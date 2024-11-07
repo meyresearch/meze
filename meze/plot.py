@@ -1257,9 +1257,9 @@ def main():
     protocol_file = functions.file_exists(arguments.protocol_file)
     protocol = functions.read_protocol(protocol_file)
 
-    # plot_rmsd_box_plot(protocol)
-    # plot_pairwise_lambda_rmsd(protocol)
-    # plot_overlap_matrix(protocol)
+    plot_rmsd_box_plot(protocol)
+    plot_pairwise_lambda_rmsd(protocol)
+    plot_overlap_matrix(protocol)
 
     transformations, free_energies, errors = read_results(protocol) 
     results = combine_results(protocol, transformations, free_energies, errors)
