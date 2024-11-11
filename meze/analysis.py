@@ -7,6 +7,7 @@ import os
 import subprocess as sp
 import MDAnalysis as mda
 import MDAnalysis.analysis.rms
+import BioSimSpace as bss
 import warnings
 import logging
 import meze
@@ -157,7 +158,12 @@ def fix_simfile(protocol, transformation):
                 continue
 
 
-def save_results(protocol, transformation):
+def save_results(
+        protocol, 
+        transformation,
+        free_energy_estimator="MBAR",
+        backend="alchemlyb"
+):
     """
     Using the protocol, get results from each repeat and write to file.
 
@@ -183,47 +189,41 @@ def save_results(protocol, transformation):
         unbound = path + "unbound/"
         bound = path + "bound/"
 
-        analyser_path = os.environ["BSS_HOME"] + "analyse_freenrg"
-        if not os.path.isfile(f"{unbound}/mbar.txt"):
-            try:
-                unbound_command = f"{analyser_path} mbar -i {unbound}/lambda*/simfile.dat -o {unbound}/mbar.txt --overlap --subsampling"
-                sp.check_output(unbound_command, shell=True)
-            
-            except sp.CalledProcessError as error_message:
-                print(error_message.output)
-                print("Trying again without subsampling.")
-                warnings.warn(f"Warning: Disabling subsampling may meen results are unreliable. Please check the unbound transformation {transformation}")
-                unbound_command = f"{analyser_path} mbar -i {unbound}/lambda*/simfile.dat -o {unbound}/mbar.txt --overlap"
-
-            with open(unbound + "mbar.out", "w") as file:
-                sp.run(unbound_command, shell=True, stdout=file)
-
-        if not os.path.isfile(f"{bound}/mbar.txt"):
-            try:
-                bound_command = f"{analyser_path} mbar -i {bound}/lambda*/simfile.dat -o {bound}/mbar.txt --overlap --subsampling"
-                sp.check_output(bound_command, shell=True)
-            
-            except sp.CalledProcessError as error_message:
-                print(error_message.output)
-                print("Trying again without subsampling.")
-                warnings.warn(f"Warning: Disabling subsampling may meen results are unreliable. Please check the bound transformation {transformation}")
-                bound_command = f"{analyser_path} mbar -i {bound}/lambda*/simfile.dat -o {bound}/mbar.txt --overlap"
-
-            with open(bound + "mbar.out", "w") as file:
-                sp.run(bound_command, shell=True, stdout=file)
-
-        unbound_free_energy, unbound_error = read_free_energy(unbound + "/mbar.txt")
-        bound_free_energy, bound_error = read_free_energy(bound + "/mbar.txt")
-        relative_binding_free_energy = None
-        error = None
-
         try:
-            relative_binding_free_energy = bound_free_energy - unbound_free_energy
-            error = math.sqrt(bound_error ** 2 + unbound_error ** 2)
-        except TypeError as error_message:
-            print(f"{transformation}: {error_message}")
+            unbound_pmf, unbound_overlap_matrix = bss.FreeEnergy.Relative.analyse(
+                work_dir=unbound,
+                estimator=free_energy_estimator,
+                method=backend
+            )
+        except Exception as e: #TODO: fix to a specific error 
+            print(e)
+            
+        try:
+            bound_pmf, bound_overlap_matrix = bss.FreeEnergy.Relative.analyse(
+                work_dir=bound,
+                estimator=free_energy_estimator,
+                method=backend
+            )    
+        except Exception as e: #TODO: fix to a specific error 
+            print(e)        
+        
+        unbound_output_file = path + "unbound_overlap_matrix.npy"
+        bound_output_file = path + "bound_overlap_matrix.npy"
 
-        data = [transformation, relative_binding_free_energy, error]
+        if not os.path.isfile(unbound_output_file): #TODO: move old overlap matrices and redo new
+            np.save(unbound_output_file, unbound_overlap_matrix)
+        
+        if not os.path.isfile(bound_output_file): #TODO: move old overlap matrices and redo new
+            np.save(bound_output_file, bound_overlap_matrix)
+
+        difference = bss.FreeEnergy.Relative.difference(
+            pmf=bound_pmf,
+            pmf_ref=unbound_pmf
+        )
+        relative_free_energy = difference[0].value()
+        error_in_free_energy = difference[1].value()
+
+        data = [transformation, relative_free_energy, error_in_free_energy]
         data_line = ",".join(str(item) for item in data) + "\n"
         data_file = outputs + "/" + engine + f"_{i}_raw.csv"
         
@@ -516,7 +516,7 @@ def main():
 
     save_results(protocol, transformation)
     save_rmsds(protocol, transformation)    
-    save_overlap_matrix(protocol, transformation)
+
 
 
 if __name__ == "__main__":
