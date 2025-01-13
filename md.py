@@ -5,7 +5,7 @@ import shutil
 from definitions import KELVIN, FEMTOSECOND, ATM
 import BioSimSpace as bss
 import os
-import meze
+import prepare_afe
 import sofra
 import solvate
 
@@ -258,7 +258,7 @@ def main():
 
     
     if metal:
-        network = meze.Meze(protein_file=arguments.protein,
+        network = prepare_afe.Meze(protein_file=arguments.protein,
                             cut_off=arguments.cut_off,
                             is_md=True,
                             restraints=apply_restraints,

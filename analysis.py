@@ -9,7 +9,7 @@ import MDAnalysis as mda
 import MDAnalysis.analysis.rms
 import warnings
 import logging
-import meze
+import prepare_afe
 import matplotlib.pyplot as plt
 import seaborn as sns
 logger = logging.getLogger()
@@ -507,7 +507,7 @@ def main():
                         "--separator",
                         help="character separating the two ligand names",
                         default="~",
-                        type=meze.character)
+                        type=prepare_afe.character)
     
     arguments = parser.parse_args()
     protocol_file = functions.file_exists(arguments.protocol_file)

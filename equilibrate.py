@@ -7,11 +7,11 @@ import functions
 import BioSimSpace as bss
 import argparse
 import os 
-import meze
+import prepare_afe
 import warnings
 
 
-class coldMeze(meze.Meze):
+class coldMeze(prepare_afe.Meze):
 
     def __init__(self, group_name, ligand_name, outputs, input_protein_file,
                  protein_directory, ligand_directory, log_directory, equilibration_directory, afe_input_directory, 
@@ -25,7 +25,7 @@ class coldMeze(meze.Meze):
                              protein_path=protein_directory, ligand_path=ligand_directory, force_constant_0=force_constant_0)
         else:
             self.protein_file = input_protein_file
-            super(meze.Meze, self).__init__(protein_file=input_protein_file, prepared=prepared, group_name=group_name, is_md=is_md, log_directory=log_directory,
+            super(prepare_afe.Meze, self).__init__(protein_file=input_protein_file, prepared=prepared, group_name=group_name, is_md=is_md, log_directory=log_directory,
                                             equilibration_path=equilibration_directory, afe_input_path=afe_input_directory, outputs=outputs,
                                             protein_path=protein_directory, ligand_path=ligand_directory,)
 
@@ -123,7 +123,7 @@ class coldMeze(meze.Meze):
             metal_ligating_atom_groups = metal_ligands[keys[0]] + metal_ligands[keys[1]]
             metal_ligating_residue_ids = [atom.resnum for atom in metal_ligating_atom_groups]
             restrained_residue_ids = metal_ligating_residue_ids + self.metal_resids.tolist()
-            metal_restraint_mask = meze.residue_restraint_mask(restrained_residue_ids)
+            metal_restraint_mask = prepare_afe.residue_restraint_mask(restrained_residue_ids)
             old_line = ""
             new_string = ""
             for line in config_lines:

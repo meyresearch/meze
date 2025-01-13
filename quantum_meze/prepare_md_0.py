@@ -1,6 +1,6 @@
-from meze import meze
+from prepare_afe import meze
 import argparse
-from meze import functions
+from prepare_afe import functions
 import os
 
 
