@@ -195,6 +195,10 @@ def save_results(
                 estimator=free_energy_estimator,
                 method=backend
             )
+            unbound_output_file = path + "unbound_overlap_matrix.npy"
+            if not os.path.isfile(unbound_output_file): #TODO: move old overlap matrices and redo new
+                np.save(unbound_output_file, unbound_overlap_matrix)
+        
         except Exception as e: #TODO: fix to a specific error 
             print(e)
             
@@ -204,25 +208,27 @@ def save_results(
                 estimator=free_energy_estimator,
                 method=backend
             )    
+            bound_output_file = path + "bound_overlap_matrix.npy"
+            if not os.path.isfile(bound_output_file): #TODO: move old overlap matrices and redo new
+                np.save(bound_output_file, bound_overlap_matrix)
+
         except Exception as e: #TODO: fix to a specific error 
             print(e)        
-        
-        unbound_output_file = path + "unbound_overlap_matrix.npy"
-        bound_output_file = path + "bound_overlap_matrix.npy"
 
-        if not os.path.isfile(unbound_output_file): #TODO: move old overlap matrices and redo new
-            np.save(unbound_output_file, unbound_overlap_matrix)
-        
-        if not os.path.isfile(bound_output_file): #TODO: move old overlap matrices and redo new
-            np.save(bound_output_file, bound_overlap_matrix)
+        try:
+            difference = bss.FreeEnergy.Relative.difference(
+                pmf=bound_pmf,
+                pmf_ref=unbound_pmf
+            )
+            relative_free_energy = difference[0].value()
+            error_in_free_energy = difference[1].value()
 
-        difference = bss.FreeEnergy.Relative.difference(
-            pmf=bound_pmf,
-            pmf_ref=unbound_pmf
-        )
-        relative_free_energy = difference[0].value()
-        error_in_free_energy = difference[1].value()
-
+        except UnboundLocalError as e:
+            print(e)
+            print(f"The analysis for {transformation} in repeat {i} failed. Check the run directories.")
+            relative_free_energy = None
+            error_in_free_energy = None
+            
         data = [transformation, relative_free_energy, error_in_free_energy]
         data_line = ",".join(str(item) for item in data) + "\n"
         data_file = outputs + "/" + engine + f"_{i}_raw.csv"
@@ -513,7 +519,6 @@ def main():
     protocol_file = functions.file_exists(arguments.protocol_file)
     protocol = functions.read_protocol(protocol_file)
     transformation = arguments.transformation
-
     save_results(protocol, transformation)
     save_rmsds(protocol, transformation)    
 

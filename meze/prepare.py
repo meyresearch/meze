@@ -385,7 +385,6 @@ def main():
                                            n_difficult=arguments.n_difficult,
                                            solvation_method=protocol["solvation_method"],
                                            solvent_closeness=protocol["solvent_closeness"],
-                                           n_difficult=arguments.n_difficult, 
                                            only_save_end_states=arguments.only_save_end_states)
 
         links_file = functions.file_exists(arguments.extra_transformations_file)

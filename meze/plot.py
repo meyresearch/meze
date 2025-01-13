@@ -12,8 +12,15 @@ import argparse
 import os
 import meze
 import functions
+
 import matplotlib
+import matplotlib.font_manager as font_manager
 matplotlib.rcParams["font.size"] = 16
+font_name = font_manager.FontProperties(
+    fname="/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"
+)
+import matplotlib.ticker as ticker
+
 from scipy.stats import (
     spearmanr,
     pearsonr, 
@@ -114,13 +121,15 @@ def output_statistics(experimental_free_energy, computational, experimental_erro
                             method="percentile",
                             confidence_level=0.95,
                             paired=True,
-                            n_resamples=1000)
+                            n_resamples=1000,
+                            random_state=12345)
     mue_distribution = mue_results.bootstrap_distribution
     mue = f"{np.round(np.mean(mue_distribution), decimals=2)}"
-
+    if len(mue) < 4: # add missing trailing zero
+        mue = f"{mue}0"
     mue_confidence_interval = mue_results.confidence_interval
-    mue_value = f"MAE: {mue}" + r"$^{{{upper:.2f}}}_{{{lower:.2f}}}$ kcal mol$^{{-1}}$".format(upper = np.round(mue_confidence_interval.high, decimals=2),
-                                                                                               lower = np.round(mue_confidence_interval.low, decimals=2))
+    mue_value = f"MAE: {mue}" + r"$^{{{upper:.2f}}}_{{{lower:.2f}}}$ kcal/mol".format(upper = np.round(mue_confidence_interval.high, decimals=2),
+                                                                                      lower = np.round(mue_confidence_interval.low, decimals=2))
     
     rmse_results = bootstrap(data=(experimental_values, calculated_values),
                              statistic=compute_rmse,
@@ -130,8 +139,10 @@ def output_statistics(experimental_free_energy, computational, experimental_erro
                              n_resamples=1000)
     rmse_distribution = rmse_results.bootstrap_distribution
     rmse = f"{np.round(np.mean(rmse_distribution), decimals=2)}"
+    if len(rmse) < 4: # add missing trailing zero
+        rmse = f"{rmse}0"
     rmse_confidence_interval = rmse_results.confidence_interval
-    rmse_value = f"RMSE: {rmse}" + r"$^{{{upper:.2f}}}_{{{lower:.2f}}}$ kcal mol$^{{-1}}$".format(upper = np.round(rmse_confidence_interval.high, decimals=2),
+    rmse_value = f"RMSE: {rmse}" + r"$^{{{upper:.2f}}}_{{{lower:.2f}}}$ kcal/mol".format(upper = np.round(rmse_confidence_interval.high, decimals=2),
                                                                                                   lower = np.round(rmse_confidence_interval.low, decimals=2))
     
 
@@ -154,6 +165,8 @@ def output_statistics(experimental_free_energy, computational, experimental_erro
                                     paired=True)
         pearson_distribution = pearson_results.bootstrap_distribution
         pearson = f"{np.round(np.mean(pearson_distribution), decimals=2)}"
+        if len(pearson) < 4: # add missing trailing zero
+            pearson = f"{pearson}0"
         pearson_confidence_interval = pearson_results.confidence_interval
         pearson_value = r"Pearson R: " + f"{pearson}" + r"$^{{{upper:.2f}}}_{{{lower:.2f}}}$".format(upper = np.round(pearson_confidence_interval.high, decimals=2),
                                                                                                      lower = np.round(pearson_confidence_interval.low, decimals=2))
@@ -166,6 +179,8 @@ def output_statistics(experimental_free_energy, computational, experimental_erro
                                      paired=True)
         spearman_distribution = spearman_results.bootstrap_distribution
         spearman = f"{np.round(np.mean(spearman_distribution), decimals=2)}"
+        if len(spearman) < 4: # add missing trailing zero
+            spearman = f"{spearman}0"
         spearman_confidence_interval = spearman_results.confidence_interval
         spearman_value = r"Spearman $\rho$: " + f"{spearman}" + r"$^{{{upper:.2f}}}_{{{lower:.2f}}}$".format(upper = np.round(spearman_confidence_interval.high, decimals=2),
                                                                                                              lower = np.round(spearman_confidence_interval.low, decimals=2))
@@ -931,7 +946,6 @@ def plot_overlap_matrix(protocol):
     for i in range(1, repeats + 1):    
         path = outputs + "/" + engine + f"_{i}/"
         transformation_directories = functions.get_files(path + "ligand_*/")
-
         for j in range(len(transformation_directories)):
             transformation_directory = transformation_directories[j]
 
@@ -949,31 +963,31 @@ def plot_overlap_matrix(protocol):
             for k in range(len(overlap_matrix_files)):
             
                 plot_file = transformation_directory + filenames[k] + ".png"
-                if not os.path.isfile(plot_file):
-                    try:    
-                        fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-                        sns.set_theme(context="notebook", style="ticks", font_scale=2)  
-                        sns.heatmap(ax=ax,
-                                    data=overlap_matrices[k], 
-                                    annot=True, 
-                                    fmt=".1f", 
-                                    linewidths=0.3, 
-                                    annot_kws={"size": 14}, 
-                                    square=True, 
-                                    robust=True, 
-                                    cmap=colour_map,
-                                    norm=norm_colours, 
-                                    cbar_kws=colour_bar_args,
-                                    vmax=1)
-                        ax.xaxis.tick_top()
-                        ax.tick_params(axis="y", rotation=360)
-                        ax.set_title(r"$\lambda$ index")
-                        ax.set_ylabel(r"$\lambda$ index")
-                        fig.savefig(plot_file, dpi=1000)
-                        plt.close(fig)
+                # if not os.path.isfile(plot_file):
+                try:    
+                    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+                    sns.set_theme(context="notebook", style="ticks", font_scale=2)  
+                    sns.heatmap(ax=ax,
+                                data=overlap_matrices[k], 
+                                annot=True, 
+                                fmt=".1f", 
+                                linewidths=0.3, 
+                                annot_kws={"size": 14}, 
+                                square=True, 
+                                robust=True, 
+                                cmap=colour_map,
+                                norm=norm_colours, 
+                                cbar_kws=colour_bar_args,
+                                vmax=1)
+                    ax.xaxis.tick_top()
+                    ax.tick_params(axis="y", rotation=360)
+                    ax.set_title(r"$\lambda$ index")
+                    ax.set_ylabel(r"$\lambda$ index")
+                    fig.savefig(plot_file, dpi=1000)
+                    plt.close(fig)
 
-                    except IndexError as e:
-                        print(f"transformation {transformation_directory.split('/')[-2]} at repeat {i} raised error: {e}")
+                except IndexError as e:
+                    print(f"transformation {transformation_directory.split('/')[-2]} at repeat {i} raised error: {e}")
 
 
 def plot_absolute_dGs(name, experimental_file, calculated_results, protocol, plots_directory, region=True):
@@ -1000,7 +1014,7 @@ def plot_absolute_dGs(name, experimental_file, calculated_results, protocol, plo
 
 
     fig, ax = plt.subplots(1, 1, figsize=(10,10))
-    sns.set_theme(context="notebook", palette="colorblind", style="ticks", font_scale=2)
+    sns.set_theme(context="notebook", palette="colorblind", style="ticks", font_scale=2.5)
 
     ax.scatter(x_data, 
                y_data, 
@@ -1025,8 +1039,8 @@ def plot_absolute_dGs(name, experimental_file, calculated_results, protocol, plo
     min_experimental = min(x_data) - 1
     min_value = min(min_calculated, min_experimental)
 
-    max_value = -5
-    min_value = -13
+    max_value = -4
+    min_value = -12
 
     ax.plot([min_value, max_value], [min_value, max_value], color="gray", linestyle=":", zorder=-1)
     ax.vlines(0, min_value, max_value, color="silver", linestyle="--", zorder=-1)
@@ -1039,25 +1053,34 @@ def plot_absolute_dGs(name, experimental_file, calculated_results, protocol, plo
         ax.fill_between(x, bottom, top, alpha=0.2, color="gray", zorder=-1)
     
     box_properties = dict(boxstyle="square", facecolor="white")
-    ax.text(0.05, 0.95, absolute_text_box, transform=ax.transAxes, fontsize=20, verticalalignment="top", bbox=box_properties)
+    ax.text(0.05, 0.95, absolute_text_box, transform=ax.transAxes, fontsize=20, verticalalignment="top", bbox=box_properties, fontproperties=font_name)
     
     ax.set_xlim(min_value, max_value)
     ax.set_ylim(min_value, max_value)
-    ax.set_xlabel("$\Delta$ G$_\mathrm{EXP}$ (kcal mol \u207B \u00B9)", fontsize=28)
-    ax.set_ylabel("$\Delta$ G$_\mathrm{RBFE}$ (kcal mol \u207B \u00B9)", fontsize=28)
+
+    ax.set_xticks([int(x) for x in np.arange(min_value, max_value+1)])
+    ax.set_yticks([int(y) for y in np.arange(min_value, max_value+1)])
+
+    ax.set_xticklabels(ax.get_xticks(), fontproperties=font_name, fontsize=24)
+    ax.set_yticklabels(ax.get_yticks(), fontproperties=font_name, fontsize=24)
+
+    ax.set_xlabel("$\Delta$G$_\mathrm{EXP}$ (kcal/mol)", fontsize=28, fontproperties=font_name)
+    ax.set_ylabel("$\Delta$G$_\mathrm{RBFE}$ (kcal/mol)", fontsize=28, fontproperties=font_name)
+    # ax.set_xlabel("$\Delta$G$_\mathrm{EXP}$ (kcal/mol)", fontproperties=font_name)
+    # ax.set_ylabel("$\Delta$G$_\mathrm{RBFE}$ (kcal/mol)", fontproperties=font_name)
     fig.tight_layout()
     fig.savefig(f"{plots_directory}/{name}_absolute_dG_correlation.png", dpi=1000)     
     
-    labels = [name.replace("ligand_", "") for name in ligand_names]
-    for i in range(len(labels)):
-        ax.annotate(labels[i], (x_data[i] + 0.07, y_data[i]), fontsize=14)
+    # labels = [name.replace("ligand_", "") for name in ligand_names]
+    # for i in range(len(labels)):
+    #     ax.annotate(labels[i], (x_data[i] + 0.07, y_data[i]), fontsize=14)
     
-    ax.set_xlim(min_value, max_value)
-    ax.set_ylim(min_value, max_value)
-    ax.set_xlabel("$\Delta$ G$_\mathrm{EXP}$ (kcal mol \u207B \u00B9)", fontsize=28)
-    ax.set_ylabel("$\Delta$ G$_\mathrm{RBFE}$ (kcal mol \u207B \u00B9)", fontsize=28)
-    fig.tight_layout()
-    fig.savefig(f"{plots_directory}/{name}_absolute_dG_correlation_labeled.png", dpi=1000)    
+    # ax.set_xlim(min_value, max_value)
+    # ax.set_ylim(min_value, max_value)
+    # ax.set_xlabel("$\Delta$G$_\mathrm{EXP}$ (kcal/mol)", fontsize=28, fontproperties=font_name)
+    # ax.set_ylabel("$\Delta$G$_\mathrm{RBFE}$ (kcal/mol)", fontsize=28, fontproperties=font_name)
+    # fig.tight_layout()
+    # fig.savefig(f"{plots_directory}/{name}_absolute_dG_correlation_labeled.png", dpi=1000)    
 
 
 def get_absolute_dGs(experimental_file, calculated_dataframe, protocol):
@@ -1257,9 +1280,9 @@ def main():
     protocol_file = functions.file_exists(arguments.protocol_file)
     protocol = functions.read_protocol(protocol_file)
 
-    plot_rmsd_box_plot(protocol)
-    plot_pairwise_lambda_rmsd(protocol)
-    plot_overlap_matrix(protocol)
+    # plot_rmsd_box_plot(protocol)
+    # plot_pairwise_lambda_rmsd(protocol)
+    # plot_overlap_matrix(protocol)
 
     transformations, free_energies, errors = read_results(protocol) 
     results = combine_results(protocol, transformations, free_energies, errors)
@@ -1275,9 +1298,9 @@ def main():
                       protocol=protocol,
                       plots_directory=protocol["plots directory"])
    
-    plot_bar(protocol["plots directory"], results, experimental_free_energy, experimental_error)
-    plot_correlation(protocol["group name"], protocol["plots directory"], results, experimental_free_energy, experimental_error, text_box=text_box)
-    plot_individual_runs(protocol, experimental_free_energy, experimental_error, results)
+    # plot_bar(protocol["plots directory"], results, experimental_free_energy, experimental_error)
+    # plot_correlation(protocol["group name"], protocol["plots directory"], results, experimental_free_energy, experimental_error, text_box=text_box)
+    # plot_individual_runs(protocol, experimental_free_energy, experimental_error, results)
 
 
 
