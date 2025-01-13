@@ -251,15 +251,16 @@ class Sofra(object):
             self.plots = functions.get_files(f"{self.outputs}/plots/")
         else:
             self.protein_file = protein_file
+            self.equilibration_directory = self.create_directory(equilibration_path)
+            self.outputs = self.create_directory(outputs)
+            self.plots = self.create_directory(f"{self.outputs}/plots/")
+            self.log_directory = self.create_directory(log_directory)
             if not self.is_md:
                 self.afe_input_directory = self.create_directory(afe_input_path)
                 self.output_directories = self.create_output_directories()
             else:
                 self.md_input_directory = self.create_directory(md_input_directory)
-            self.equilibration_directory = self.create_directory(equilibration_path)
-            self.outputs = self.create_directory(outputs)
-            self.plots = self.create_directory(f"{self.outputs}/plots/")
-            self.log_directory = self.create_directory(log_directory)
+
         self.solvation_method = solvation_method
         self.solvent_closeness = functions.check_positive(solvent_closeness)
 
