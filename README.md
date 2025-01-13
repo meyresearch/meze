@@ -1,4 +1,4 @@
-# MetalloEnZymE parameterisation program (MEZE)
+# MetalloEnZymE parameterisation program (meze)
 
 **Authors**: J. Jasmin Güven
 
