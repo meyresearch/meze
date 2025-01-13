@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
 import os
-import meze
+import prepare_afe
 import functions
 import matplotlib
 matplotlib.rcParams["font.size"] = 16
@@ -1251,7 +1251,7 @@ def main():
                         "--separator",
                         help="character separating the two ligand names",
                         default="~",
-                        type=meze.character)
+                        type=prepare_afe.character)
     
     arguments = parser.parse_args()
     protocol_file = functions.file_exists(arguments.protocol_file)
