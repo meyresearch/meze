@@ -1,4 +1,4 @@
-import meze
+import prepare_afe
 
 
 def get_side_chain_selection(universe, residue):

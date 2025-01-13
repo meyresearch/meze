@@ -251,15 +251,16 @@ class Sofra(object):
             self.plots = functions.get_files(f"{self.outputs}/plots/")
         else:
             self.protein_file = protein_file
+            self.equilibration_directory = self.create_directory(equilibration_path)
+            self.outputs = self.create_directory(outputs)
+            self.plots = self.create_directory(f"{self.outputs}/plots/")
+            self.log_directory = self.create_directory(log_directory)
             if not self.is_md:
                 self.afe_input_directory = self.create_directory(afe_input_path)
                 self.output_directories = self.create_output_directories()
             else:
                 self.md_input_directory = self.create_directory(md_input_directory)
-            self.equilibration_directory = self.create_directory(equilibration_path)
-            self.outputs = self.create_directory(outputs)
-            self.plots = self.create_directory(f"{self.outputs}/plots/")
-            self.log_directory = self.create_directory(log_directory)
+
         self.solvation_method = solvation_method
         self.solvent_closeness = functions.check_positive(solvent_closeness)
 
@@ -658,7 +659,7 @@ class Sofra(object):
             dataframe.to_csv(save_name)
             
         else:
-            save_name = self.afe_input_directory+f"/meze_network.csv"
+            save_name = self.afe_input_directory+f"meze_network.csv"
             lomap_work_directory = self.check_lomap_directory()
             transformations, lomap_scores = bss.Align.generateNetwork(self.ligand_molecules, plot_network=True, names=self.names, work_dir=lomap_work_directory)   
         
@@ -821,7 +822,7 @@ class Sofra(object):
         """
         if not self.is_md:
             strip = self.output_directories[0].split("/")[-2]
-            path_to_outputs = self.output_directories[0].replace(strip, "")
+            path_to_outputs = self.output_directories[0].replace(strip + "/", "")
         else: 
             path_to_outputs = self.outputs
 
@@ -840,7 +841,6 @@ class Sofra(object):
                     f"minimisation steps = {self.min_steps}",
                     f"minimisation stepsize = {self.min_dt}",
                     f"minimisation tolerance = {self.min_tol}",
-
                     f"temperature = {self.temperature._value}",
                     f"pressure = {self.pressure._value}",
                     f"sampling time = {self.md_time._value}",
@@ -848,7 +848,6 @@ class Sofra(object):
                     f"only save end states = {self.only_save_end_states}",
                     f"outputs = {path_to_outputs}",
                     f"repeats = {self.n_repeats}",
-
                     f"project directory = {self.working_directory}",
                     f"equilibration directory = {self.equilibration_directory}",
                     f"ligand directory = {self.ligand_path}",
@@ -857,11 +856,11 @@ class Sofra(object):
                     f"plots directory = {self.plots}"]
         
         if not self.is_md:
-            protocol.append(f"afe input directory = {self.afe_input_directory}",
-                            f"short nvt = {self.short_nvt._value}",
-                            f"nvt = {self.nvt._value}",
-                            f"npt = {self.npt._value}",
-                            f"network file = {self.network_file}",)
+            protocol.extend([f"afe input directory = {self.afe_input_directory}",
+                             f"short nvt = {self.short_nvt._value}",
+                             f"nvt = {self.nvt._value}",
+                             f"npt = {self.npt._value}",
+                             f"network file = {self.network_file}"])
             protocol_file = self.afe_input_directory + "/protocol.dat"
         else:
             protocol_file = self.md_input_directory + "/protocol.dat"
