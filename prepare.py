@@ -2,7 +2,7 @@ import argparse
 import functions
 import os
 import sofra
-import meze
+import prepare_afe
 import logging
 logger = logging.getLogger()
 logger.setLevel(logging.CRITICAL)
@@ -225,7 +225,7 @@ def main():
 
     if not arguments.extra_transformations_file:
         if metal:
-            network = meze.Meze(protein_file=arguments.protein,
+            network = prepare_afe.Meze(protein_file=arguments.protein,
                                 cut_off=arguments.cut_off,
                                 force_constant_0=arguments.force_constant_0,
                                 workdir=arguments.working_directory,
@@ -326,7 +326,7 @@ def main():
         protocol_file = functions.file_exists(arguments.protocol_file)
         protocol = functions.input_to_dict(protocol_file)
         if metal:
-            prepared_network = meze.Meze(prepared=True,
+            prepared_network = prepare_afe.Meze(prepared=True,
                                          protein_file=protocol["protein input file"],
                                          cut_off=protocol["cutoff"],
                                          force_constant_0=protocol["force constant"],
@@ -385,7 +385,6 @@ def main():
                                            n_difficult=arguments.n_difficult,
                                            solvation_method=protocol["solvation_method"],
                                            solvent_closeness=protocol["solvent_closeness"],
-                                           n_difficult=arguments.n_difficult, 
                                            only_save_end_states=arguments.only_save_end_states)
 
         links_file = functions.file_exists(arguments.extra_transformations_file)
