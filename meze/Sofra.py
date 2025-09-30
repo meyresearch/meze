@@ -11,6 +11,10 @@ from typing import (
 @dataclass
 class Sofra:
     protein_file: str
-    group_name: str = "meze"
+    group_name: str = None
     protein: Optional[Protein] = None 
     ligands: List = field(default_factory=list)
+
+@dataclass
+class Meze(Sofra):
+    group_name = "meze"
