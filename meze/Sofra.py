@@ -1,5 +1,8 @@
-from dataclasses import dataclass
-import Protein
+from dataclasses import (
+    dataclass,
+    field
+)
+from meze import Protein
 from typing import (
     List,
     Optional
@@ -9,5 +12,5 @@ from typing import (
 class Sofra:
     protein_file: str
     group_name: str = "meze"
-    protein: Optional[Protein.Protein] = None 
-    ligands: List = []
+    protein: Optional[Protein] = None 
+    ligands: List = field(default_factory=list)
