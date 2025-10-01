@@ -1,4 +1,4 @@
-from meze import Sofra, Meze
+from meze import Meze
 
 project_dir = "/Users/af25016/projects/indole-carboxylates/vim2/system_preparation/water"
 meze_ = Meze.from_files(topology=f"{project_dir}/vim2_solv.prmtop",
