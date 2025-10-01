@@ -9,3 +9,5 @@ print(meze_)
 active_site = meze_.get_active_site()
 for atom in active_site:
     print(atom.resname, atom.resid)
+
+print(meze_.coordinating_residues)
