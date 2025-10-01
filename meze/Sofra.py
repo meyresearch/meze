@@ -10,6 +10,7 @@ from typing import (
 import os
 import MDAnalysis as mda
 import BioSimSpace as bss
+from BioSimSpace._SireWrappers import System as bssSystem
 @dataclass
 class MezeRecipe:
     """Meze workflow recipe
@@ -32,7 +33,6 @@ class ColdMezeRecipe(MezeRecipe):
     dt: float = Field(0.002, gt=0, description="Integrator timestep, in picoseconds")
     temperature: float = Field(300.0, ge=0, description="Simulation temperature in kelvin")
     pressure: float = Field(1.0, ge=0, description="Simulation pressure in atm")
-    position_restraints: Optional[str] = None
     restraint_weight: float = Field(100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)")
 
 @dataclass
@@ -114,9 +114,30 @@ class Meze:
 
     def run(
             self,
-            system
+            protocol_type: str,
+            system: Optional[bssSystem], 
+            workdir: Optional[str],
+            position_restraints: Optional[str] = None
+            
     ):
-        pass
+        input_system = system or self.system
+        target_workdir = workdir or self.recipe.workdir
+
+        if protocol_type == "minimisation":
+            protocol = bss.Protocol.Minimisation(
+                steps=self.recipe.max_cycles, 
+                restraint=position_restraints, 
+                force_constant=self.recipe.restraint_weight
+            )
+        else:
+            pass
+
+        process = bss.Process.Amber(
+            system = input_system,
+            protocol = protocol,
+            work_dir=target_workdir
+        )
+
 @dataclass
 class ColdMeze(Meze):
     recipe: ColdMezeRecipe
@@ -130,12 +151,17 @@ class ColdMeze(Meze):
         recipe = ColdMezeRecipe(topology=topology, coordinates=coordinates, **kwargs)
         return cls(recipe=recipe)
     
-    def minimise(self):
-        protocol = bss.Protocol.Minimisation(
-            steps=self.recipe.max_cycles,
-            restraint=self.recipe.position_restraints,
-            force_constant=self.recipe.restraint_weight
+    def minimise(
+            self,
+            system: Optional[bssSystem] = None,
+            workdir: Optional[str] = None,
+            position_restraints: Optional[str] = None,
+    ):        
+        return self.run(
+            protocol_type="minimisation",
+            system=system,
+            workdir=workdir,
+            position_restraints=position_restraints
         )
-        # self.run()
-        print(protocol)
+        
 
