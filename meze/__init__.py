@@ -1,4 +1,4 @@
-from .Sofra import Sofra, Meze
+from .Sofra import MezeRecipe, Meze
 from .Protein import Protein  
 
-__all__ = ["Sofra", "Protein", "Meze"]  
+__all__ = ["Protein", "Meze",  "MezeRecipe"]  
