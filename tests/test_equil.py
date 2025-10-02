@@ -10,6 +10,7 @@ cold_meze = ColdMeze.from_files(topology=f"{input_dir}/vim2_solv.prmtop",
 equil_dir = os.path.join(project_dir, "equilibration")
 os.makedirs(equil_dir, exist_ok=True)
 
-cold_meze.minimise(position_restraints="all",
-                   workdir=equil_dir)
+cold_meze.minimise(workdir=equil_dir,
+                   position_restraints="solute",
+                   restraint_weight=100.0)
 
