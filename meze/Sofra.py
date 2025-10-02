@@ -1,17 +1,21 @@
 from pydantic.dataclasses import dataclass
 from pydantic import (
     Field,
-    PrivateAttr
+    field_validator
 )
 from meze import protein
 from typing import (
     Optional,
-    Literal
+    Literal,
+    Union
 )
 import os
 import MDAnalysis as mda
 import BioSimSpace as bss
 from BioSimSpace._SireWrappers import System as bssSystem
+from BioSimSpace.Types._time import Time as bssTime
+from BioSimSpace.Types._temperature import Temperature as bssTemperature
+from BioSimSpace.Types._pressure import Pressure as bssPressure
 from .utils import residue_restraint_mask
 @dataclass
 class MezeRecipe:
@@ -32,11 +36,41 @@ class ColdMezeRecipe(MezeRecipe):
     n_sd_cycles: int = Field(1000, ge=0, description="Number of steepest descent cycles (if min_method=1)") 
     min_method: int = Field(1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient")
     nb_cutoff: float = Field(12.0, ge=0, description="Cut-off for electrostatics interactions")
-    time: float = Field(100.0, gt=0, description="Simulation time in picoseconds")
-    dt: float = Field(0.002, gt=0, description="Integrator timestep, in picoseconds")
-    temperature: float = Field(300.0, ge=0, description="Simulation temperature in kelvin")
-    pressure: float = Field(1.0, ge=0, description="Simulation pressure in atm")
-    restraint_weight: float = Field(100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)")
+    runtime: float = Field(
+        default_factory=lambda: bss.Types.Time(100.0, bss.Units.Time.picosecond),
+        description="Simulation time in picoseconds"
+    )
+    dt: float = Field(
+        default_factory=lambda: bss.Types.Time(0.002, bss.Units.Time.picosecond), 
+        description="Integrator timestep, in picoseconds"
+    )
+    temperature: float = Field(
+        default_factory=lambda: bss.Types.Temperature.kelvin(300.0), 
+        description="Simulation temperature in kelvin"
+    )
+    pressure: float = Field(
+        default_factory=lambda: bss.Types.Pressure.atm(1.0), 
+        description="Simulation pressure in atm"
+    )
+    restraint_weight: float = Field(
+        100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
+    )
+
+    @field_validator
+    def ensure_time(cls, x):
+        if isinstance(x, (int, float)):
+            return bss.Types.Time(x, bss.Units.Time.picosecond)
+    
+    @field_validator
+    def ensure_temperature(cls, x):
+        if isinstance(x, (int, float)):
+            return bss.Types.Temperature(x, bss.Units.Temperature.kelvin)
+        
+    @field_validator
+    def ensure_pressure(cls, x):
+        if isinstance(x, (int, float)):
+            return bss.Types.Pressure(x, bss.Units.Pressure.atm)
+
 
 @dataclass
 class Meze:
@@ -169,26 +203,23 @@ class ColdMeze(Meze):
             position_restraints: Optional[str] = None,
             restraint_weight: Optional[float] = None,
             process_name: Optional[str] = "meze-run",
+            timestep: Optional[Union[float, bssTemperature]] = None,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = None,
+            start_temperature: Optional[Union[float, bssTemperature]] = 300,
+            end_temperature: Optional[Union[float, bssTemperature]] = 300,
+            pressure: Optional[Union[float, bssPressure]] = None
     ) -> bssSystem:
-        """General function for running an Amber process
 
-        Args:
-            protocol_type (str): what type of protocol to use for the run
-            system (Optional[bssSystem]): system to run on
-            workdir (Optional[str]): working directory for the run
-            position_restraints (Optional[str], optional): Positional restraints. Defaults to None.
-            restraint_weight (Optional[float], optional): Force constant for position restraints. Defaults to None.
-            process_name (Optional[str], optional): Name for the run. Defaults to "meze-run".
-
-        Returns:
-            bssSystem: system after run process
-        """
         input_system = system or self.system
         target_workdir = workdir or self.recipe.workdir
         run_directory = os.path.join(target_workdir, process_name)
         restraint_force_constant = restraint_weight or self.recipe.restraint_weight
         os.makedirs(run_directory, exist_ok=True)
-        
+        md_runtime = runtime or self.recipe.runtime
+        md_timestep = timestep or self.recipe.dt
+        run_temperature = temperature or self.recipe.temperature
+        npt_pressure = pressure or self.recipe.pressure
         config_options = {
             "ntmin": self.recipe.min_method,
             "maxcyc": self.recipe.max_cycles,
@@ -204,6 +235,10 @@ class ColdMeze(Meze):
                 steps=self.recipe.max_cycles, 
                 force_constant=restraint_force_constant,
                 restraint="all" if position_restraints else None
+            )
+        elif protocol_type == "equilibration":
+            protocol = bss.Protocol.Equilibration(
+                timestep=md_timestep
             )
         else:
             pass
@@ -225,11 +260,23 @@ class ColdMeze(Meze):
             self,
             system: Optional[bssSystem] = None,
             workdir: Optional[str] = None,
-            restraint_weight: Optional[float] = None,
             position_restraints: Optional[
                 Literal["solute", "backbone", "heavy", "metal-coordination"]
             ] = None,
-    ):        
+            restraint_weight: Optional[float] = None
+    ) -> bssSystem:  
+        """Run a minimisation with Amber
+
+        Args:
+            system (Optional[bssSystem], optional): System to minimise. Defaults to None.
+            workdir (Optional[str], optional): Working directory for minimisation. Defaults to None.
+            position_restraints (Optional[ Literal['solute', 'backbone', 'heavy', 'metal-coordination', optional): 
+                                Whether to use positional restraints. Defaults to None.
+            restraint_weight (Optional[float], optional): Force constant for position restraints. Defaults to None.
+
+        Returns:
+            bssSystem: Minimised system.
+        """
         return self.run(
             protocol_type="minimisation",
             system=system,
@@ -238,5 +285,27 @@ class ColdMeze(Meze):
             process_name="min",
             restraint_weight=restraint_weight
         )
-        
 
+    def heat(
+            self,
+            system: Optional[bssSystem] = None,
+            workdir: Optional[str] = None,
+            position_restraints: Optional[
+                Literal["solute", "backbone", "heavy", "metal-coordination"]
+            ] = None,
+            restraint_weight: Optional[float] = None,
+            timestep: Optional[Union[float, bssTemperature]] = None,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = None,
+            start_temperature: Optional[Union[float, bssTemperature]] = 300,
+            end_temperature: Optional[Union[float, bssTemperature]] = 300,
+            pressure: Optional[Union[float, bssPressure]] = None
+    ) -> bssSystem:
+        return self.run(
+            protocol_type="equilibration",
+            system=system,
+            workdir=workdir,
+            position_restraints=position_restraints,
+            process_name="min",
+            restraint_weight=restraint_weight,
+        )
