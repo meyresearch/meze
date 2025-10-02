@@ -27,7 +27,7 @@ class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
     max_cycles: int = Field(1000, ge=0, description="Number of minimisation cycles")
-    n_sd_cycles: int = Field(1000, ge=0, description="Number of steepest descent cycles (if ntmin=1)") 
+    n_sd_cycles: int = Field(1000, ge=0, description="Number of steepest descent cycles (if min_method=1)") 
     min_method: int = Field(1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient")
     time: float = Field(100.0, gt=0, description="Simulation time in picoseconds")
     dt: float = Field(0.002, gt=0, description="Integrator timestep, in picoseconds")
@@ -117,11 +117,13 @@ class Meze:
             protocol_type: str,
             system: Optional[bssSystem], 
             workdir: Optional[str],
-            position_restraints: Optional[str] = None
-            
+            position_restraints: Optional[str] = None,
+            process_name: Optional[str] = "meze-run"
     ):
         input_system = system or self.system
         target_workdir = workdir or self.recipe.workdir
+        run_directory = os.path.join(target_workdir, process_name)
+        os.makedirs(run_directory, exist_ok=True)
 
         if protocol_type == "minimisation":
             protocol = bss.Protocol.Minimisation(
@@ -135,7 +137,8 @@ class Meze:
         process = bss.Process.Amber(
             system = input_system,
             protocol = protocol,
-            work_dir=target_workdir
+            work_dir=run_directory,
+            name=process_name
         )
 
 @dataclass
@@ -161,7 +164,8 @@ class ColdMeze(Meze):
             protocol_type="minimisation",
             system=system,
             workdir=workdir,
-            position_restraints=position_restraints
+            position_restraints=position_restraints,
+            process_name="min"
         )
         
 
