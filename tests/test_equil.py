@@ -46,7 +46,7 @@ pressure_system = cold_meze.pressurise(
     system=minimised_system, #!!DEBUGGING: REMEMBER TO CHANGE BACK TO heat_system!! 
     restart=True,
     process_name="04_pressure",
-    workdir=equil_dir,
+    workdir=equil_dir, 
     position_restraints="solute",
     timestep=0.001,
 )

@@ -43,6 +43,9 @@ class ColdMezeRecipe(MezeRecipe):
     min_method: int = Field(
         1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient"
     )
+    barostat: int = Field(
+        2, 
+    )
     nb_cutoff: float = Field(
         12.0, ge=0, description="Cut-off for electrostatics interactions"
     )
