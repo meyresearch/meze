@@ -24,8 +24,6 @@ from .utils import residue_restraint_mask
 class MezeRecipe(BaseModel):
     """Meze workflow recipe
     """
-    topology: str = Field(..., description="Path to topology file")
-    coordinates: str = Field(..., description="Path to coordinate file")
     workdir: str = Field(default_factory=os.getcwd, description="Working directory")
     metal: str = Field("ZN", description="Metal resname")
     group_name: str = Field("meze", description="Group name for project")
@@ -40,9 +38,15 @@ class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
     max_cycles: int = Field(1000, ge=0, description="Number of minimisation cycles")
-    n_sd_cycles: int = Field(1000, ge=0, description="Number of steepest descent cycles (if min_method=1)") 
-    min_method: int = Field(1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient")
-    nb_cutoff: float = Field(12.0, ge=0, description="Cut-off for electrostatics interactions")
+    n_sd_cycles: int = Field(
+        1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
+    ) 
+    min_method: int = Field(
+        1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient"
+    )
+    nb_cutoff: float = Field(
+        12.0, ge=0, description="Cut-off for electrostatics interactions"
+    )
     runtime: float = Field(
         default_factory=lambda: bss.Types.Time(100.0, "ps"),
         description="Simulation time in picoseconds"
@@ -50,6 +54,14 @@ class ColdMezeRecipe(MezeRecipe):
     dt: float = Field(
         default_factory=lambda: bss.Types.Time(0.002, "ps"), 
         description="Integrator timestep, in picoseconds"
+    )
+    start_temperature: float = Field(
+        default_factory=lambda: bss.Types.Temperature(300.0, "K"), 
+        description="Simulation start temperature in kelvin"
+    )
+    end_temperature: float = Field(
+        default_factory=lambda: bss.Types.Temperature(300.0, "K"), 
+        description="Simulation end temperature in kelvin"
     )
     temperature: float = Field(
         default_factory=lambda: bss.Types.Temperature(300.0, "K"), 
@@ -81,12 +93,14 @@ class ColdMezeRecipe(MezeRecipe):
 
 @dataclass
 class Meze:
+    topology: str = Field(..., description="Path to topology file")
+    coordinates: str = Field(..., description="Path to coordinate file")
     recipe: MezeRecipe = Field(default_factory=MezeRecipe, description="Meze workflow recipe")
 
     def __post_init__(self):
         self.universe = mda.Universe(
-            self.recipe.topology,
-            self.recipe.coordinates,
+            self.topology,
+            self.coordinates,
             topology_format="prmtop"
         )
         self._set_metal()
@@ -104,12 +118,8 @@ class Meze:
         Returns:
             Meze: Meze class object
         """
-        recipe = MezeRecipe(
-            topology=topology,
-            coordinates=coordinates,
-            **kwargs
-        )
-        return cls(recipe=recipe)
+        recipe = MezeRecipe(**kwargs)
+        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
 
     def _set_metal(self):
         """Set metal residue names and indices based on MDAnalysis Universe
@@ -134,16 +144,16 @@ class Meze:
         cutoff = self.recipe.coordination_cut_off
         metal_ligands = {}
         for i in range(len(self.metal_resids)):
-            ligands = self.universe.select_atoms(
-                f"not (name {self.metal_resname} or element H) and sphzone {cutoff} (resid {self.metal_resids[i]})"
-            )
+            selection = f"not (name {self.metal_resname} or element H)" + \
+            f" and sphzone {cutoff} (resid {self.metal_resids[i]})"
+            ligands = self.universe.select_atoms(selection)
             key = self.metal_atomids[i] 
             metal_ligands[key] = ligands
         return metal_ligands
 
     def _setup_bss_system(self):
         self.system = bss.IO.readMolecules(
-            [self.recipe.topology, self.recipe.coordinates]
+            [self.topology, self.coordinates]
         )
 
     def get_active_site(self) -> mda.AtomGroup:
@@ -166,8 +176,8 @@ class ColdMeze(Meze):
         Build a ColdMeze object from topology and coordinates.
         Passes extra kwargs into ColdMezeRecipe.
         """
-        recipe = ColdMezeRecipe(topology=topology, coordinates=coordinates, **kwargs)
-        return cls(recipe=recipe)
+        recipe = ColdMezeRecipe(**kwargs)
+        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
     
     def _build_restraint_mask(self, position_restraints: str) -> str:
         """Build an amber-compatible restraint mask
@@ -198,9 +208,8 @@ class ColdMeze(Meze):
         elif position_restraints == "":
             pass
 
-        return f":{residue_restraint_mask(constraint_resids)}"
-            
-
+        return f"':{residue_restraint_mask(constraint_resids)}'"
+        
 
     def run(
             self,
@@ -210,6 +219,10 @@ class ColdMeze(Meze):
             position_restraints: Optional[str] = None,
             restraint_weight: Optional[float] = None,
             process_name: Optional[str] = "meze-run",
+            max_cycles: Optional[int] = None,
+            method: Optional[int] = None,
+            n_sd_cycles: Optional[int] = None,
+            nb_cutoff: Optional[float] = None,
             timestep: Optional[Union[float, bssTemperature]] = None,
             runtime: Optional[Union[float, bssTime]] = None,
             temperature: Optional[Union[float, bssTemperature]] = None,
@@ -218,15 +231,23 @@ class ColdMeze(Meze):
             pressure: Optional[Union[float, bssPressure]] = None
     ) -> bssSystem:
 
+        self.recipe = ColdMezeRecipe(
+            workdir=workdir or self.recipe.workdir,
+            max_cycles=max_cycles or self.recipe.max_cycles,
+            n_sd_cycles=n_sd_cycles or self.recipe.n_sd_cycles,
+            min_method=method or self.recipe.min_method,
+            nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
+            runtime=runtime or self.recipe.runtime,
+            dt=timestep or self.recipe.dt,
+            temperature=temperature or self.recipe.temperature,
+            pressure=pressure or self.recipe.pressure,
+            restraint_weight=restraint_weight or self.recipe.restraint_weight
+        )
+
         input_system = system or self.system
-        target_workdir = workdir or self.recipe.workdir
-        run_directory = os.path.join(target_workdir, process_name)
-        restraint_force_constant = restraint_weight or self.recipe.restraint_weight
+        run_directory = os.path.join(self.recipe.workdir, process_name)
         os.makedirs(run_directory, exist_ok=True)
-        md_runtime = runtime or self.recipe.runtime
-        md_timestep = timestep or self.recipe.dt
-        run_temperature = temperature or self.recipe.temperature
-        npt_pressure = pressure or self.recipe.pressure
+
         config_options = {
             "ntmin": self.recipe.min_method,
             "maxcyc": self.recipe.max_cycles,
@@ -240,19 +261,19 @@ class ColdMeze(Meze):
         if protocol_type == "minimisation":
             protocol = bss.Protocol.Minimisation(
                 steps=self.recipe.max_cycles, 
-                force_constant=restraint_force_constant,
+                force_constant=self.recipe.restraint_weight,
                 restraint="all" if position_restraints else None
             )
         elif protocol_type == "equilibration":
             protocol = bss.Protocol.Equilibration(
-                timestep=md_timestep,
-                runtime=md_runtime,
+                timestep=self.recipe.dt,
+                runtime=self.recipe.runtime,
                 temperature_start=start_temperature,
                 temperature_end=end_temperature,
-                temperature=run_temperature,
-                pressure=npt_pressure,
+                temperature=self.recipe.temperature,
+                pressure=self.recipe.pressure,
                 restraint="all" if position_restraints else None,
-                force_constant=restraint_force_constant
+                force_constant=self.recipe.restraint_weight
             )
         else:
             pass
@@ -264,8 +285,8 @@ class ColdMeze(Meze):
             name=process_name,
             extra_options=config_options,
         )
-        process.start()
-        process.wait()
+        # process.start()
+        # process.wait()
         new_system = process.getSystem()
         self.system = new_system
         return new_system
@@ -278,7 +299,12 @@ class ColdMeze(Meze):
                 Literal["solute", "backbone", "heavy", "metal-coordination"]
             ] = None,
             restraint_weight: Optional[float] = None,
-            process_name: Optional[str] = "min"
+            process_name: Optional[str] = "min",
+            max_cycles: Optional[int] = None,
+            method: Optional[int] = None,
+            n_sd_cycles: Optional[int] = None,
+            nb_cutoff: Optional[float] = None
+
     ) -> bssSystem:  
         """Run a minimisation with Amber
 
@@ -301,7 +327,11 @@ class ColdMeze(Meze):
             workdir=workdir,
             position_restraints=position_restraints,
             process_name=process_name,
-            restraint_weight=restraint_weight
+            restraint_weight=restraint_weight,
+            max_cycles=max_cycles,
+            n_sd_cycles=n_sd_cycles,
+            nb_cutoff=nb_cutoff,
+            method=method,
         )
 
     def heat(
