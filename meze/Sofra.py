@@ -1,7 +1,9 @@
 from pydantic.dataclasses import dataclass
+
 from pydantic import (
     Field,
-    field_validator
+    field_validator,
+    BaseModel
 )
 from meze import protein
 from typing import (
@@ -12,13 +14,14 @@ from typing import (
 import os
 import MDAnalysis as mda
 import BioSimSpace as bss
+import json
 from BioSimSpace._SireWrappers import System as bssSystem
 from BioSimSpace.Types._time import Time as bssTime
 from BioSimSpace.Types._temperature import Temperature as bssTemperature
 from BioSimSpace.Types._pressure import Pressure as bssPressure
 from .utils import residue_restraint_mask
-@dataclass
-class MezeRecipe:
+
+class MezeRecipe(BaseModel):
     """Meze workflow recipe
     """
     topology: str = Field(..., description="Path to topology file")
@@ -27,8 +30,12 @@ class MezeRecipe:
     metal: str = Field("ZN", description="Metal resname")
     group_name: str = Field("meze", description="Group name for project")
     coordination_cut_off: float = Field(2.8, ge=0, description="Metal coordination cutoff in Å")
+    
+    def __str__(self) -> str:
+        """Print recipe information as JSON
+        """
+        return self.model_dump_json(indent=4, fallback=str, warnings="none")
 
-@dataclass
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
@@ -37,39 +44,39 @@ class ColdMezeRecipe(MezeRecipe):
     min_method: int = Field(1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient")
     nb_cutoff: float = Field(12.0, ge=0, description="Cut-off for electrostatics interactions")
     runtime: float = Field(
-        default_factory=lambda: bss.Types.Time(100.0, bss.Units.Time.picosecond),
+        default_factory=lambda: bss.Types.Time(100.0, "ps"),
         description="Simulation time in picoseconds"
     )
     dt: float = Field(
-        default_factory=lambda: bss.Types.Time(0.002, bss.Units.Time.picosecond), 
+        default_factory=lambda: bss.Types.Time(0.002, "ps"), 
         description="Integrator timestep, in picoseconds"
     )
     temperature: float = Field(
-        default_factory=lambda: bss.Types.Temperature.kelvin(300.0), 
+        default_factory=lambda: bss.Types.Temperature(300.0, "K"), 
         description="Simulation temperature in kelvin"
     )
     pressure: float = Field(
-        default_factory=lambda: bss.Types.Pressure.atm(1.0), 
+        default_factory=lambda: bss.Types.Pressure(1.0, "atm"), 
         description="Simulation pressure in atm"
     )
     restraint_weight: float = Field(
         100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
     )
 
-    @field_validator
-    def ensure_time(cls, x):
-        if isinstance(x, (int, float)):
-            return bss.Types.Time(x, bss.Units.Time.picosecond)
+    @field_validator("dt", "runtime")
+    def ensure_time(cls, v):
+        if isinstance(v, (int, float)):
+            return bss.Types.Time(v, bss.Units.Time.picosecond)
     
-    @field_validator
-    def ensure_temperature(cls, x):
-        if isinstance(x, (int, float)):
-            return bss.Types.Temperature(x, bss.Units.Temperature.kelvin)
+    @field_validator("temperature")
+    def ensure_temperature(cls, v):
+        if isinstance(v, (int, float)):
+            return bss.Types.Temperature(v, bss.Units.Temperature.kelvin)
         
-    @field_validator
-    def ensure_pressure(cls, x):
-        if isinstance(x, (int, float)):
-            return bss.Types.Pressure(x, bss.Units.Pressure.atm)
+    @field_validator("pressure")
+    def ensure_pressure(cls, v):
+        if isinstance(v, (int, float)):
+            return bss.Types.Pressure(v, bss.Units.Pressure.atm)
 
 
 @dataclass
@@ -238,7 +245,14 @@ class ColdMeze(Meze):
             )
         elif protocol_type == "equilibration":
             protocol = bss.Protocol.Equilibration(
-                timestep=md_timestep
+                timestep=md_timestep,
+                runtime=md_runtime,
+                temperature_start=start_temperature,
+                temperature_end=end_temperature,
+                temperature=run_temperature,
+                pressure=npt_pressure,
+                restraint="all" if position_restraints else None,
+                force_constant=restraint_force_constant
             )
         else:
             pass
@@ -263,16 +277,20 @@ class ColdMeze(Meze):
             position_restraints: Optional[
                 Literal["solute", "backbone", "heavy", "metal-coordination"]
             ] = None,
-            restraint_weight: Optional[float] = None
+            restraint_weight: Optional[float] = None,
+            process_name: Optional[str] = "min"
     ) -> bssSystem:  
         """Run a minimisation with Amber
 
         Args:
             system (Optional[bssSystem], optional): System to minimise. Defaults to None.
             workdir (Optional[str], optional): Working directory for minimisation. Defaults to None.
-            position_restraints (Optional[ Literal['solute', 'backbone', 'heavy', 'metal-coordination', optional): 
+            position_restraints (Optional[
+                             Literal['solute', 'backbone', 'heavy', 'metal-coordination', optional
+                            ): 
                                 Whether to use positional restraints. Defaults to None.
-            restraint_weight (Optional[float], optional): Force constant for position restraints. Defaults to None.
+            restraint_weight (Optional[float], optional): Force constant for position restraints. 
+                                                          Defaults to None.
 
         Returns:
             bssSystem: Minimised system.
@@ -282,7 +300,7 @@ class ColdMeze(Meze):
             system=system,
             workdir=workdir,
             position_restraints=position_restraints,
-            process_name="min",
+            process_name=process_name,
             restraint_weight=restraint_weight
         )
 
@@ -299,13 +317,19 @@ class ColdMeze(Meze):
             temperature: Optional[Union[float, bssTemperature]] = None,
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
-            pressure: Optional[Union[float, bssPressure]] = None
+            process_name: Optional[str] = "nvt"
     ) -> bssSystem:
+
         return self.run(
             protocol_type="equilibration",
             system=system,
             workdir=workdir,
             position_restraints=position_restraints,
-            process_name="min",
+            process_name=process_name,
             restraint_weight=restraint_weight,
+            timestep=timestep,
+            temperature=temperature,
+            runtime=runtime,
+            start_temperature=start_temperature,
+            end_temperature=end_temperature,
         )
