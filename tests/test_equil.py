@@ -6,18 +6,47 @@ input_dir = f"{project_dir}/system_preparation/water"
 
 
 
-cold_meze = ColdMeze.from_files(topology=f"{input_dir}/vim2_solv.prmtop",
-                                coordinates=f"{input_dir}/vim2_solv.inpcrd",
-                                group_name="vim2_wat")
+cold_meze = ColdMeze.from_files(
+    topology=f"{input_dir}/vim2_solv.prmtop",
+    coordinates=f"{input_dir}/vim2_solv.inpcrd",
+    group_name="vim2_wat"
+)
 
 print(cold_meze.recipe)
 
 equil_dir = os.path.join(project_dir, "equilibration")
 os.makedirs(equil_dir, exist_ok=True)
 
-cold_meze.minimise(workdir=equil_dir,
-                   position_restraints="solute")
+minimised_system = cold_meze.minimise(
+    process_name="01_min",
+    workdir=equil_dir,
+    position_restraints="solute"
+)
 
-cold_meze.heat(process_name="r_nvt",
-               workdir=equil_dir,
-               position_restraints="solute")
+heat_system = cold_meze.heat(
+    system=minimised_system,
+    process_name="02_heat",
+    workdir=equil_dir,
+    position_restraints="solute",
+    timestep=0.001,
+    start_temperature=100,
+    end_temperature=300
+) 
+
+relax_system = cold_meze.heat(
+    system=minimised_system, #!!DEBUGGING: REMEMBER TO CHANGE BACK TO heat_system!! 
+    restart=True,
+    process_name="03_relax",
+    workdir=equil_dir,
+    position_restraints="solute",
+    timestep=0.001,
+)
+
+pressure_system = cold_meze.pressurise(
+    system=minimised_system, #!!DEBUGGING: REMEMBER TO CHANGE BACK TO heat_system!! 
+    restart=True,
+    process_name="04_pressure",
+    workdir=equil_dir,
+    position_restraints="solute",
+    timestep=0.001,
+)
