@@ -2,7 +2,6 @@ from pydantic.dataclasses import dataclass
 
 from pydantic import (
     Field,
-    field_validator,
     BaseModel
 )
 from meze import protein
@@ -48,48 +47,26 @@ class ColdMezeRecipe(MezeRecipe):
         12.0, ge=0, description="Cut-off for electrostatics interactions"
     )
     runtime: float = Field(
-        default_factory=lambda: bss.Types.Time(100.0, "ps"),
-        description="Simulation time in picoseconds"
+        100.0, description="Simulation time in picoseconds"
     )
     dt: float = Field(
-        default_factory=lambda: bss.Types.Time(0.002, "ps"), 
-        description="Integrator timestep, in picoseconds"
+        0.002, description="Integrator timestep, in picoseconds"
     )
     start_temperature: float = Field(
-        default_factory=lambda: bss.Types.Temperature(300.0, "K"), 
-        description="Simulation start temperature in kelvin"
+        300.0, description="Simulation start temperature in kelvin"
     )
     end_temperature: float = Field(
-        default_factory=lambda: bss.Types.Temperature(300.0, "K"), 
-        description="Simulation end temperature in kelvin"
+        300.0, description="Simulation end temperature in kelvin"
     )
     temperature: float = Field(
-        default_factory=lambda: bss.Types.Temperature(300.0, "K"), 
-        description="Simulation temperature in kelvin"
+        300.0,  description="Simulation temperature in kelvin"
     )
     pressure: float = Field(
-        default_factory=lambda: bss.Types.Pressure(1.0, "atm"), 
-        description="Simulation pressure in atm"
+        1.0, description="Simulation pressure in atm"
     )
     restraint_weight: float = Field(
         100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
     )
-
-    @field_validator("dt", "runtime")
-    def ensure_time(cls, v):
-        if isinstance(v, (int, float)):
-            return bss.Types.Time(v, bss.Units.Time.picosecond)
-    
-    @field_validator("temperature")
-    def ensure_temperature(cls, v):
-        if isinstance(v, (int, float)):
-            return bss.Types.Temperature(v, bss.Units.Temperature.kelvin)
-        
-    @field_validator("pressure")
-    def ensure_pressure(cls, v):
-        if isinstance(v, (int, float)):
-            return bss.Types.Pressure(v, bss.Units.Pressure.atm)
-
 
 @dataclass
 class Meze:
@@ -191,7 +168,7 @@ class ColdMeze(Meze):
         Returns:
             str: amber-style restraintmask
         """
-        allowed = {None, "solute", "backbone", "heavy", "metal-coordination"}
+        allowed = {None, "solute", "backbone", "metal-coordination"}
         if position_restraints not in allowed:
             raise ValueError(
                 f"Invalid restraint option '{position_restraints}'. "
@@ -213,9 +190,10 @@ class ColdMeze(Meze):
 
     def run(
             self,
-            protocol_type: str,
+            protocol_type: Literal["minimisation", "nvt", "npt"],
             system: Optional[bssSystem], 
             workdir: Optional[str],
+            restart: Optional[bool] = False,
             position_restraints: Optional[str] = None,
             restraint_weight: Optional[float] = None,
             process_name: Optional[str] = "meze-run",
@@ -240,6 +218,8 @@ class ColdMeze(Meze):
             runtime=runtime or self.recipe.runtime,
             dt=timestep or self.recipe.dt,
             temperature=temperature or self.recipe.temperature,
+            start_temperature=start_temperature or self.recipe.start_temperature,
+            end_temperature=end_temperature or self.recipe.end_temperature,
             pressure=pressure or self.recipe.pressure,
             restraint_weight=restraint_weight or self.recipe.restraint_weight
         )
@@ -247,36 +227,58 @@ class ColdMeze(Meze):
         input_system = system or self.system
         run_directory = os.path.join(self.recipe.workdir, process_name)
         os.makedirs(run_directory, exist_ok=True)
+        runtime = bss.Types.Time(self.recipe.runtime, "ps")
+        dt = bss.Types.Time(self.recipe.dt, "ps")
+        temperature = bss.Types.Temperature(self.recipe.temperature, "K")
+        start_temperature = bss.Types.Temperature(self.recipe.start_temperature, "K")
+        end_temperature = bss.Types.Temperature(self.recipe.end_temperature, "K")
+        pressure = bss.Types.Pressure(self.recipe.pressure, "atm")
 
-        config_options = {
-            "ntmin": self.recipe.min_method,
-            "maxcyc": self.recipe.max_cycles,
-            "ncyc": self.recipe.n_sd_cycles,
-            "cut": self.recipe.nb_cutoff
-        }
+        config_options = {"cut": self.recipe.nb_cutoff}
         
         if position_restraints:
             config_options["restraintmask"] = self._build_restraint_mask(position_restraints)
-
+        
+        allowed = ["minimisation", "nvt", "npt"]
         if protocol_type == "minimisation":
+            config_options["ntmin"] = self.recipe.min_method,
+            config_options["maxcyc"] = self.recipe.max_cycles,
+            config_options["ncyc"] = self.recipe.n_sd_cycles,
             protocol = bss.Protocol.Minimisation(
                 steps=self.recipe.max_cycles, 
                 force_constant=self.recipe.restraint_weight,
                 restraint="all" if position_restraints else None
             )
-        elif protocol_type == "equilibration":
+        elif protocol_type == "nvt":
+            pressure = None
+            if self.recipe.start_temperature != self.recipe.end_temperature:
+                temperature = None
             protocol = bss.Protocol.Equilibration(
-                timestep=self.recipe.dt,
-                runtime=self.recipe.runtime,
+                restart=restart,
+                timestep=dt,
+                runtime=runtime,
                 temperature_start=start_temperature,
                 temperature_end=end_temperature,
-                temperature=self.recipe.temperature,
-                pressure=self.recipe.pressure,
+                temperature=temperature,
+                pressure=pressure,
+                restraint="all" if position_restraints else None,
+                force_constant=self.recipe.restraint_weight
+            )
+        elif protocol_type == "npt":
+            protocol = bss.Protocol.Equilibration(
+                restart=restart,
+                timestep=dt,
+                runtime=runtime,
+                temperature=temperature,
+                pressure=pressure,
                 restraint="all" if position_restraints else None,
                 force_constant=self.recipe.restraint_weight
             )
         else:
-            pass
+            raise ValueError(
+                f"Invalid protocol type '{protocol_type}'. "
+                f"Must be one of {allowed}."
+            )
     
         process = bss.Process.Amber(
             system = input_system,
@@ -296,7 +298,7 @@ class ColdMeze(Meze):
             system: Optional[bssSystem] = None,
             workdir: Optional[str] = None,
             position_restraints: Optional[
-                Literal["solute", "backbone", "heavy", "metal-coordination"]
+                Literal["solute", "backbone", "metal-coordination"]
             ] = None,
             restraint_weight: Optional[float] = None,
             process_name: Optional[str] = "min",
@@ -312,9 +314,9 @@ class ColdMeze(Meze):
             system (Optional[bssSystem], optional): System to minimise. Defaults to None.
             workdir (Optional[str], optional): Working directory for minimisation. Defaults to None.
             position_restraints (Optional[
-                             Literal['solute', 'backbone', 'heavy', 'metal-coordination', optional
+                             Literal['solute', 'backbone', 'metal-coordination', optional
                             ): 
-                                Whether to use positional restraints. Defaults to None.
+                                Wether to use positional restraints (always includes metal-coordination). Defaults to None.
             restraint_weight (Optional[float], optional): Force constant for position restraints. 
                                                           Defaults to None.
 
@@ -339,8 +341,9 @@ class ColdMeze(Meze):
             system: Optional[bssSystem] = None,
             workdir: Optional[str] = None,
             position_restraints: Optional[
-                Literal["solute", "backbone", "heavy", "metal-coordination"]
+                Literal["solute", "backbone", "metal-coordination"]
             ] = None,
+            restart: Optional[bool] = False,
             restraint_weight: Optional[float] = None,
             timestep: Optional[Union[float, bssTemperature]] = None,
             runtime: Optional[Union[float, bssTime]] = None,
@@ -351,9 +354,10 @@ class ColdMeze(Meze):
     ) -> bssSystem:
 
         return self.run(
-            protocol_type="equilibration",
+            protocol_type="nvt",
             system=system,
             workdir=workdir,
+            restart=restart,
             position_restraints=position_restraints,
             process_name=process_name,
             restraint_weight=restraint_weight,
@@ -362,4 +366,34 @@ class ColdMeze(Meze):
             runtime=runtime,
             start_temperature=start_temperature,
             end_temperature=end_temperature,
+        )
+
+    def pressurise(
+            self,
+            system: Optional[bssSystem] = None,
+            workdir: Optional[str] = None,
+            position_restraints: Optional[
+                Literal["solute", "backbone", "metal-coordination"]
+            ] = None,
+            restart: Optional[bool] = False,
+            restraint_weight: Optional[float] = None,
+            timestep: Optional[Union[float, bssTemperature]] = None,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = 300,
+            pressure: Optional[Union[float, bssPressure]] = 1.0,
+            process_name: Optional[str] = "npt"
+    ) -> bssSystem:
+
+        return self.run(
+            protocol_type="npt",
+            system=system,
+            workdir=workdir,
+            restart=restart,
+            position_restraints=position_restraints,
+            process_name=process_name,
+            restraint_weight=restraint_weight,
+            timestep=timestep,
+            temperature=temperature,
+            runtime=runtime,
+            pressure=pressure
         )
