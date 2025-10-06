@@ -4,7 +4,6 @@ from pydantic import (
     Field,
     BaseModel
 )
-from meze import protein
 from typing import (
     Optional,
     Literal,
