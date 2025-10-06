@@ -44,7 +44,7 @@ class ColdMezeRecipe(MezeRecipe):
         1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient"
     )
     barostat: int = Field(
-        2, 
+        2, ge=1, le=2, description="Type of barostat, 1: Berendsen, 2: MC"
     )
     nb_cutoff: float = Field(
         12.0, ge=0, description="Cut-off for electrostatics interactions"
@@ -159,7 +159,7 @@ class ColdMeze(Meze):
         recipe = ColdMezeRecipe(**kwargs)
         return cls(topology=topology, coordinates=coordinates, recipe=recipe)
     
-    def _build_restraint_mask(self, position_restraints: str) -> str:
+    def _build_restraint_mask(self, position_restraints: str) -> str | None:
         """Build an amber-compatible restraint mask
 
         Args:
@@ -185,10 +185,16 @@ class ColdMeze(Meze):
         if position_restraints == "solute":
             protein_resids = [atom.resnum for atom in self.universe.select_atoms("protein")]
             constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist()
-        elif position_restraints == "":
-            pass
-
-        return f"':{residue_restraint_mask(constraint_resids)}'"
+            return f"':{residue_restraint_mask(constraint_resids)}'"
+        elif position_restraints == "backbone":
+            constraint_resids = coordinating_resids + self.metal_resids.tolist()
+            return f"'(@N,CA,C,O & !:WAT)|:{residue_restraint_mask(constraint_resids)}'"
+        elif position_restraints == "metal-coordination":
+            constraint_resids = coordinating_resids + self.metal_resids.tolist()
+            return f"':{residue_restraint_mask(constraint_resids)}'"
+        else: 
+            return None
+        
         
 
     def run(
@@ -202,9 +208,10 @@ class ColdMeze(Meze):
             process_name: Optional[str] = "meze-run",
             max_cycles: Optional[int] = None,
             method: Optional[int] = None,
+            barostat: Optional[int] = None,
             n_sd_cycles: Optional[int] = None,
             nb_cutoff: Optional[float] = None,
-            timestep: Optional[Union[float, bssTemperature]] = None,
+            timestep: Optional[Union[float, bssTime]] = None,
             runtime: Optional[Union[float, bssTime]] = None,
             temperature: Optional[Union[float, bssTemperature]] = None,
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
@@ -217,6 +224,7 @@ class ColdMeze(Meze):
             max_cycles=max_cycles or self.recipe.max_cycles,
             n_sd_cycles=n_sd_cycles or self.recipe.n_sd_cycles,
             min_method=method or self.recipe.min_method,
+            barostat=barostat or self.recipe.barostat,
             nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
             runtime=runtime or self.recipe.runtime,
             dt=timestep or self.recipe.dt,
@@ -237,7 +245,8 @@ class ColdMeze(Meze):
         end_temperature = bss.Types.Temperature(self.recipe.end_temperature, "K")
         pressure = bss.Types.Pressure(self.recipe.pressure, "atm")
 
-        config_options = {"cut": self.recipe.nb_cutoff}
+        config_options = {"cut": self.recipe.nb_cutoff,
+                          "ntpr": 1000}
         
         if position_restraints:
             config_options["restraintmask"] = self._build_restraint_mask(position_restraints)
@@ -268,6 +277,7 @@ class ColdMeze(Meze):
                 force_constant=self.recipe.restraint_weight
             )
         elif protocol_type == "npt":
+            config_options["barostat"] = self.recipe.barostat
             protocol = bss.Protocol.Equilibration(
                 restart=restart,
                 timestep=dt,
