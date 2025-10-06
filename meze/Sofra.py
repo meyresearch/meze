@@ -1,48 +1,86 @@
 from pydantic.dataclasses import dataclass
+import dataclasses
 from pydantic import (
     Field,
-    PrivateAttr
+    BaseModel
 )
-from meze import Protein
+from meze import protein
 from typing import (
-    Optional
+    Optional,
+    Literal,
+    Union
 )
 import os
 import MDAnalysis as mda
 import BioSimSpace as bss
+import json
 from BioSimSpace._SireWrappers import System as bssSystem
-@dataclass
-class MezeRecipe:
+from BioSimSpace.Types._time import Time as bssTime
+from BioSimSpace.Types._temperature import Temperature as bssTemperature
+from BioSimSpace.Types._pressure import Pressure as bssPressure
+from .utils import residue_restraint_mask
+
+class MezeRecipe(BaseModel):
     """Meze workflow recipe
     """
-    topology: str = Field(..., description="Path to topology file")
-    coordinates: str = Field(..., description="Path to coordinate file")
     workdir: str = Field(default_factory=os.getcwd, description="Working directory")
     metal: str = Field("ZN", description="Metal resname")
     group_name: str = Field("meze", description="Group name for project")
     coordination_cut_off: float = Field(2.8, ge=0, description="Metal coordination cutoff in Å")
+    
+    def __str__(self) -> str:
+        """Print recipe information as JSON
+        """
+        return self.model_dump_json(indent=4, fallback=str, warnings="none")
 
-@dataclass
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
     max_cycles: int = Field(1000, ge=0, description="Number of minimisation cycles")
-    n_sd_cycles: int = Field(1000, ge=0, description="Number of steepest descent cycles (if ntmin=1)") 
-    min_method: int = Field(1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient")
-    time: float = Field(100.0, gt=0, description="Simulation time in picoseconds")
-    dt: float = Field(0.002, gt=0, description="Integrator timestep, in picoseconds")
-    temperature: float = Field(300.0, ge=0, description="Simulation temperature in kelvin")
-    pressure: float = Field(1.0, ge=0, description="Simulation pressure in atm")
-    restraint_weight: float = Field(100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)")
+    n_sd_cycles: int = Field(
+        1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
+    ) 
+    min_method: int = Field(
+        1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient"
+    )
+    barostat: int = Field(
+        2, ge=1, le=2, description="Type of barostat, 1: Berendsen, 2: MC"
+    )
+    nb_cutoff: float = Field(
+        12.0, ge=0, description="Cut-off for electrostatics interactions"
+    )
+    runtime: float = Field(
+        100.0, description="Simulation time in picoseconds"
+    )
+    dt: float = Field(
+        0.002, description="Integrator timestep, in picoseconds"
+    )
+    start_temperature: float = Field(
+        300.0, description="Simulation start temperature in kelvin"
+    )
+    end_temperature: float = Field(
+        300.0, description="Simulation end temperature in kelvin"
+    )
+    temperature: float = Field(
+        300.0,  description="Simulation temperature in kelvin"
+    )
+    pressure: float = Field(
+        1.0, description="Simulation pressure in atm"
+    )
+    restraint_weight: float = Field(
+        100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
+    )
 
 @dataclass
 class Meze:
+    topology: str = Field(..., description="Path to topology file")
+    coordinates: str = Field(..., description="Path to coordinate file")
     recipe: MezeRecipe = Field(default_factory=MezeRecipe, description="Meze workflow recipe")
 
     def __post_init__(self):
         self.universe = mda.Universe(
-            self.recipe.topology,
-            self.recipe.coordinates,
+            self.topology,
+            self.coordinates,
             topology_format="prmtop"
         )
         self._set_metal()
@@ -60,12 +98,8 @@ class Meze:
         Returns:
             Meze: Meze class object
         """
-        recipe = MezeRecipe(
-            topology=topology,
-            coordinates=coordinates,
-            **kwargs
-        )
-        return cls(recipe=recipe)
+        recipe = MezeRecipe(**kwargs)
+        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
 
     def _set_metal(self):
         """Set metal residue names and indices based on MDAnalysis Universe
@@ -90,16 +124,16 @@ class Meze:
         cutoff = self.recipe.coordination_cut_off
         metal_ligands = {}
         for i in range(len(self.metal_resids)):
-            ligands = self.universe.select_atoms(
-                f"not (name {self.metal_resname} or element H) and sphzone {cutoff} (resid {self.metal_resids[i]})"
-            )
+            selection = f"not (name {self.metal_resname} or element H)" + \
+            f" and sphzone {cutoff} (resid {self.metal_resids[i]})"
+            ligands = self.universe.select_atoms(selection)
             key = self.metal_atomids[i] 
             metal_ligands[key] = ligands
         return metal_ligands
 
     def _setup_bss_system(self):
         self.system = bss.IO.readMolecules(
-            [self.recipe.topology, self.recipe.coordinates]
+            [self.topology, self.coordinates]
         )
 
     def get_active_site(self) -> mda.AtomGroup:
@@ -112,32 +146,6 @@ class Meze:
         selection = f"resname {self.recipe.metal} or around {cutoff} (resname {self.recipe.metal})"
         return self.universe.select_atoms(selection)
 
-    def run(
-            self,
-            protocol_type: str,
-            system: Optional[bssSystem], 
-            workdir: Optional[str],
-            position_restraints: Optional[str] = None
-            
-    ):
-        input_system = system or self.system
-        target_workdir = workdir or self.recipe.workdir
-
-        if protocol_type == "minimisation":
-            protocol = bss.Protocol.Minimisation(
-                steps=self.recipe.max_cycles, 
-                restraint=position_restraints, 
-                force_constant=self.recipe.restraint_weight
-            )
-        else:
-            pass
-
-        process = bss.Process.Amber(
-            system = input_system,
-            protocol = protocol,
-            work_dir=target_workdir
-        )
-
 @dataclass
 class ColdMeze(Meze):
     recipe: ColdMezeRecipe
@@ -148,20 +156,256 @@ class ColdMeze(Meze):
         Build a ColdMeze object from topology and coordinates.
         Passes extra kwargs into ColdMezeRecipe.
         """
-        recipe = ColdMezeRecipe(topology=topology, coordinates=coordinates, **kwargs)
-        return cls(recipe=recipe)
+        recipe = ColdMezeRecipe(**kwargs)
+        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
     
+    def _build_restraint_mask(self, position_restraints: str) -> str | None:
+        """Build an amber-compatible restraint mask
+
+        Args:
+            position_restraints (str): what type of position restraints to apply
+
+        Raises:
+            ValueError: If position_restraint option is invalid.
+
+        Returns:
+            str: amber-style restraintmask
+        """
+        allowed = {None, "solute", "backbone", "metal-coordination"}
+        if position_restraints not in allowed:
+            raise ValueError(
+                f"Invalid restraint option '{position_restraints}'. "
+                f"Must be one of {allowed}."
+            )
+        
+        coordinating_atomgroups = next(iter(self.coordinating_residues.values()))
+        for atomgroup in list(self.coordinating_residues.values())[1:]:
+            coordinating_atomgroups += atomgroup
+        coordinating_resids = [atom.resnum for atom in coordinating_atomgroups]
+        if position_restraints == "solute":
+            protein_resids = [atom.resnum for atom in self.universe.select_atoms("protein")]
+            constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist()
+            return f"':{residue_restraint_mask(constraint_resids)}'"
+        elif position_restraints == "backbone":
+            constraint_resids = coordinating_resids + self.metal_resids.tolist()
+            return f"'(@N,CA,C,O & !:WAT)|:{residue_restraint_mask(constraint_resids)}'"
+        elif position_restraints == "metal-coordination":
+            constraint_resids = coordinating_resids + self.metal_resids.tolist()
+            return f"':{residue_restraint_mask(constraint_resids)}'"
+        else: 
+            return None
+        
+        
+
+    def run(
+            self,
+            protocol_type: Literal["minimisation", "nvt", "npt"],
+            system: Optional[bssSystem], 
+            workdir: Optional[str],
+            restart: Optional[bool] = False,
+            position_restraints: Optional[str] = None,
+            restraint_weight: Optional[float] = None,
+            process_name: Optional[str] = "meze-run",
+            max_cycles: Optional[int] = None,
+            method: Optional[int] = None,
+            barostat: Optional[int] = None,
+            n_sd_cycles: Optional[int] = None,
+            nb_cutoff: Optional[float] = None,
+            timestep: Optional[Union[float, bssTime]] = None,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = None,
+            start_temperature: Optional[Union[float, bssTemperature]] = 300,
+            end_temperature: Optional[Union[float, bssTemperature]] = 300,
+            pressure: Optional[Union[float, bssPressure]] = None
+    ) -> "ColdMeze":
+
+        recipe = ColdMezeRecipe(
+            workdir=workdir or self.recipe.workdir,
+            max_cycles=max_cycles or self.recipe.max_cycles,
+            n_sd_cycles=n_sd_cycles or self.recipe.n_sd_cycles,
+            min_method=method or self.recipe.min_method,
+            barostat=barostat or self.recipe.barostat,
+            nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
+            runtime=runtime or self.recipe.runtime,
+            dt=timestep or self.recipe.dt,
+            temperature=temperature or self.recipe.temperature,
+            start_temperature=start_temperature or self.recipe.start_temperature,
+            end_temperature=end_temperature or self.recipe.end_temperature,
+            pressure=pressure or self.recipe.pressure,
+            restraint_weight=restraint_weight or self.recipe.restraint_weight
+        )
+
+        input_system = system or self.system
+        run_directory = os.path.join(recipe.workdir, process_name)
+        os.makedirs(run_directory, exist_ok=True)
+        runtime = bss.Types.Time(recipe.runtime, "ps")
+        dt = bss.Types.Time(recipe.dt, "ps")
+        temperature = bss.Types.Temperature(recipe.temperature, "K")
+        start_temperature = bss.Types.Temperature(recipe.start_temperature, "K")
+        end_temperature = bss.Types.Temperature(recipe.end_temperature, "K")
+        pressure = bss.Types.Pressure(recipe.pressure, "atm")
+
+        config_options = {"cut": recipe.nb_cutoff,
+                          "ntpr": 1000}
+        
+        if position_restraints:
+            config_options["restraintmask"] = self._build_restraint_mask(position_restraints)
+        
+        allowed = ["minimisation", "nvt", "npt"]
+        if protocol_type == "minimisation":
+            config_options["ntmin"] = recipe.min_method,
+            config_options["maxcyc"] = recipe.max_cycles,
+            config_options["ncyc"] = recipe.n_sd_cycles,
+            protocol = bss.Protocol.Minimisation(
+                steps=recipe.max_cycles, 
+                force_constant=recipe.restraint_weight,
+                restraint="all" if position_restraints else None
+            )
+        elif protocol_type == "nvt":
+            pressure = None
+            if recipe.start_temperature != recipe.end_temperature:
+                temperature = None
+            protocol = bss.Protocol.Equilibration(
+                restart=restart,
+                timestep=dt,
+                runtime=runtime,
+                temperature_start=start_temperature,
+                temperature_end=end_temperature,
+                temperature=temperature,
+                pressure=pressure,
+                restraint="all" if position_restraints else None,
+                force_constant=recipe.restraint_weight
+            )
+        elif protocol_type == "npt":
+            config_options["barostat"] = recipe.barostat
+            protocol = bss.Protocol.Equilibration(
+                restart=restart,
+                timestep=dt,
+                runtime=runtime,
+                temperature=temperature,
+                pressure=pressure,
+                restraint="all" if position_restraints else None,
+                force_constant=recipe.restraint_weight
+            )
+        else:
+            raise ValueError(
+                f"Invalid protocol type '{protocol_type}'. "
+                f"Must be one of {allowed}."
+            )
+    
+        process = bss.Process.Amber(
+            system = input_system,
+            protocol = protocol,
+            work_dir=run_directory,
+            name=process_name,
+            extra_options=config_options,
+        )
+        # process.start()
+        # process.wait()
+        new_system = process.getSystem()
+        return dataclasses.replace(self, system=new_system, recipe=recipe)
+
     def minimise(
             self,
             system: Optional[bssSystem] = None,
             workdir: Optional[str] = None,
-            position_restraints: Optional[str] = None,
-    ):        
+            position_restraints: Optional[
+                Literal["solute", "backbone", "metal-coordination"]
+            ] = None,
+            restraint_weight: Optional[float] = None,
+            process_name: Optional[str] = "min",
+            max_cycles: Optional[int] = None,
+            method: Optional[int] = None,
+            n_sd_cycles: Optional[int] = None,
+            nb_cutoff: Optional[float] = None
+
+    ) -> bssSystem:  
+        """Run a minimisation with Amber
+
+        Args:
+            system (Optional[bssSystem], optional): System to minimise. Defaults to None.
+            workdir (Optional[str], optional): Working directory for minimisation. Defaults to None.
+            position_restraints (Optional[
+                             Literal['solute', 'backbone', 'metal-coordination', optional
+                            ): 
+                                Wether to use positional restraints (always includes metal-coordination). Defaults to None.
+            restraint_weight (Optional[float], optional): Force constant for position restraints. 
+                                                          Defaults to None.
+
+        Returns:
+            bssSystem: Minimised system.
+        """
         return self.run(
             protocol_type="minimisation",
             system=system,
             workdir=workdir,
-            position_restraints=position_restraints
+            position_restraints=position_restraints,
+            process_name=process_name,
+            restraint_weight=restraint_weight,
+            max_cycles=max_cycles,
+            n_sd_cycles=n_sd_cycles,
+            nb_cutoff=nb_cutoff,
+            method=method,
         )
-        
 
+    def heat(
+            self,
+            system: Optional[bssSystem] = None,
+            workdir: Optional[str] = None,
+            position_restraints: Optional[
+                Literal["solute", "backbone", "metal-coordination"]
+            ] = None,
+            restart: Optional[bool] = False,
+            restraint_weight: Optional[float] = None,
+            timestep: Optional[Union[float, bssTemperature]] = None,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = None,
+            start_temperature: Optional[Union[float, bssTemperature]] = 300,
+            end_temperature: Optional[Union[float, bssTemperature]] = 300,
+            process_name: Optional[str] = "nvt"
+    ) -> bssSystem:
+
+        return self.run(
+            protocol_type="nvt",
+            system=system,
+            workdir=workdir,
+            restart=restart,
+            position_restraints=position_restraints,
+            process_name=process_name,
+            restraint_weight=restraint_weight,
+            timestep=timestep,
+            temperature=temperature,
+            runtime=runtime,
+            start_temperature=start_temperature,
+            end_temperature=end_temperature,
+        )
+
+    def pressurise(
+            self,
+            system: Optional[bssSystem] = None,
+            workdir: Optional[str] = None,
+            position_restraints: Optional[
+                Literal["solute", "backbone", "metal-coordination"]
+            ] = None,
+            restart: Optional[bool] = False,
+            restraint_weight: Optional[float] = None,
+            timestep: Optional[Union[float, bssTemperature]] = None,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = 300,
+            pressure: Optional[Union[float, bssPressure]] = 1.0,
+            process_name: Optional[str] = "npt"
+    ) -> bssSystem:
+
+        return self.run(
+            protocol_type="npt",
+            system=system,
+            workdir=workdir,
+            restart=restart,
+            position_restraints=position_restraints,
+            process_name=process_name,
+            restraint_weight=restraint_weight,
+            timestep=timestep,
+            temperature=temperature,
+            runtime=runtime,
+            pressure=pressure
+        )
