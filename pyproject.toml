@@ -1,5 +1,5 @@
 [project]
-name = "meze-test"
+name = "meze"
 version = "0.0.1"
 authors = [
   { name="Jasmin Güven", email="jasmin.guven@bristol.ac.uk" },
@@ -21,3 +21,7 @@ Issues = "https://github.com/meyresearch/meze/issues"
 [build-system]
 requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["meze"]
+
