@@ -50,3 +50,43 @@ pressure_system = cold_meze.pressurise(
     position_restraints="solute",
     timestep=0.001,
 )
+
+lower_restraint = cold_meze.pressurise(
+    system=minimised_system, #!!DEBUGGING: REMEMBER TO CHANGE BACK TO heat_system!! 
+    restart=True,
+    process_name="05_lower",
+    workdir=equil_dir,
+    position_restraints="solute",
+    timestep=0.001,
+    restraint_weight=10.0
+)
+
+lower_restraint = cold_meze.pressurise(
+    system=minimised_system, #!!DEBUGGING: REMEMBER TO CHANGE BACK TO heat_system!! 
+    restart=True,
+    process_name="05_lower",
+    workdir=equil_dir,
+    position_restraints="solute",
+    timestep=0.001,
+    restraint_weight=10.0
+)
+
+relax_backbone = cold_meze.pressurise(
+    system=minimised_system, #!!DEBUGGING: REMEMBER TO CHANGE BACK TO heat_system!! 
+    restart=True,
+    process_name="06_relax",
+    workdir=equil_dir,
+    position_restraints="backbone",
+    timestep=0.001,
+    restraint_weight=10.0
+)
+
+relax_backbone = cold_meze.pressurise(
+    system=minimised_system, #!!DEBUGGING: REMEMBER TO CHANGE BACK TO heat_system!! 
+    restart=True,
+    process_name="07_continue",
+    workdir=equil_dir,
+    position_restraints="backbone",
+    timestep=0.001,
+    restraint_weight=0.1
+)
