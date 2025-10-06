@@ -1,5 +1,5 @@
 from pydantic.dataclasses import dataclass
-
+import dataclasses
 from pydantic import (
     Field,
     BaseModel
@@ -217,9 +217,9 @@ class ColdMeze(Meze):
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = None
-    ) -> bssSystem:
+    ) -> "ColdMeze":
 
-        self.recipe = ColdMezeRecipe(
+        recipe = ColdMezeRecipe(
             workdir=workdir or self.recipe.workdir,
             max_cycles=max_cycles or self.recipe.max_cycles,
             n_sd_cycles=n_sd_cycles or self.recipe.n_sd_cycles,
@@ -236,16 +236,16 @@ class ColdMeze(Meze):
         )
 
         input_system = system or self.system
-        run_directory = os.path.join(self.recipe.workdir, process_name)
+        run_directory = os.path.join(recipe.workdir, process_name)
         os.makedirs(run_directory, exist_ok=True)
-        runtime = bss.Types.Time(self.recipe.runtime, "ps")
-        dt = bss.Types.Time(self.recipe.dt, "ps")
-        temperature = bss.Types.Temperature(self.recipe.temperature, "K")
-        start_temperature = bss.Types.Temperature(self.recipe.start_temperature, "K")
-        end_temperature = bss.Types.Temperature(self.recipe.end_temperature, "K")
-        pressure = bss.Types.Pressure(self.recipe.pressure, "atm")
+        runtime = bss.Types.Time(recipe.runtime, "ps")
+        dt = bss.Types.Time(recipe.dt, "ps")
+        temperature = bss.Types.Temperature(recipe.temperature, "K")
+        start_temperature = bss.Types.Temperature(recipe.start_temperature, "K")
+        end_temperature = bss.Types.Temperature(recipe.end_temperature, "K")
+        pressure = bss.Types.Pressure(recipe.pressure, "atm")
 
-        config_options = {"cut": self.recipe.nb_cutoff,
+        config_options = {"cut": recipe.nb_cutoff,
                           "ntpr": 1000}
         
         if position_restraints:
@@ -253,17 +253,17 @@ class ColdMeze(Meze):
         
         allowed = ["minimisation", "nvt", "npt"]
         if protocol_type == "minimisation":
-            config_options["ntmin"] = self.recipe.min_method,
-            config_options["maxcyc"] = self.recipe.max_cycles,
-            config_options["ncyc"] = self.recipe.n_sd_cycles,
+            config_options["ntmin"] = recipe.min_method,
+            config_options["maxcyc"] = recipe.max_cycles,
+            config_options["ncyc"] = recipe.n_sd_cycles,
             protocol = bss.Protocol.Minimisation(
-                steps=self.recipe.max_cycles, 
-                force_constant=self.recipe.restraint_weight,
+                steps=recipe.max_cycles, 
+                force_constant=recipe.restraint_weight,
                 restraint="all" if position_restraints else None
             )
         elif protocol_type == "nvt":
             pressure = None
-            if self.recipe.start_temperature != self.recipe.end_temperature:
+            if recipe.start_temperature != recipe.end_temperature:
                 temperature = None
             protocol = bss.Protocol.Equilibration(
                 restart=restart,
@@ -274,10 +274,10 @@ class ColdMeze(Meze):
                 temperature=temperature,
                 pressure=pressure,
                 restraint="all" if position_restraints else None,
-                force_constant=self.recipe.restraint_weight
+                force_constant=recipe.restraint_weight
             )
         elif protocol_type == "npt":
-            config_options["barostat"] = self.recipe.barostat
+            config_options["barostat"] = recipe.barostat
             protocol = bss.Protocol.Equilibration(
                 restart=restart,
                 timestep=dt,
@@ -285,7 +285,7 @@ class ColdMeze(Meze):
                 temperature=temperature,
                 pressure=pressure,
                 restraint="all" if position_restraints else None,
-                force_constant=self.recipe.restraint_weight
+                force_constant=recipe.restraint_weight
             )
         else:
             raise ValueError(
@@ -303,8 +303,7 @@ class ColdMeze(Meze):
         # process.start()
         # process.wait()
         new_system = process.getSystem()
-        self.system = new_system
-        return new_system
+        return dataclasses.replace(self, system=new_system, recipe=recipe)
 
     def minimise(
             self,
