@@ -299,8 +299,8 @@ class ColdMeze(Meze):
             name=process_name,
             extra_options=config_options,
         )
-        # process.start()
-        # process.wait()
+        process.start()
+        process.wait()
         new_system = process.getSystem()
         return dataclasses.replace(self, system=new_system, recipe=recipe)
 
