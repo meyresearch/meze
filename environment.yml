@@ -1,0 +1,12 @@
+name: meze-env
+channels:
+  - conda-forge
+  - openbiosim
+dependencies:
+  - python>=3.11
+  - biosimspace
+  - numpy<2.3
+  - mdanalysis
+  - pip
+  - pip:
+      - meze @ git+https://github.com/meyresearch/meze.git@main
