@@ -215,7 +215,8 @@ class ColdMeze(Meze):
             temperature: Optional[Union[float, bssTemperature]] = None,
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
-            pressure: Optional[Union[float, bssPressure]] = None
+            pressure: Optional[Union[float, bssPressure]] = None,
+            is_gpu: Optional[bool] = True
     ) -> "ColdMeze":
 
         recipe = ColdMezeRecipe(
@@ -298,6 +299,7 @@ class ColdMeze(Meze):
             work_dir=run_directory,
             name=process_name,
             extra_options=config_options,
+            is_gpu=is_gpu
         )
         process.start()
         process.wait()
@@ -316,8 +318,8 @@ class ColdMeze(Meze):
             max_cycles: Optional[int] = None,
             method: Optional[int] = None,
             n_sd_cycles: Optional[int] = None,
-            nb_cutoff: Optional[float] = None
-
+            nb_cutoff: Optional[float] = None,
+            is_gpu: Optional[bool] = False
     ) -> bssSystem:  
         """Run a minimisation with Amber
 
@@ -361,7 +363,8 @@ class ColdMeze(Meze):
             temperature: Optional[Union[float, bssTemperature]] = None,
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
-            process_name: Optional[str] = "nvt"
+            process_name: Optional[str] = "nvt",
+            is_gpu: Optional[bool] = True
     ) -> bssSystem:
 
         return self.run(
@@ -377,6 +380,7 @@ class ColdMeze(Meze):
             runtime=runtime,
             start_temperature=start_temperature,
             end_temperature=end_temperature,
+            is_gpu=is_gpu,
         )
 
     def pressurise(
@@ -392,7 +396,8 @@ class ColdMeze(Meze):
             runtime: Optional[Union[float, bssTime]] = None,
             temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = 1.0,
-            process_name: Optional[str] = "npt"
+            process_name: Optional[str] = "npt",
+            is_gpu: Optional[bool] = True
     ) -> bssSystem:
 
         return self.run(
@@ -406,5 +411,6 @@ class ColdMeze(Meze):
             timestep=timestep,
             temperature=temperature,
             runtime=runtime,
-            pressure=pressure
+            pressure=pressure,
+            is_gpu=is_gpu
         )
