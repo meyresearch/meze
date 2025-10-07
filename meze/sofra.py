@@ -1,3 +1,8 @@
+import warnings
+import logging
+warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
+logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
+logging.getLogger("MDAnalysis").setLevel(logging.ERROR)
 from pydantic.dataclasses import dataclass
 import dataclasses
 from pydantic import (
@@ -215,7 +220,8 @@ class ColdMeze(Meze):
             temperature: Optional[Union[float, bssTemperature]] = None,
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
-            pressure: Optional[Union[float, bssPressure]] = None
+            pressure: Optional[Union[float, bssPressure]] = None,
+            is_gpu: Optional[bool] = True
     ) -> "ColdMeze":
 
         recipe = ColdMezeRecipe(
@@ -252,9 +258,9 @@ class ColdMeze(Meze):
         
         allowed = ["minimisation", "nvt", "npt"]
         if protocol_type == "minimisation":
-            config_options["ntmin"] = recipe.min_method,
-            config_options["maxcyc"] = recipe.max_cycles,
-            config_options["ncyc"] = recipe.n_sd_cycles,
+            config_options["ntmin"] = recipe.min_method
+            config_options["maxcyc"] = recipe.max_cycles
+            config_options["ncyc"] = recipe.n_sd_cycles
             protocol = bss.Protocol.Minimisation(
                 steps=recipe.max_cycles, 
                 force_constant=recipe.restraint_weight,
@@ -298,6 +304,7 @@ class ColdMeze(Meze):
             work_dir=run_directory,
             name=process_name,
             extra_options=config_options,
+            is_gpu=is_gpu
         )
         process.start()
         process.wait()
@@ -316,8 +323,8 @@ class ColdMeze(Meze):
             max_cycles: Optional[int] = None,
             method: Optional[int] = None,
             n_sd_cycles: Optional[int] = None,
-            nb_cutoff: Optional[float] = None
-
+            nb_cutoff: Optional[float] = None,
+            is_gpu: Optional[bool] = False
     ) -> bssSystem:  
         """Run a minimisation with Amber
 
@@ -345,6 +352,7 @@ class ColdMeze(Meze):
             n_sd_cycles=n_sd_cycles,
             nb_cutoff=nb_cutoff,
             method=method,
+            is_gpu=is_gpu
         )
 
     def heat(
@@ -361,7 +369,8 @@ class ColdMeze(Meze):
             temperature: Optional[Union[float, bssTemperature]] = None,
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
-            process_name: Optional[str] = "nvt"
+            process_name: Optional[str] = "nvt",
+            is_gpu: Optional[bool] = True
     ) -> bssSystem:
 
         return self.run(
@@ -377,6 +386,7 @@ class ColdMeze(Meze):
             runtime=runtime,
             start_temperature=start_temperature,
             end_temperature=end_temperature,
+            is_gpu=is_gpu,
         )
 
     def pressurise(
@@ -392,7 +402,8 @@ class ColdMeze(Meze):
             runtime: Optional[Union[float, bssTime]] = None,
             temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = 1.0,
-            process_name: Optional[str] = "npt"
+            process_name: Optional[str] = "npt",
+            is_gpu: Optional[bool] = True
     ) -> bssSystem:
 
         return self.run(
@@ -406,5 +417,6 @@ class ColdMeze(Meze):
             timestep=timestep,
             temperature=temperature,
             runtime=runtime,
-            pressure=pressure
+            pressure=pressure,
+            is_gpu=is_gpu
         )
