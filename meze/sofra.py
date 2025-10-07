@@ -17,7 +17,6 @@ from typing import (
 import os
 import MDAnalysis as mda
 import BioSimSpace as bss
-import json
 from BioSimSpace._SireWrappers import System as bssSystem
 from BioSimSpace.Types._time import Time as bssTime
 from BioSimSpace.Types._temperature import Temperature as bssTemperature
@@ -40,7 +39,9 @@ class MezeRecipe(BaseModel):
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
-    path_to_engine: str = None
+    path_to_engine: Optional[str] = Field(
+        None, description="Path to the MD engine executable (e.g. pmemd.cuda)"
+    )
     max_cycles: int = Field(1000, ge=0, description="Number of minimisation cycles")
     n_sd_cycles: int = Field(
         1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
