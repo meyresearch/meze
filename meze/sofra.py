@@ -40,6 +40,7 @@ class MezeRecipe(BaseModel):
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
+    path_to_engine: str = None
     max_cycles: int = Field(1000, ge=0, description="Number of minimisation cycles")
     n_sd_cycles: int = Field(
         1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
@@ -238,7 +239,8 @@ class ColdMeze(Meze):
             start_temperature=start_temperature or self.recipe.start_temperature,
             end_temperature=end_temperature or self.recipe.end_temperature,
             pressure=pressure or self.recipe.pressure,
-            restraint_weight=restraint_weight or self.recipe.restraint_weight
+            restraint_weight=restraint_weight or self.recipe.restraint_weight,
+            path_to_engine=engine_executable or self.recipe.path_to_engine
         )
 
         input_system = system or self.system
@@ -306,7 +308,7 @@ class ColdMeze(Meze):
             name=process_name,
             extra_options=config_options,
             is_gpu=is_gpu,
-            exe=engine_executable
+            exe=self.recipe.path_to_engine
         )
         process.start()
         process.wait()
