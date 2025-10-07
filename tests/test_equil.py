@@ -8,7 +8,7 @@ cold_meze = ColdMeze.from_files(
     topology=f"{input_dir}/vim2_solv.prmtop",
     coordinates=f"{input_dir}/vim2_solv.inpcrd",
     group_name="vim2_wat",
-    path_to_executable=os.path.join(
+    path_to_engine=os.path.join(
         os.environ["AMBERHOME"], "bin", "pmemd.cuda"
     )
 )

@@ -257,6 +257,10 @@ class ColdMeze(Meze):
         config_options = {"cut": recipe.nb_cutoff,
                           "ntpr": 1000}
         
+        if restart:
+            config_options["irest"] = 1
+            config_options["ntx"] = 5
+
         if position_restraints:
             config_options["restraintmask"] = self._build_restraint_mask(position_restraints)
         
@@ -275,7 +279,6 @@ class ColdMeze(Meze):
             if recipe.start_temperature != recipe.end_temperature:
                 temperature = None
             protocol = bss.Protocol.Equilibration(
-                restart=restart,
                 timestep=dt,
                 runtime=runtime,
                 temperature_start=start_temperature,
@@ -288,7 +291,6 @@ class ColdMeze(Meze):
         elif protocol_type == "npt":
             config_options["barostat"] = recipe.barostat
             protocol = bss.Protocol.Equilibration(
-                restart=restart,
                 timestep=dt,
                 runtime=runtime,
                 temperature=temperature,
