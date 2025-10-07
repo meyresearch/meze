@@ -7,6 +7,7 @@ dependencies:
   - biosimspace
   - numpy<2.3
   - mdanalysis
+  - cuda=12.4
   - pip
   - pip:
       - meze @ git+https://github.com/meyresearch/meze.git@main
