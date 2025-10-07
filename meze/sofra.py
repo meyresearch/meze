@@ -1,3 +1,8 @@
+import warnings
+import logging
+warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
+logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
+logging.getLogger("MDAnalysis").setLevel(logging.ERROR)
 from pydantic.dataclasses import dataclass
 import dataclasses
 from pydantic import (
