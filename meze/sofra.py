@@ -253,9 +253,9 @@ class ColdMeze(Meze):
         
         allowed = ["minimisation", "nvt", "npt"]
         if protocol_type == "minimisation":
-            config_options["ntmin"] = recipe.min_method,
-            config_options["maxcyc"] = recipe.max_cycles,
-            config_options["ncyc"] = recipe.n_sd_cycles,
+            config_options["ntmin"] = recipe.min_method
+            config_options["maxcyc"] = recipe.max_cycles
+            config_options["ncyc"] = recipe.n_sd_cycles
             protocol = bss.Protocol.Minimisation(
                 steps=recipe.max_cycles, 
                 force_constant=recipe.restraint_weight,
@@ -347,6 +347,7 @@ class ColdMeze(Meze):
             n_sd_cycles=n_sd_cycles,
             nb_cutoff=nb_cutoff,
             method=method,
+            is_gpu=is_gpu
         )
 
     def heat(
