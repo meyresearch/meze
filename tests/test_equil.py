@@ -16,7 +16,8 @@ os.makedirs(equil_dir, exist_ok=True)
 minimised_meze = cold_meze.minimise(
     process_name="01_min",
     workdir=equil_dir,
-    position_restraints="solute"
+    position_restraints="solute",
+    max_cycles=5000
 )
 
 hot_meze = cold_meze.heat(
