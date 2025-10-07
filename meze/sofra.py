@@ -40,6 +40,7 @@ class MezeRecipe(BaseModel):
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
+    path_to_engine: str = None
     max_cycles: int = Field(1000, ge=0, description="Number of minimisation cycles")
     n_sd_cycles: int = Field(
         1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
@@ -221,7 +222,8 @@ class ColdMeze(Meze):
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = None,
-            is_gpu: Optional[bool] = True
+            is_gpu: Optional[bool] = True,
+            engine_executable: Optional["str"] = None
     ) -> "ColdMeze":
 
         recipe = ColdMezeRecipe(
@@ -237,7 +239,8 @@ class ColdMeze(Meze):
             start_temperature=start_temperature or self.recipe.start_temperature,
             end_temperature=end_temperature or self.recipe.end_temperature,
             pressure=pressure or self.recipe.pressure,
-            restraint_weight=restraint_weight or self.recipe.restraint_weight
+            restraint_weight=restraint_weight or self.recipe.restraint_weight,
+            path_to_engine=engine_executable or self.recipe.path_to_engine
         )
 
         input_system = system or self.system
@@ -304,7 +307,8 @@ class ColdMeze(Meze):
             work_dir=run_directory,
             name=process_name,
             extra_options=config_options,
-            is_gpu=is_gpu
+            is_gpu=is_gpu,
+            exe=self.recipe.path_to_engine
         )
         process.start()
         process.wait()
@@ -324,23 +328,10 @@ class ColdMeze(Meze):
             method: Optional[int] = None,
             n_sd_cycles: Optional[int] = None,
             nb_cutoff: Optional[float] = None,
-            is_gpu: Optional[bool] = False
-    ) -> bssSystem:  
-        """Run a minimisation with Amber
-
-        Args:
-            system (Optional[bssSystem], optional): System to minimise. Defaults to None.
-            workdir (Optional[str], optional): Working directory for minimisation. Defaults to None.
-            position_restraints (Optional[
-                             Literal['solute', 'backbone', 'metal-coordination', optional
-                            ): 
-                                Wether to use positional restraints (always includes metal-coordination). Defaults to None.
-            restraint_weight (Optional[float], optional): Force constant for position restraints. 
-                                                          Defaults to None.
-
-        Returns:
-            bssSystem: Minimised system.
-        """
+            is_gpu: Optional[bool] = False,
+            engine_executable: Optional[str] = None
+    ) -> "ColdMeze":  
+        
         return self.run(
             protocol_type="minimisation",
             system=system,
@@ -352,7 +343,8 @@ class ColdMeze(Meze):
             n_sd_cycles=n_sd_cycles,
             nb_cutoff=nb_cutoff,
             method=method,
-            is_gpu=is_gpu
+            is_gpu=is_gpu,
+            engine_executable=engine_executable
         )
 
     def heat(
@@ -370,8 +362,9 @@ class ColdMeze(Meze):
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             process_name: Optional[str] = "nvt",
-            is_gpu: Optional[bool] = True
-    ) -> bssSystem:
+            is_gpu: Optional[bool] = True,
+            engine_executable: Optional[str] = None
+    ) -> "ColdMeze":
 
         return self.run(
             protocol_type="nvt",
@@ -387,6 +380,7 @@ class ColdMeze(Meze):
             start_temperature=start_temperature,
             end_temperature=end_temperature,
             is_gpu=is_gpu,
+            engine_executable=engine_executable
         )
 
     def pressurise(
@@ -403,8 +397,9 @@ class ColdMeze(Meze):
             temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = 1.0,
             process_name: Optional[str] = "npt",
-            is_gpu: Optional[bool] = True
-    ) -> bssSystem:
+            is_gpu: Optional[bool] = True,
+            engine_executable: Optional[str] = None
+    ) -> "ColdMeze":
 
         return self.run(
             protocol_type="npt",
@@ -418,5 +413,6 @@ class ColdMeze(Meze):
             temperature=temperature,
             runtime=runtime,
             pressure=pressure,
-            is_gpu=is_gpu
+            is_gpu=is_gpu,
+            engine_executable=engine_executable
         )
