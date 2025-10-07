@@ -7,7 +7,10 @@ input_dir = f"{project_dir}/system_preparation/water"
 cold_meze = ColdMeze.from_files(
     topology=f"{input_dir}/vim2_solv.prmtop",
     coordinates=f"{input_dir}/vim2_solv.inpcrd",
-    group_name="vim2_wat"
+    group_name="vim2_wat",
+    path_to_executable=os.path.join(
+        os.environ["AMBERHOME"], "bin", "pmemd.cuda"
+    )
 )
 
 equil_dir = os.path.join(project_dir, "equilibration")
@@ -17,7 +20,8 @@ minimised_meze = cold_meze.minimise(
     process_name="01_min",
     workdir=equil_dir,
     position_restraints="solute",
-    max_cycles=5000
+    max_cycles=5000, 
+    is_gpu=True
 )
 
 hot_meze = cold_meze.heat(
