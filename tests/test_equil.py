@@ -8,10 +8,9 @@ cold_meze = ColdMeze.from_files(
     topology=f"{input_dir}/vim2_solv.prmtop",
     coordinates=f"{input_dir}/vim2_solv.inpcrd",
     group_name="vim2_wat",
-    path_to_engine=os.path.join(
-        os.environ["AMBERHOME"], "bin", "pmemd.cuda"
-    )
+    path_to_engine=os.path.join(os.environ["AMBERHOME"], "bin", "sander")
 )
+
 
 equil_dir = os.path.join(project_dir, "equilibration")
 os.makedirs(equil_dir, exist_ok=True)
@@ -20,7 +19,7 @@ minimised_meze = cold_meze.minimise(
     process_name="01_min",
     workdir=equil_dir,
     position_restraints="solute",
-    max_cycles=5000, 
+    max_cycles=100, 
     is_gpu=True
 )
 
@@ -30,6 +29,7 @@ hot_meze = cold_meze.heat(
     workdir=equil_dir,
     position_restraints="solute",
     timestep=0.001,
+    runtime=10,
     start_temperature=100,
     end_temperature=300
 ) 
@@ -39,6 +39,7 @@ relax_meze = cold_meze.heat(
     restart=True,
     process_name="03_relax",
     workdir=equil_dir,
+    runtime=10,
     position_restraints="solute",
     timestep=0.001,
 )

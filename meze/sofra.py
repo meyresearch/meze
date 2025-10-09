@@ -3,7 +3,7 @@ import logging
 warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
 logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
 logging.getLogger("MDAnalysis").setLevel(logging.ERROR)
-from pydantic.dataclasses import dataclass
+from dataclasses import dataclass
 import dataclasses
 from pydantic import (
     Field,
@@ -79,15 +79,21 @@ class ColdMezeRecipe(MezeRecipe):
 
 @dataclass
 class Meze:
-    topology: str = Field(..., description="Path to topology file")
-    coordinates: str = Field(..., description="Path to coordinate file")
-    recipe: MezeRecipe = Field(default_factory=MezeRecipe, description="Meze workflow recipe")
+    topology: str 
+    coordinates: str 
+    recipe: MezeRecipe 
 
     def __post_init__(self):
+        coordinate_extension = os.path.splitext(self.coordinates)[1]
+        if coordinate_extension in [".rst7"]:
+            coordinate_format = "RESTRT"
+        else:
+            coordinate_format = None
         self.universe = mda.Universe(
             self.topology,
             self.coordinates,
-            topology_format="prmtop"
+            topology_format="PARM7",
+            format=coordinate_format
         )
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
@@ -313,10 +319,22 @@ class ColdMeze(Meze):
             is_gpu=is_gpu,
             exe=self.recipe.path_to_engine
         )
+
         process.start()
         process.wait()
+
         new_system = process.getSystem()
-        return dataclasses.replace(self, system=new_system, recipe=recipe)
+        topology, new_coordinates = bss.IO.saveMolecules(
+            f"{run_directory}/next", system=new_system, fileformat=["prm7", "rst7"]
+        )
+
+        return dataclasses.replace(
+            self,
+            topology=topology,
+            coordinates=new_coordinates,
+            recipe=recipe
+        )
+    
 
     def minimise(
             self,
