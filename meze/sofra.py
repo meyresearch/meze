@@ -261,7 +261,8 @@ class ColdMeze(Meze):
         pressure = bss.Types.Pressure(recipe.pressure, "atm")
 
         config_options = {"cut": recipe.nb_cutoff,
-                          "ntpr": 1000}
+                          "ntpr": 1000,
+                          "iwrap": 0}
         
         if restart:
             config_options["irest"] = 1
