@@ -29,8 +29,12 @@ class MezeRecipe(BaseModel):
     workdir: str = Field(default_factory=os.getcwd, description="Working directory")
     metal: str = Field("ZN", description="Metal resname")
     group_name: str = Field("meze", description="Group name for project")
-    coordination_cut_off: float = Field(2.8, ge=0, description="Metal coordination cutoff in Å")
-    
+    coordination_cut_off: float = Field(
+        2.8, ge=0, description="Metal coordination cutoff in Å"
+    )
+    path_to_engine: Optional[str] = Field(
+        None, description="Path to the MD engine executable (e.g. pmemd.cuda)"
+    )
     def __str__(self) -> str:
         """Print recipe information as JSON
         """
@@ -39,9 +43,6 @@ class MezeRecipe(BaseModel):
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
-    path_to_engine: Optional[str] = Field(
-        None, description="Path to the MD engine executable (e.g. pmemd.cuda)"
-    )
     max_cycles: int = Field(1000, ge=0, description="Number of minimisation cycles")
     n_sd_cycles: int = Field(
         1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
@@ -148,6 +149,45 @@ class Meze:
             [self.topology, self.coordinates]
         )
 
+    def _run(
+            self,
+            system: Optional[bssSystem], 
+            recipe: MezeRecipe,
+            protocol: bss.Protocol,
+            process_name: Optional[str] = "meze-run",
+            config_options: Optional[dict] = None,
+            is_gpu: bool = True,
+    ):
+        input_system = system or self.system
+        run_directory = os.path.join(recipe.workdir, process_name)
+        os.makedirs(run_directory, exist_ok=True)
+
+        process = bss.Process.Amber(
+            system = input_system,
+            protocol = protocol,
+            work_dir=run_directory,
+            name=process_name,
+            extra_options=config_options,
+            is_gpu=is_gpu,
+            exe=recipe.path_to_engine
+        )
+
+        process.start()
+        process.wait()
+
+        new_system = process.getSystem()
+        topology, new_coordinates = bss.IO.saveMolecules(
+            f"{run_directory}/next", system=new_system, fileformat=["prm7", "rst7"]
+        )
+
+        return dataclasses.replace(
+            self,
+            topology=topology,
+            coordinates=new_coordinates,
+            recipe=recipe
+        )
+    
+    
     def get_active_site(self) -> mda.AtomGroup:
         """Get active site based on metal and coordination cutoff
 
@@ -157,6 +197,7 @@ class Meze:
         cutoff = self.recipe.coordination_cut_off
         selection = f"resname {self.recipe.metal} or around {cutoff} (resname {self.recipe.metal})"
         return self.universe.select_atoms(selection)
+    
 
 @dataclass
 class ColdMeze(Meze):
@@ -250,9 +291,6 @@ class ColdMeze(Meze):
             path_to_engine=engine_executable or self.recipe.path_to_engine
         )
 
-        input_system = system or self.system
-        run_directory = os.path.join(recipe.workdir, process_name)
-        os.makedirs(run_directory, exist_ok=True)
         runtime = bss.Types.Time(recipe.runtime, "ps")
         dt = bss.Types.Time(recipe.dt, "ps")
         temperature = bss.Types.Temperature(recipe.temperature, "K")
@@ -311,30 +349,7 @@ class ColdMeze(Meze):
                 f"Must be one of {allowed}."
             )
     
-        process = bss.Process.Amber(
-            system = input_system,
-            protocol = protocol,
-            work_dir=run_directory,
-            name=process_name,
-            extra_options=config_options,
-            is_gpu=is_gpu,
-            exe=self.recipe.path_to_engine
-        )
 
-        process.start()
-        process.wait()
-
-        new_system = process.getSystem()
-        topology, new_coordinates = bss.IO.saveMolecules(
-            f"{run_directory}/next", system=new_system, fileformat=["prm7", "rst7"]
-        )
-
-        return dataclasses.replace(
-            self,
-            topology=topology,
-            coordinates=new_coordinates,
-            recipe=recipe
-        )
     
 
     def minimise(
