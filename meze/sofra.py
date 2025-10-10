@@ -187,7 +187,7 @@ class Meze:
             recipe=recipe
         )
     
-    
+
     def get_active_site(self) -> mda.AtomGroup:
         """Get active site based on metal and coordination cutoff
 
@@ -248,8 +248,6 @@ class ColdMeze(Meze):
         else: 
             return None
         
-        
-
     def run(
             self,
             protocol_type: Literal["minimisation", "nvt", "npt"],
@@ -291,13 +289,6 @@ class ColdMeze(Meze):
             path_to_engine=engine_executable or self.recipe.path_to_engine
         )
 
-        runtime = bss.Types.Time(recipe.runtime, "ps")
-        dt = bss.Types.Time(recipe.dt, "ps")
-        temperature = bss.Types.Temperature(recipe.temperature, "K")
-        start_temperature = bss.Types.Temperature(recipe.start_temperature, "K")
-        end_temperature = bss.Types.Temperature(recipe.end_temperature, "K")
-        pressure = bss.Types.Pressure(recipe.pressure, "atm")
-
         config_options = {"cut": recipe.nb_cutoff,
                           "ntpr": 1000,
                           "iwrap": 0}
@@ -320,26 +311,28 @@ class ColdMeze(Meze):
                 restraint="all" if position_restraints else None
             )
         elif protocol_type == "nvt":
-            pressure = None
             if recipe.start_temperature != recipe.end_temperature:
                 temperature = None
+            else:
+                temperature = bss.Types.Temperature(recipe.temperature, "K")
+
             protocol = bss.Protocol.Equilibration(
-                timestep=dt,
-                runtime=runtime,
-                temperature_start=start_temperature,
-                temperature_end=end_temperature,
+                timestep=bss.Types.Time(recipe.dt, "ps"),
+                runtime=bss.Types.Time(recipe.runtime, "ps"),
+                temperature_start=bss.Types.Temperature(recipe.start_temperature, "K"),
+                temperature_end=bss.Types.Temperature(recipe.end_temperature, "K"),
                 temperature=temperature,
-                pressure=pressure,
+                pressure=None,
                 restraint="all" if position_restraints else None,
                 force_constant=recipe.restraint_weight
             )
         elif protocol_type == "npt":
             config_options["barostat"] = recipe.barostat
             protocol = bss.Protocol.Equilibration(
-                timestep=dt,
-                runtime=runtime,
-                temperature=temperature,
-                pressure=pressure,
+                timestep=bss.Types.Time(recipe.dt, "ps"),
+                runtime=bss.Types.Time(recipe.runtime, "ps"),
+                temperature=bss.Types.Temperature(recipe.temperature, "K"),
+                pressure=bss.Types.Pressure(recipe.pressure, "atm"),
                 restraint="all" if position_restraints else None,
                 force_constant=recipe.restraint_weight
             )
@@ -348,10 +341,17 @@ class ColdMeze(Meze):
                 f"Invalid protocol type '{protocol_type}'. "
                 f"Must be one of {allowed}."
             )
+        
+        return super()._run(
+            protocol=protocol,
+            recipe=recipe,
+            system=system,
+            workdir=workdir,
+            process_name=process_name,
+            config_options=config_options,
+            is_gpu=is_gpu,
+        )
     
-
-    
-
     def minimise(
             self,
             system: Optional[bssSystem] = None,
