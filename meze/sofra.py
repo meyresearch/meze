@@ -29,8 +29,12 @@ class MezeRecipe(BaseModel):
     workdir: str = Field(default_factory=os.getcwd, description="Working directory")
     metal: str = Field("ZN", description="Metal resname")
     group_name: str = Field("meze", description="Group name for project")
-    coordination_cut_off: float = Field(2.8, ge=0, description="Metal coordination cutoff in Å")
-    
+    coordination_cut_off: float = Field(
+        2.8, ge=0, description="Metal coordination cutoff in Å"
+    )
+    path_to_engine: Optional[str] = Field(
+        None, description="Path to the MD engine executable (e.g. pmemd.cuda)"
+    )
     def __str__(self) -> str:
         """Print recipe information as JSON
         """
@@ -39,9 +43,6 @@ class MezeRecipe(BaseModel):
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
-    path_to_engine: Optional[str] = Field(
-        None, description="Path to the MD engine executable (e.g. pmemd.cuda)"
-    )
     max_cycles: int = Field(1000, ge=0, description="Number of minimisation cycles")
     n_sd_cycles: int = Field(
         1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
@@ -76,6 +77,26 @@ class ColdMezeRecipe(MezeRecipe):
     restraint_weight: float = Field(
         100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
     )
+
+class HotMezeRecipe(MezeRecipe):
+    """Meze workflow recipe for production runs
+    """
+    nb_cutoff: float = Field(
+        12.0, ge=0, description="Cut-off for electrostatics interactions"
+    )
+    runtime: float = Field(
+        100.0, description="Simulation time in nanoseconds"
+    )
+    dt: float = Field(
+        0.002, description="Integrator timestep, in picoseconds"
+    )
+    temperature: float = Field(
+        300.0,  description="Simulation temperature in kelvin"
+    )
+    pressure: float = Field(
+        1.0, description="Simulation pressure in atm"
+    )
+
 
 @dataclass
 class Meze:
@@ -148,6 +169,45 @@ class Meze:
             [self.topology, self.coordinates]
         )
 
+    def _run(
+            self,
+            system: Optional[bssSystem], 
+            recipe: MezeRecipe,
+            protocol: bss.Protocol,
+            process_name: Optional[str] = "meze-run",
+            config_options: Optional[dict] = None,
+            is_gpu: bool = True,
+    ):
+        input_system = system or self.system
+        run_directory = os.path.join(recipe.workdir, process_name)
+        os.makedirs(run_directory, exist_ok=True)
+
+        process = bss.Process.Amber(
+            system = input_system,
+            protocol = protocol,
+            work_dir=run_directory,
+            name=process_name,
+            extra_options=config_options,
+            is_gpu=is_gpu,
+            exe=recipe.path_to_engine
+        )
+
+        process.start()
+        process.wait()
+
+        new_system = process.getSystem()
+        topology, new_coordinates = bss.IO.saveMolecules(
+            f"{run_directory}/next", system=new_system, fileformat=["prm7", "rst7"]
+        )
+
+        return dataclasses.replace(
+            self,
+            topology=topology,
+            coordinates=new_coordinates,
+            recipe=recipe
+        )
+    
+
     def get_active_site(self) -> mda.AtomGroup:
         """Get active site based on metal and coordination cutoff
 
@@ -157,6 +217,7 @@ class Meze:
         cutoff = self.recipe.coordination_cut_off
         selection = f"resname {self.recipe.metal} or around {cutoff} (resname {self.recipe.metal})"
         return self.universe.select_atoms(selection)
+    
 
 @dataclass
 class ColdMeze(Meze):
@@ -207,8 +268,6 @@ class ColdMeze(Meze):
         else: 
             return None
         
-        
-
     def run(
             self,
             protocol_type: Literal["minimisation", "nvt", "npt"],
@@ -250,16 +309,6 @@ class ColdMeze(Meze):
             path_to_engine=engine_executable or self.recipe.path_to_engine
         )
 
-        input_system = system or self.system
-        run_directory = os.path.join(recipe.workdir, process_name)
-        os.makedirs(run_directory, exist_ok=True)
-        runtime = bss.Types.Time(recipe.runtime, "ps")
-        dt = bss.Types.Time(recipe.dt, "ps")
-        temperature = bss.Types.Temperature(recipe.temperature, "K")
-        start_temperature = bss.Types.Temperature(recipe.start_temperature, "K")
-        end_temperature = bss.Types.Temperature(recipe.end_temperature, "K")
-        pressure = bss.Types.Pressure(recipe.pressure, "atm")
-
         config_options = {"cut": recipe.nb_cutoff,
                           "ntpr": 1000,
                           "iwrap": 0}
@@ -282,26 +331,28 @@ class ColdMeze(Meze):
                 restraint="all" if position_restraints else None
             )
         elif protocol_type == "nvt":
-            pressure = None
             if recipe.start_temperature != recipe.end_temperature:
                 temperature = None
+            else:
+                temperature = bss.Types.Temperature(recipe.temperature, "K")
+
             protocol = bss.Protocol.Equilibration(
-                timestep=dt,
-                runtime=runtime,
-                temperature_start=start_temperature,
-                temperature_end=end_temperature,
+                timestep=bss.Types.Time(recipe.dt, "ps"),
+                runtime=bss.Types.Time(recipe.runtime, "ps"),
+                temperature_start=bss.Types.Temperature(recipe.start_temperature, "K"),
+                temperature_end=bss.Types.Temperature(recipe.end_temperature, "K"),
                 temperature=temperature,
-                pressure=pressure,
+                pressure=None,
                 restraint="all" if position_restraints else None,
                 force_constant=recipe.restraint_weight
             )
         elif protocol_type == "npt":
             config_options["barostat"] = recipe.barostat
             protocol = bss.Protocol.Equilibration(
-                timestep=dt,
-                runtime=runtime,
-                temperature=temperature,
-                pressure=pressure,
+                timestep=bss.Types.Time(recipe.dt, "ps"),
+                runtime=bss.Types.Time(recipe.runtime, "ps"),
+                temperature=bss.Types.Temperature(recipe.temperature, "K"),
+                pressure=bss.Types.Pressure(recipe.pressure, "atm"),
                 restraint="all" if position_restraints else None,
                 force_constant=recipe.restraint_weight
             )
@@ -310,33 +361,16 @@ class ColdMeze(Meze):
                 f"Invalid protocol type '{protocol_type}'. "
                 f"Must be one of {allowed}."
             )
-    
-        process = bss.Process.Amber(
-            system = input_system,
-            protocol = protocol,
-            work_dir=run_directory,
-            name=process_name,
-            extra_options=config_options,
+        
+        return super()._run(
+            protocol=protocol,
+            recipe=recipe,
+            system=system,
+            process_name=process_name,
+            config_options=config_options,
             is_gpu=is_gpu,
-            exe=self.recipe.path_to_engine
-        )
-
-        process.start()
-        process.wait()
-
-        new_system = process.getSystem()
-        topology, new_coordinates = bss.IO.saveMolecules(
-            f"{run_directory}/next", system=new_system, fileformat=["prm7", "rst7"]
-        )
-
-        return dataclasses.replace(
-            self,
-            topology=topology,
-            coordinates=new_coordinates,
-            recipe=recipe
         )
     
-
     def minimise(
             self,
             system: Optional[bssSystem] = None,
@@ -438,3 +472,61 @@ class ColdMeze(Meze):
             is_gpu=is_gpu,
             engine_executable=engine_executable
         )
+
+class HotMeze(Meze):
+    recipe: HotMezeRecipe
+
+    @classmethod
+    def from_files(cls, topology: str, coordinates: str, **kwargs) -> "HotMeze":
+        """
+        Build a ColdMeze object from topology and coordinates.
+        Passes extra kwargs into ColdMezeRecipe.
+        """
+        recipe = HotMezeRecipe(**kwargs)
+        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+
+    def run(
+            self,
+            workdir: Optional[str],
+            system: Optional[bssSystem] = None,
+            process_name: Optional[str] = "meze-run",
+            nb_cutoff: Optional[float] = None,
+            timestep: Optional[Union[float, bssTime]] = None,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = 300,
+            pressure: Optional[Union[float, bssPressure]] = 1,
+            engine_executable: Optional[str] = None,
+            write_frequency: Optional[int] = 500000
+
+    ):
+        recipe = HotMezeRecipe(
+            workdir=workdir or self.recipe.workdir,
+            nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
+            runtime= runtime or self.recipe.runtime,
+            dt=timestep or self.recipe.dt,
+            temperature=temperature or self.recipe.temperature,
+            pressure=pressure or self.recipe.pressure,
+            path_to_engine=engine_executable or self.recipe.path_to_engine
+        )
+        config_options = {"cut": recipe.nb_cutoff,
+                          "ntpr": write_frequency,
+                          "ntwx": write_frequency,
+                          "ntwr": write_frequency,
+                          "irest": 1,
+                          "ntx": 5}
+        
+        protocol = bss.Protocol.Production(
+            timestep=bss.Types.Time(recipe.dt, "ps"),
+            runtime=bss.Types.Time(recipe.runtime, "ns"),
+            temperature=bss.Types.Temperature(recipe.temperature, "K"),
+            pressure=bss.Types.Pressure(recipe.pressure, "atm")
+        )
+
+        return super()._run(
+            protocol=protocol,
+            recipe=recipe,
+            system=system,
+            process_name=process_name,
+            config_options=config_options
+        )
+        

@@ -1,8 +1,16 @@
-from .sofra import MezeRecipe, Meze, ColdMezeRecipe, ColdMeze
-
+from .sofra import (
+    MezeRecipe,
+    ColdMezeRecipe,
+    HotMezeRecipe,
+    Meze,
+    ColdMeze, 
+    HotMeze
+)
 __all__ = [
-    "Meze",
     "MezeRecipe", 
     "ColdMezeRecipe", 
+    "HotMezeRecipe",
+    "Meze",
     "ColdMeze",
+    "HotMeze"
 ]  
