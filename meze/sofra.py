@@ -78,6 +78,26 @@ class ColdMezeRecipe(MezeRecipe):
         100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
     )
 
+class HotMezeRecipe(MezeRecipe):
+    """Meze workflow recipe for production runs
+    """
+    nb_cutoff: float = Field(
+        12.0, ge=0, description="Cut-off for electrostatics interactions"
+    )
+    runtime: float = Field(
+        100.0, description="Simulation time in nanoseconds"
+    )
+    dt: float = Field(
+        0.002, description="Integrator timestep, in picoseconds"
+    )
+    temperature: float = Field(
+        300.0,  description="Simulation temperature in kelvin"
+    )
+    pressure: float = Field(
+        1.0, description="Simulation pressure in atm"
+    )
+
+
 @dataclass
 class Meze:
     topology: str 
@@ -452,3 +472,30 @@ class ColdMeze(Meze):
             is_gpu=is_gpu,
             engine_executable=engine_executable
         )
+
+class HotMeze(Meze):
+    recipe: HotMezeRecipe
+
+    @classmethod
+    def from_files(cls, topology: str, coordinates: str, **kwargs) -> "HotMeze":
+        """
+        Build a ColdMeze object from topology and coordinates.
+        Passes extra kwargs into ColdMezeRecipe.
+        """
+        recipe = HotMezeRecipe(**kwargs)
+        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+
+    def run(
+            self,
+            system: Optional[bssSystem],
+            workdir: Optional[str],
+            process_name: Optional[str] = "meze-run",
+            nb_cutoff: Optional[float] = None,
+            timestep: Optional[Union[float, bssTime]] = None,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = 300,
+            pressure: Optional[Union[float, bssPressure]] = 1,
+
+
+    ):
+        pass
