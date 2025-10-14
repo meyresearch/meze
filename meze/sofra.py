@@ -505,7 +505,6 @@ class HotMeze(Meze):
             pressure: Optional[Union[float, bssPressure]] = 1,
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 500000
-
     ):
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
@@ -521,13 +520,14 @@ class HotMeze(Meze):
                           "ntwx": write_frequency,
                           "ntwr": write_frequency,
                           "irest": 1,
-                          "ntx": 5}
+                          "ntx": 5, 
+                          "iwrap": 0}
         
         protocol = bss.Protocol.Production(
             timestep=bss.Types.Time(recipe.dt, "ps"),
             runtime=bss.Types.Time(recipe.runtime, "ns"),
             temperature=bss.Types.Temperature(recipe.temperature, "K"),
-            pressure=bss.Types.Pressure(recipe.pressure, "atmlr")
+            pressure=bss.Types.Pressure(recipe.pressure, "atm")
         )
 
         return super()._run(
@@ -613,7 +613,25 @@ class QuantumMeze(Meze):
                 qm_residue = self.universe.select_atoms(f"resid {residue.resid}")
                 qm_region.append(qm_residue)
         return sum([round(atom_group.charges.sum()) for atom_group in qm_region])
+    
+    def _write_qm_namelist(self, qm_theory: str = "DFTB3"):
 
+        parsed_whole_residues = residue_restraint_mask(self.qm_region["whole_residues"])
+        atom_ids = ",".join(list(map(str, self.qm_region["atom_ids"])))
+        
+        qm_config_options = {
+            "qmmask": f"':{parsed_whole_residues}|(@{atom_ids})'",
+            "writepdb": "1",
+            "qmcharge": str(self.qm_charge),
+            "qm_theory": qm_theory,
+            "qmshake": "0",
+            "qm_ewald": "1",
+            "qm_pme": "1"
+        }
+        qm_namelist = [f"  {key}={value}" for key, value in qm_config_options.items()]
+        qm_namelist.insert(0, "&qmmm")
+        qm_namelist.append("/")
+        return qm_namelist
 
 
 class ColdQuantumMeze(QuantumMeze):
@@ -646,7 +664,8 @@ class ColdQuantumMeze(QuantumMeze):
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = None,
             engine_executable: Optional[str] = None,
-            qm_theory: Optional[str] = "DFTB3"):
+            qm_theory: Optional[str] = "DFTB3"
+    ) -> "ColdQuantumMeze":
         
         recipe = ColdMezeRecipe(
             workdir=workdir or self.recipe.workdir,
@@ -664,6 +683,8 @@ class ColdQuantumMeze(QuantumMeze):
             path_to_engine=engine_executable or self.recipe.path_to_engine
         )
 
+        qm_namelist = self._write_qm_namelist()
+
         config_options = {
             "cut": recipe.nb_cutoff,
             "ntpr": 50,
@@ -672,22 +693,6 @@ class ColdQuantumMeze(QuantumMeze):
             "iwrap": 0
         }
         
-        parsed_whole_residues = residue_restraint_mask(self.qm_region["whole_residues"])
-        atom_ids = ",".join(list(map(str, self.qm_region["atom_ids"])))
-        
-        qm_config_options = {
-            "qmmask": f"':{parsed_whole_residues}|(@{atom_ids})'",
-            "writepdb": "1",
-            "qmcharge": str(self.qm_charge),
-            "qm_theory": qm_theory,
-            "qmshake": "0",
-            "qm_ewald": "1",
-            "qm_pme": "1"
-        }
-        qm_namelist = [f"  {key}={value}" for key, value in qm_config_options.items()]
-        qm_namelist.insert(0, "&qmmm")
-        qm_namelist.append("/")
-
         if restart:
             config_options["irest"] = 1
             config_options["ntx"] = 5
@@ -785,4 +790,70 @@ class ColdQuantumMeze(QuantumMeze):
             start_temperature=start_temperature,
             end_temperature=end_temperature,
             engine_executable=engine_executable
+        )
+    
+class HotQuantumMeze(QuantumMeze):
+    recipe: HotMezeRecipe
+
+    @classmethod
+    def from_files(cls, topology: str, coordinates: str, **kwargs) -> "HotQuantumMeze":
+        """
+        Build a Meze object from topology and coordinates.
+        Passes extra kwargs into MezeRecipe.
+        """
+        recipe = HotMezeRecipe(**kwargs)
+        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+    
+    def run(
+            self,
+            workdir: Optional[str],
+            system: Optional[bssSystem] = None,
+            process_name: Optional[str] = "qm-meze-run",
+            nb_cutoff: Optional[float] = None,
+            timestep: Optional[Union[float, bssTime]] = None,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = 300,
+            pressure: Optional[Union[float, bssPressure]] = 1,
+            engine_executable: Optional[str] = None,
+            write_frequency: Optional[int] = 500,
+            qm_theory: Optional[str] = "DFTB3"
+    ) -> "HotQuantumMeze":
+        
+        recipe = HotMezeRecipe(
+            workdir=workdir or self.recipe.workdir,
+            nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
+            runtime= runtime or self.recipe.runtime,
+            dt=timestep or self.recipe.dt,
+            temperature=temperature or self.recipe.temperature,
+            pressure=pressure or self.recipe.pressure,
+            path_to_engine=engine_executable or self.recipe.path_to_engine
+        )
+
+        config_options = {
+            "cut": recipe.nb_cutoff,
+            "ntpr": write_frequency,
+            "ntwx": write_frequency,
+            "ntwx": write_frequency,
+            "iwrap": 0,
+            "irest": 1,
+            "ntx": 5
+        }
+        
+        qm_namelist = self._write_qm_namelist()
+
+        protocol = bss.Protocol.Production(
+            timestep=bss.Types.Time(recipe.dt, "ps"),
+            runtime=bss.Types.Time(recipe.runtime, "ps"),
+            temperature=bss.Types.Temperature(recipe.temperature, "K"),
+            pressure=None
+        )
+
+        return super()._run(
+            protocol=protocol,
+            recipe=recipe,
+            system=system,
+            process_name=process_name,
+            config_options=config_options,
+            namelist_options=qm_namelist,
+            is_gpu=False,
         )
