@@ -346,7 +346,6 @@ class ColdMeze(Meze):
             protocol=protocol,
             recipe=recipe,
             system=system,
-            workdir=workdir,
             process_name=process_name,
             config_options=config_options,
             is_gpu=is_gpu,
