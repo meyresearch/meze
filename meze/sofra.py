@@ -623,7 +623,7 @@ class QuantumMeze(Meze):
             "qmmask": f"':{parsed_whole_residues}|(@{atom_ids})'",
             "writepdb": "1",
             "qmcharge": str(self.qm_charge),
-            "qm_theory": qm_theory,
+            "qm_theory": f"'{qm_theory}'",
             "qmshake": "0",
             "qm_ewald": "1",
             "qm_pme": "1"
@@ -690,7 +690,8 @@ class ColdQuantumMeze(QuantumMeze):
             "ntpr": 50,
             "ntwx": 50,
             "ntwx": 50,
-            "iwrap": 0
+            "iwrap": 0,
+            "ifqnt": 1
         }
         
         if restart:
@@ -836,10 +837,11 @@ class HotQuantumMeze(QuantumMeze):
             "ntwx": write_frequency,
             "iwrap": 0,
             "irest": 1,
-            "ntx": 5
+            "ntx": 5,
+            "ifqnt": 1
         }
         
-        qm_namelist = self._write_qm_namelist()
+        qm_namelist = self._write_qm_namelist(qm_theory)
 
         protocol = bss.Protocol.Production(
             timestep=bss.Types.Time(recipe.dt, "ps"),
