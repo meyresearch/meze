@@ -487,8 +487,8 @@ class HotMeze(Meze):
 
     def run(
             self,
-            system: Optional[bssSystem],
             workdir: Optional[str],
+            system: Optional[bssSystem] = None,
             process_name: Optional[str] = "meze-run",
             nb_cutoff: Optional[float] = None,
             timestep: Optional[Union[float, bssTime]] = None,
@@ -519,7 +519,7 @@ class HotMeze(Meze):
             timestep=bss.Types.Time(recipe.dt, "ps"),
             runtime=bss.Types.Time(recipe.runtime, "ns"),
             temperature=bss.Types.Temperature(recipe.temperature, "K"),
-            pressure=bss.Types.Pressure(recipe.pressure)
+            pressure=bss.Types.Pressure(recipe.pressure, "atm")
         )
 
         return super()._run(
