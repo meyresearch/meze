@@ -495,7 +495,38 @@ class HotMeze(Meze):
             runtime: Optional[Union[float, bssTime]] = None,
             temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = 1,
-
+            engine_executable: Optional[str] = None,
+            write_frequency: Optional[int] = 500000
 
     ):
-        pass
+        recipe = HotMezeRecipe(
+            workdir=workdir or self.recipe.workdir,
+            nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
+            runtime= runtime or self.recipe.runtime,
+            dt=timestep or self.recipe.dt,
+            temperature=temperature or self.recipe.temperature,
+            pressure=pressure or self.recipe.pressure,
+            path_to_engine=engine_executable or self.recipe.path_to_engine
+        )
+        config_options = {"cut": recipe.nb_cutoff,
+                          "ntpr": write_frequency,
+                          "ntwx": write_frequency,
+                          "ntwr": write_frequency,
+                          "irest": 1,
+                          "ntx": 5}
+        
+        protocol = bss.Protocol.Production(
+            timestep=bss.Types.Time(recipe.dt, "ps"),
+            runtime=bss.Types.Time(recipe.runtime, "ns"),
+            temperature=bss.Types.Temperature(recipe.temperature, "K"),
+            pressure=bss.Types.Pressure(recipe.pressure)
+        )
+
+        return super()._run(
+            protocol=protocol,
+            recipe=recipe,
+            system=system,
+            process_name=process_name,
+            config_options=config_options
+        )
+        
