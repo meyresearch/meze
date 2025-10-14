@@ -690,7 +690,8 @@ class ColdQuantumMeze(QuantumMeze):
             "ntpr": 50,
             "ntwx": 50,
             "ntwx": 50,
-            "iwrap": 0
+            "iwrap": 0,
+            "ifqnt": 1
         }
         
         if restart:
@@ -836,7 +837,8 @@ class HotQuantumMeze(QuantumMeze):
             "ntwx": write_frequency,
             "iwrap": 0,
             "irest": 1,
-            "ntx": 5
+            "ntx": 5,
+            "ifqnt": 1
         }
         
         qm_namelist = self._write_qm_namelist()
