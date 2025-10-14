@@ -73,12 +73,3 @@ relax_backbone = cold_meze.pressurise(
     restraint_weight=10.0
 )
 
-continue_lowering = cold_meze.pressurise(
-    system=relax_backbone.system, 
-    restart=True,
-    process_name="07_continue",
-    workdir=equil_dir,
-    position_restraints="backbone",
-    timestep=0.001,
-    restraint_weight=0.1
-)
