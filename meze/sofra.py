@@ -179,7 +179,7 @@ class Meze:
             protocol: bss.Protocol,
             process_name: Optional[str] = "meze-run",
             config_options: Optional[dict] = None,
-            namelist_options: Optional[list] = None,
+            namelist_options: Optional[list] = [],
             is_gpu: bool = True,
     ):
         input_system = system or self.system
@@ -228,17 +228,33 @@ class Meze:
 @dataclass
 class ColdMeze(Meze):
     recipe: ColdMezeRecipe
+    exclude_resids: Optional[Union[int, list[int]]] = None
 
     @classmethod
-    def from_files(cls, topology: str, coordinates: str, **kwargs) -> "ColdMeze":
+    def from_files(
+        cls, 
+        topology: str, 
+        coordinates: str, 
+        exclude_resids: Optional[Union[int, list[int]]] = None,
+        **kwargs
+    ) -> "ColdMeze":
         """
         Build a ColdMeze object from topology and coordinates.
         Passes extra kwargs into ColdMezeRecipe.
         """
         recipe = ColdMezeRecipe(**kwargs)
-        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+        return cls(
+            topology=topology, 
+            coordinates=coordinates, 
+            exclude_resids=exclude_resids,
+            recipe=recipe
+        )
     
-    def _build_restraint_mask(self, position_restraints: str) -> str | None:
+    def _build_restraint_mask(
+            self, 
+            position_restraints: str, 
+            exclude_resids: Optional[Union[int, list[int]]] = None
+    ) -> str | None:
         """Build an amber-compatible restraint mask
 
         Args:
@@ -257,10 +273,20 @@ class ColdMeze(Meze):
                 f"Must be one of {allowed}."
             )
         
+        exclude_resids = exclude_resids or self.exclude_resids
+        if isinstance(exclude_resids, int):
+            exclude_resids = [exclude_resids]
+        exclude_resids = set(exclude_resids or [])
+
         coordinating_atomgroups = next(iter(self.coordinating_residues.values()))
         for atomgroup in list(self.coordinating_residues.values())[1:]:
             coordinating_atomgroups += atomgroup
-        coordinating_resids = [atom.resnum for atom in coordinating_atomgroups]
+
+        coordinating_resids = [
+            atom.resnum for atom in coordinating_atomgroups
+            if atom.resnum not in exclude_resids
+        ]
+        
         if position_restraints == "solute":
             protein_resids = [atom.resnum for atom in self.universe.select_atoms("protein")]
             constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist()
