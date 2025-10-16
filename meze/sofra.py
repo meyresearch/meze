@@ -592,7 +592,7 @@ class HotMeze(Meze):
 @dataclass
 class QuantumMeze(Meze):
     recipe: MezeRecipe
-    exclude_resids: Optional[int] = None
+    exclude_resids: Optional[Union[int, list[int]]] = None
 
     def __post_init__(self):
         super().__post_init__()
@@ -604,7 +604,7 @@ class QuantumMeze(Meze):
         cls, 
         topology: str, 
         coordinates: str, 
-        exclude_resids: Optional[int] = None,
+        exclude_resids: Optional[Union[int, list[int]]] = None,
         **kwargs
     ) -> "QuantumMeze":
         """
@@ -619,24 +619,41 @@ class QuantumMeze(Meze):
             recipe=recipe
         )
 
-    def _define_qm_region(self) -> dict[str, list]:
+    def _define_qm_region(
+            self, 
+            resids_to_exclude: Optional[Union[int, list[int]]] = None
+    ) -> dict[str, list]:
         """Get a simple QM region 
 
         Returns:
             dict[str, list]: QM region split into a list of whole residues and atom ids
         """
+        exclude_resids = set(self.exclude_resids or [])
+        if resids_to_exclude is not None:
+            if isinstance(resids_to_exclude, int):
+                resids_to_exclude = [resids_to_exclude]
+            exclude_resids.update(resids_to_exclude)
+
         qm_region = {"whole_residues": [],
                      "atom_ids": []}
         protein = self.universe.select_atoms("protein")
 
         for metal_id, metal_ligands in self.coordinating_residues.items():
-            qm_region["atom_ids"].append(metal_id)
+            metal_atom = self.universe.atoms[metal_id]
+            if metal_atom.resid not in exclude_resids:
+                qm_region["atom_ids"].append(metal_id)
+
             for residue in metal_ligands.residues:
+                if residue.resid in exclude_resids:
+                    continue  
+
                 if residue in protein.residues:
                     side_chain_atoms = self._get_side_chain_selection(residue)
                     qm_region["atom_ids"].append(side_chain_atoms)
                 else:
                     qm_region["whole_residues"].append(residue.resid)
+            
+        
         return qm_region
     
 
@@ -670,7 +687,9 @@ class QuantumMeze(Meze):
                 alpha_carbon = "name CA or name HA"
                 c_terminus = "name C or name O"
                 atoms_in_residue = self.universe.select_atoms(f"resid {residue.resid}")
-                qm_region_for_residue = atoms_in_residue.select_atoms(f"not ({n_terminus} or {alpha_carbon} or {c_terminus})")
+                qm_region_for_residue = atoms_in_residue.select_atoms(
+                    f"not ({n_terminus} or {alpha_carbon} or {c_terminus})"
+                )
                 qm_region.append(qm_region_for_residue)
             else:
                 qm_residue = self.universe.select_atoms(f"resid {residue.resid}")
@@ -699,17 +718,28 @@ class QuantumMeze(Meze):
 @dataclass
 class ColdQuantumMeze(QuantumMeze):
     recipe: ColdMezeRecipe
+    exclude_resids: Optional[Union[int, list[int]]] = None
 
     @classmethod
-    def from_files(cls, topology: str, coordinates: str, **kwargs) -> "ColdQuantumMeze":
+    def from_files(
+        cls, 
+        topology: str, 
+        coordinates: str, 
+        exclude_resids: Optional[Union[int, list[int]]] = None,
+        **kwargs
+    ) -> "ColdQuantumMeze":
         """
         Build a Meze object from topology and coordinates.
         Passes extra kwargs into MezeRecipe.
         """
         recipe = ColdMezeRecipe(**kwargs)
-        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+        return cls(
+            topology=topology, 
+            coordinates=coordinates,
+            exclude_resids=exclude_resids,
+            recipe=recipe
+        )
 
-    @classmethod
     def run(self,
             protocol_type: Literal["minimisation", "nvt", "npt"],
             system: Optional[bssSystem],
@@ -728,9 +758,13 @@ class ColdQuantumMeze(QuantumMeze):
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = None,
             engine_executable: Optional[str] = None,
-            qm_theory: Optional[str] = "DFTB3"
+            qm_theory: Optional[str] = "DFTB3",
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+
     ) -> "ColdQuantumMeze":
-        
+        self.qm_region = self._define_qm_region(
+            resids_to_exclude=metal_resids_for_distance_restraints
+        )
         recipe = ColdMezeRecipe(
             workdir=workdir or self.recipe.workdir,
             max_cycles=max_cycles or self.recipe.max_cycles,
@@ -805,7 +839,6 @@ class ColdQuantumMeze(QuantumMeze):
             is_gpu=False,
         )
     
-    @classmethod
     def minimise(
             self,
             system: Optional[bssSystem] = None,
@@ -815,7 +848,8 @@ class ColdQuantumMeze(QuantumMeze):
             method: Optional[int] = None,
             n_sd_cycles: Optional[int] = None,
             nb_cutoff: Optional[float] = None,
-            engine_executable: Optional[str] = None
+            engine_executable: Optional[str] = None,
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> "ColdQuantumMeze":  
         
         return self.run(
@@ -827,10 +861,10 @@ class ColdQuantumMeze(QuantumMeze):
             n_sd_cycles=n_sd_cycles,
             nb_cutoff=nb_cutoff,
             method=method,
-            engine_executable=engine_executable
+            engine_executable=engine_executable,
+            metal_resids_for_distance_restraints=metal_resids_for_distance_restraints
         )
     
-    @classmethod
     def heat(
             self,
             system: Optional[bssSystem] = None,
@@ -842,7 +876,8 @@ class ColdQuantumMeze(QuantumMeze):
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             process_name: Optional[str] = "qm-nvt",
-            engine_executable: Optional[str] = None
+            engine_executable: Optional[str] = None,
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> "ColdQuantumMeze":
 
         return self.run(
@@ -856,7 +891,8 @@ class ColdQuantumMeze(QuantumMeze):
             runtime=runtime,
             start_temperature=start_temperature,
             end_temperature=end_temperature,
-            engine_executable=engine_executable
+            engine_executable=engine_executable,
+            metal_resids_for_distance_restraints=metal_resids_for_distance_restraints
         )
     
 @dataclass
@@ -884,7 +920,6 @@ class HotQuantumMeze(QuantumMeze):
             recipe=recipe
         )
     
-    @classmethod
     def run(
             self,
             workdir: Optional[str],
@@ -900,7 +935,9 @@ class HotQuantumMeze(QuantumMeze):
             qm_theory: Optional[str] = "DFTB3",
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> "HotQuantumMeze":
-        
+        self.qm_region = self._define_qm_region(
+            resids_to_exclude=metal_resids_for_distance_restraints
+        )
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
             nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
