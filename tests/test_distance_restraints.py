@@ -16,7 +16,8 @@ hot_qm_meze = HotQuantumMeze.from_files(
     group_name=f"{system_name}_{bridging_water}",
     path_to_executable=os.path.join(
         os.environ["AMBERHOME"], "bin", "sander"
-    )
+    ),
+    exclude_resids=800
 )
 
 qmmm_dir = os.path.join(project_dir, "qmmm", bridging_water)
