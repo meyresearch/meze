@@ -640,33 +640,51 @@ class QuantumMeze(Meze):
         Returns:
             dict[str, list]: QM region split into a list of whole residues and atom ids
         """
+        exclude_resids = set(self.exclude_resids or [])
+
         if resids_to_exclude is not None:
             if isinstance(resids_to_exclude, int):
                 resids_to_exclude = [resids_to_exclude]
-            self.exclude_resids.update(resids_to_exclude)
+            exclude_resids.update(resids_to_exclude)
 
-        qm_region = {"whole_residues": [],
-                     "atom_ids": []}
+        excluded_atoms = set()
+        for metal_atom_idx, metal_ligands in self.coordinating_residues.items():
+            metal_resid = self.universe.select_atoms(f"bynum {metal_atom_idx}").resids[0]
+            if metal_resid in exclude_resids:
+                excluded_atoms.add(metal_atom_idx)
+                for residue in metal_ligands.residues:
+                    exclude_resids.add(residue.resid)
+
+        qm_region_atom_ids = set()
+        qm_region_whole_residues = set()
+
         protein = self.universe.select_atoms("protein")
 
         for metal_id, metal_ligands in self.coordinating_residues.items():
-            metal_atom = self.universe.atoms[metal_id]
-            if metal_atom.resid not in self.exclude_resids:
-                qm_region["atom_ids"].append(metal_id)
+            if metal_id in excluded_atoms:
+                continue 
+
+            metal_atom = self.universe.select_atoms(f"bynum {metal_id}")[0]
+            if metal_atom.resid not in exclude_resids:
+                qm_region_atom_ids.add(str(metal_id))
 
             for residue in metal_ligands.residues:
-                if residue.resid in self.exclude_resids:
+                if residue.resid in exclude_resids:
                     continue  
 
                 if residue in protein.residues:
                     side_chain_atoms = self._get_side_chain_selection(residue)
-                    qm_region["atom_ids"].append(side_chain_atoms)
+                    qm_region_atom_ids.add(side_chain_atoms)
                 else:
-                    qm_region["whole_residues"].append(residue.resid)
-            
-        
+                    qm_region_whole_residues.add(residue.resid)
+
+        qm_region = {
+            "whole_residues": list(qm_region_whole_residues),
+            "atom_ids": list(qm_region_atom_ids),
+        }
+
         return qm_region
-    
+
 
     def _get_side_chain_selection(self, residue: mdaResidue):
         """Return amino acid side chain atom indices
@@ -985,6 +1003,7 @@ class HotQuantumMeze(QuantumMeze):
         qm_namelist = self._write_qm_namelist(qm_theory)
 
         if metal_resids_for_distance_restraints:
+            # add distance restraints
             pass
 
         protocol = bss.Protocol.Production(
