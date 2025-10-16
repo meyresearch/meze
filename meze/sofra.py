@@ -3,7 +3,10 @@ import logging
 warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
 logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
 logging.getLogger("MDAnalysis").setLevel(logging.ERROR)
-from dataclasses import dataclass
+from dataclasses import (
+    dataclass, 
+    field
+)
 import dataclasses
 import numpy as np
 from pydantic import (
@@ -253,14 +256,20 @@ class Meze:
 @dataclass
 class ColdMeze(Meze):
     recipe: ColdMezeRecipe
-    exclude_resids: Optional[Union[int, list[int]]] = None
+    exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
+
+    def __post_init__(self):
+        super().__post_init__()
+        if isinstance(self.exclude_resids, int):
+            self.exclude_resids = [self.exclude_resids]
+        self.exclude_resids = set(self.exclude_resids or [])
 
     @classmethod
     def from_files(
         cls, 
         topology: str, 
         coordinates: str, 
-        exclude_resids: Optional[Union[int, list[int]]] = None,
+        exclude_resids: Optional[Union[int, list[int]]] = [],
         **kwargs
     ) -> "ColdMeze":
         """
@@ -278,7 +287,7 @@ class ColdMeze(Meze):
     def _build_restraint_mask(
             self, 
             position_restraints: str, 
-            exclude_resids: Optional[Union[int, list[int]]] = None
+            exclude_resids: Optional[Union[int, list[int]]] = []
     ) -> str | None:
         """Build an amber-compatible restraint mask
 
@@ -592,10 +601,13 @@ class HotMeze(Meze):
 @dataclass
 class QuantumMeze(Meze):
     recipe: MezeRecipe
-    exclude_resids: Optional[Union[int, list[int]]] = None
+    exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
 
     def __post_init__(self):
         super().__post_init__()
+        if isinstance(self.exclude_resids, int):
+            self.exclude_resids = [self.exclude_resids]
+        self.exclude_resids = set(self.exclude_resids or [])
         self.qm_region = self._define_qm_region()
         self.qm_charge = self._get_qm_charge()
 
@@ -604,7 +616,7 @@ class QuantumMeze(Meze):
         cls, 
         topology: str, 
         coordinates: str, 
-        exclude_resids: Optional[Union[int, list[int]]] = None,
+        exclude_resids: Optional[Union[int, list[int]]] = [],
         **kwargs
     ) -> "QuantumMeze":
         """
@@ -628,11 +640,10 @@ class QuantumMeze(Meze):
         Returns:
             dict[str, list]: QM region split into a list of whole residues and atom ids
         """
-        exclude_resids = set(self.exclude_resids or [])
         if resids_to_exclude is not None:
             if isinstance(resids_to_exclude, int):
                 resids_to_exclude = [resids_to_exclude]
-            exclude_resids.update(resids_to_exclude)
+            self.exclude_resids.update(resids_to_exclude)
 
         qm_region = {"whole_residues": [],
                      "atom_ids": []}
@@ -640,11 +651,11 @@ class QuantumMeze(Meze):
 
         for metal_id, metal_ligands in self.coordinating_residues.items():
             metal_atom = self.universe.atoms[metal_id]
-            if metal_atom.resid not in exclude_resids:
+            if metal_atom.resid not in self.exclude_resids:
                 qm_region["atom_ids"].append(metal_id)
 
             for residue in metal_ligands.residues:
-                if residue.resid in exclude_resids:
+                if residue.resid in self.exclude_resids:
                     continue  
 
                 if residue in protein.residues:
@@ -718,14 +729,20 @@ class QuantumMeze(Meze):
 @dataclass
 class ColdQuantumMeze(QuantumMeze):
     recipe: ColdMezeRecipe
-    exclude_resids: Optional[Union[int, list[int]]] = None
+    exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
+
+    def __post_init__(self):
+        super().__post_init__()
+        if isinstance(self.exclude_resids, int):
+            self.exclude_resids = [self.exclude_resids]
+        self.exclude_resids = set(self.exclude_resids or [])
 
     @classmethod
     def from_files(
         cls, 
         topology: str, 
         coordinates: str, 
-        exclude_resids: Optional[Union[int, list[int]]] = None,
+        exclude_resids: Optional[Union[int, list[int]]] = [],
         **kwargs
     ) -> "ColdQuantumMeze":
         """
@@ -898,14 +915,20 @@ class ColdQuantumMeze(QuantumMeze):
 @dataclass
 class HotQuantumMeze(QuantumMeze):
     recipe: HotMezeRecipe
-    exclude_resids: Optional[Union[int, list[int]]] = None
+    exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
+
+    def __post_init__(self):
+        super().__post_init__()
+        if isinstance(self.exclude_resids, int):
+            self.exclude_resids = [self.exclude_resids]
+        self.exclude_resids = set(self.exclude_resids or [])
 
     @classmethod
     def from_files(
         cls, 
         topology: str, 
         coordinates: str, 
-        exclude_resids: Optional[Union[int, list[int]]] = None,
+        exclude_resids: Optional[Union[int, list[int]]] = [],
         **kwargs
     ) -> "HotQuantumMeze":
         """
