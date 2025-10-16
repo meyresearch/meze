@@ -13,11 +13,11 @@ from pydantic import (
 from typing import (
     Optional,
     Literal,
-    Union,
-    Any
+    Union
 )
 import os
 import MDAnalysis as mda
+import MDAnalysis.analysis.distances
 from MDAnalysis.core.groups import Residue as mdaResidue
 import BioSimSpace as bss
 from BioSimSpace._SireWrappers import System as bssSystem
@@ -136,6 +136,34 @@ class Meze:
         """
         recipe = MezeRecipe(**kwargs)
         return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+
+    def build_distance_restraints(
+            self,
+            force_constant: Optional[float] = 100.0,
+            flat_bottom_radius: Optional[float] = 1.00
+    ) -> dict[tuple[int, int], tuple[float, float, float]]:
+
+        restraints = {}
+        for metal_id, ligating_atoms in self.coordinating_residues.items():
+            atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
+
+            for ligating_atom in ligating_atoms:
+                key = (metal_id, ligating_atom.id)
+                atom_group_2 = self.universe.select_atoms(
+                    f"resid {ligating_atom.resid} and name {ligating_atom.name}"
+                )
+                distance = MDAnalysis.analysis.distances.dist(
+                    atom_group_1, atom_group_2
+                )[-1][0]
+                restraints[key] = (
+                    np.round(distance, 2),
+                    np.round(force_constant, 2),
+                    np.round(flat_bottom_radius, 2)
+                )
+        return restraints
+
+
+
 
     def _set_metal(self):
         """Set metal residue names and indices based on MDAnalysis Universe
@@ -843,7 +871,8 @@ class HotQuantumMeze(QuantumMeze):
             pressure: Optional[Union[float, bssPressure]] = 1,
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 500,
-            qm_theory: Optional[str] = "DFTB3"
+            qm_theory: Optional[str] = "DFTB3",
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> "HotQuantumMeze":
         
         recipe = HotMezeRecipe(
@@ -868,6 +897,9 @@ class HotQuantumMeze(QuantumMeze):
         }
         
         qm_namelist = self._write_qm_namelist(qm_theory)
+
+        if metal_resids_for_distance_restraints:
+            pass
 
         protocol = bss.Protocol.Production(
             timestep=bss.Types.Time(recipe.dt, "ps"),
