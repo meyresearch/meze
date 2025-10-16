@@ -837,7 +837,7 @@ class HotQuantumMeze(QuantumMeze):
             system: Optional[bssSystem] = None,
             process_name: Optional[str] = "qm-meze-run",
             nb_cutoff: Optional[float] = None,
-            timestep: Optional[Union[float, bssTime]] = None,
+            timestep: Optional[Union[float, bssTime]] = 0.001,
             runtime: Optional[Union[float, bssTime]] = None,
             temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = 1,
