@@ -162,9 +162,6 @@ class Meze:
                 )
         return restraints
 
-
-
-
     def _set_metal(self):
         """Set metal residue names and indices based on MDAnalysis Universe
 
