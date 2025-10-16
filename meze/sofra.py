@@ -1003,8 +1003,8 @@ class HotQuantumMeze(QuantumMeze):
         qm_namelist = self._write_qm_namelist(qm_theory)
 
         if metal_resids_for_distance_restraints:
-            # add distance restraints
-            pass
+            config_options["nmropt"] = 1
+            
 
         protocol = bss.Protocol.Production(
             timestep=bss.Types.Time(recipe.dt, "ps"),
