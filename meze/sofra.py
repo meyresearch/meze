@@ -589,9 +589,10 @@ class HotMeze(Meze):
             config_options=config_options
         )
         
-
+@dataclass
 class QuantumMeze(Meze):
     recipe: MezeRecipe
+    exclude_resids: Optional[int] = None
 
     def __post_init__(self):
         super().__post_init__()
@@ -599,13 +600,24 @@ class QuantumMeze(Meze):
         self.qm_charge = self._get_qm_charge()
 
     @classmethod
-    def from_files(cls, topology: str, coordinates: str, **kwargs) -> "QuantumMeze":
+    def from_files(
+        cls, 
+        topology: str, 
+        coordinates: str, 
+        exclude_resids: Optional[int] = None,
+        **kwargs
+    ) -> "QuantumMeze":
         """
         Build a Meze object from topology and coordinates.
         Passes extra kwargs into MezeRecipe.
         """
         recipe = MezeRecipe(**kwargs)
-        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+        return cls(
+            topology=topology, 
+            coordinates=coordinates, 
+            exclude_resids=exclude_resids,
+            recipe=recipe
+        )
 
     def _define_qm_region(self) -> dict[str, list]:
         """Get a simple QM region 
@@ -684,7 +696,7 @@ class QuantumMeze(Meze):
         qm_namelist.append("/")
         return qm_namelist
 
-
+@dataclass
 class ColdQuantumMeze(QuantumMeze):
     recipe: ColdMezeRecipe
 
@@ -697,6 +709,7 @@ class ColdQuantumMeze(QuantumMeze):
         recipe = ColdMezeRecipe(**kwargs)
         return cls(topology=topology, coordinates=coordinates, recipe=recipe)
 
+    @classmethod
     def run(self,
             protocol_type: Literal["minimisation", "nvt", "npt"],
             system: Optional[bssSystem],
@@ -734,7 +747,7 @@ class ColdQuantumMeze(QuantumMeze):
             path_to_engine=engine_executable or self.recipe.path_to_engine
         )
 
-        qm_namelist = self._write_qm_namelist()
+        qm_namelist = self._write_qm_namelist(qm_theory=qm_theory)
 
         config_options = {
             "cut": recipe.nb_cutoff,
@@ -792,6 +805,7 @@ class ColdQuantumMeze(QuantumMeze):
             is_gpu=False,
         )
     
+    @classmethod
     def minimise(
             self,
             system: Optional[bssSystem] = None,
@@ -816,6 +830,7 @@ class ColdQuantumMeze(QuantumMeze):
             engine_executable=engine_executable
         )
     
+    @classmethod
     def heat(
             self,
             system: Optional[bssSystem] = None,
@@ -844,6 +859,7 @@ class ColdQuantumMeze(QuantumMeze):
             engine_executable=engine_executable
         )
     
+@dataclass
 class HotQuantumMeze(QuantumMeze):
     recipe: HotMezeRecipe
     exclude_resids: Optional[Union[int, list[int]]] = None
@@ -868,6 +884,7 @@ class HotQuantumMeze(QuantumMeze):
             recipe=recipe
         )
     
+    @classmethod
     def run(
             self,
             workdir: Optional[str],
