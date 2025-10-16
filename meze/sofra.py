@@ -846,15 +846,27 @@ class ColdQuantumMeze(QuantumMeze):
     
 class HotQuantumMeze(QuantumMeze):
     recipe: HotMezeRecipe
+    exclude_resids: Optional[Union[int, list[int]]] = None
 
     @classmethod
-    def from_files(cls, topology: str, coordinates: str, **kwargs) -> "HotQuantumMeze":
+    def from_files(
+        cls, 
+        topology: str, 
+        coordinates: str, 
+        exclude_resids: Optional[Union[int, list[int]]] = None,
+        **kwargs
+    ) -> "HotQuantumMeze":
         """
         Build a Meze object from topology and coordinates.
         Passes extra kwargs into MezeRecipe.
         """
         recipe = HotMezeRecipe(**kwargs)
-        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+        return cls(
+            topology=topology, 
+            coordinates=coordinates, 
+            exclude_resids=exclude_resids,
+            recipe=recipe
+        )
     
     def run(
             self,
