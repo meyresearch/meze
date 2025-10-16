@@ -27,7 +27,10 @@ from BioSimSpace._SireWrappers import System as bssSystem
 from BioSimSpace.Types._time import Time as bssTime
 from BioSimSpace.Types._temperature import Temperature as bssTemperature
 from BioSimSpace.Types._pressure import Pressure as bssPressure
-from .utils import residue_restraint_mask
+from .utils import (
+    residue_restraint_mask,
+    write_distance_restraints
+)
 
 class MezeRecipe(BaseModel):
     """Meze workflow recipe
@@ -142,27 +145,31 @@ class Meze:
 
     def build_distance_restraints(
             self,
+            metal_atom_ids: Optional[list[int]] = None,
             force_constant: Optional[float] = 100.0,
             flat_bottom_radius: Optional[float] = 1.00
     ) -> dict[tuple[int, int], tuple[float, float, float]]:
 
+        metal_atom_ids = metal_atom_ids or list(self.coordinating_residues.keys())
+
         restraints = {}
         for metal_id, ligating_atoms in self.coordinating_residues.items():
-            atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
+            if metal_id in metal_atom_ids:
+                atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
 
-            for ligating_atom in ligating_atoms:
-                key = (metal_id, ligating_atom.id)
-                atom_group_2 = self.universe.select_atoms(
-                    f"resid {ligating_atom.resid} and name {ligating_atom.name}"
-                )
-                distance = MDAnalysis.analysis.distances.dist(
-                    atom_group_1, atom_group_2
-                )[-1][0]
-                restraints[key] = (
-                    np.round(distance, 2),
-                    np.round(force_constant, 2),
-                    np.round(flat_bottom_radius, 2)
-                )
+                for ligating_atom in ligating_atoms:
+                    key = (metal_id, ligating_atom.id)
+                    atom_group_2 = self.universe.select_atoms(
+                        f"resid {ligating_atom.resid} and name {ligating_atom.name}"
+                    )
+                    distance = MDAnalysis.analysis.distances.dist(
+                        atom_group_1, atom_group_2
+                    )[-1][0]
+                    restraints[key] = (
+                        np.round(distance, 2),
+                        np.round(force_constant, 2),
+                        np.round(flat_bottom_radius, 2)
+                    )
         return restraints
 
     def _set_metal(self):
@@ -207,8 +214,9 @@ class Meze:
             protocol: bss.Protocol,
             process_name: Optional[str] = "meze-run",
             config_options: Optional[dict] = None,
-            namelist_options: Optional[list] = [],
+            namelist_options: Optional[list] = None,
             is_gpu: bool = True,
+            distance_restraints: Optional[list] = None
     ):
         input_system = system or self.system
         run_directory = os.path.join(recipe.workdir, process_name)
@@ -224,6 +232,17 @@ class Meze:
             is_gpu=is_gpu,
             exe=recipe.path_to_engine
         )
+
+        if distance_restraints:
+            config_file = process._config_file
+
+            with open(f"{run_directory}/restraints.RST", "w") as file:
+                file.writelines(distance_restraints)
+
+            with open(config_file, "a") as file:
+                file.write("\n")
+                file.write(f"DISANG=restraints.RST\n")
+                file.write(f"DUMPAVE=distances.out\n")
 
         process.start()
         process.wait()
@@ -743,6 +762,24 @@ class QuantumMeze(Meze):
         qm_namelist.insert(0, "&qmmm")
         qm_namelist.append("/")
         return qm_namelist
+    
+    def _prepare_distance_restraints(
+        self,
+        metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+    ) -> Optional[list[str]]:
+        if not metal_resids_for_distance_restraints:
+            return None
+
+        if isinstance(metal_resids_for_distance_restraints, int):
+            metal_resids_for_distance_restraints = [metal_resids_for_distance_restraints]
+
+        metal_atom_ids = [
+            self.universe.select_atoms(f"resid {resid}").ids[0]
+            for resid in metal_resids_for_distance_restraints
+        ]
+        distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
+        return write_distance_restraints(distance_restraints_dict)
+
 
 @dataclass
 class ColdQuantumMeze(QuantumMeze):
@@ -1004,7 +1041,17 @@ class HotQuantumMeze(QuantumMeze):
 
         if metal_resids_for_distance_restraints:
             config_options["nmropt"] = 1
-            
+            metal_atom_ids = [
+                self.universe.select_atoms(f"resid {i}").ids[0] for i in metal_resids_for_distance_restraints
+            ]
+            distance_restraints = self.build_distance_restraints(metal_atom_ids)
+            restraints = write_distance_restraints(distance_restraints)
+            restraint_namelist = ["&wt TYPE='DUMPFREQ', istep1=1 /"]
+        else:
+            restraints = None
+            restraint_namelist = []
+        
+        namelist = qm_namelist + restraint_namelist
 
         protocol = bss.Protocol.Production(
             timestep=bss.Types.Time(recipe.dt, "ps"),
@@ -1019,6 +1066,7 @@ class HotQuantumMeze(QuantumMeze):
             system=system,
             process_name=process_name,
             config_options=config_options,
-            namelist_options=qm_namelist,
+            namelist_options=namelist,
             is_gpu=False,
+            distance_restraints=restraints
         )
