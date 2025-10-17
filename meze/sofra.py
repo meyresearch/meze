@@ -821,8 +821,6 @@ class QuantumMeze(Meze):
             distance_restraints=distance_restraints
         )
 
-
-
 @dataclass
 class ColdQuantumMeze(QuantumMeze):
     recipe: ColdMezeRecipe
@@ -960,6 +958,7 @@ class ColdQuantumMeze(QuantumMeze):
             n_sd_cycles: Optional[int] = None,
             nb_cutoff: Optional[float] = None,
             engine_executable: Optional[str] = None,
+            qm_theory: Optional[str] = "DFTB3",
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> "ColdQuantumMeze":  
         
@@ -973,6 +972,7 @@ class ColdQuantumMeze(QuantumMeze):
             nb_cutoff=nb_cutoff,
             method=method,
             engine_executable=engine_executable,
+            qm_theory=qm_theory,
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints
         )
     
@@ -988,6 +988,7 @@ class ColdQuantumMeze(QuantumMeze):
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             process_name: Optional[str] = "qm-nvt",
             engine_executable: Optional[str] = None,
+            qm_theory: Optional[str] = "DFTB3",
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> "ColdQuantumMeze":
 
@@ -1003,6 +1004,7 @@ class ColdQuantumMeze(QuantumMeze):
             start_temperature=start_temperature,
             end_temperature=end_temperature,
             engine_executable=engine_executable,
+            qm_theory=qm_theory,
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints
         )
     
