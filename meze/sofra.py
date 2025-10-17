@@ -981,7 +981,7 @@ class ColdQuantumMeze(QuantumMeze):
             system: Optional[bssSystem] = None,
             workdir: Optional[str] = None,
             restart: Optional[bool] = False,
-            timestep: Optional[Union[float, bssTemperature]] = None,
+            timestep: Optional[Union[float, bssTemperature]] = 0.001,
             runtime: Optional[Union[float, bssTime]] = None,
             temperature: Optional[Union[float, bssTemperature]] = None,
             start_temperature: Optional[Union[float, bssTemperature]] = 300,
