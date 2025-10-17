@@ -36,7 +36,7 @@ class MezeRecipe(BaseModel):
     """Meze workflow recipe
     """
     workdir: str = Field(default_factory=os.getcwd, description="Working directory")
-    metal: str = Field("ZN", description="Metal resname")
+    metal: str = Field("ZN", description="Metal element")
     group_name: str = Field("meze", description="Group name for project")
     coordination_cut_off: float = Field(
         2.8, ge=0, description="Metal coordination cutoff in Å"
@@ -178,8 +178,15 @@ class Meze:
         Raises:
             ValueError: If no atoms matching to given metal name are found
         """
-        metal = self.recipe.metal.upper()
-        self.metals = self.universe.select_atoms(f"resname {metal}")
+        input_metal = self.recipe.metal
+        if len(input_metal) == 1:
+            metal = input_metal.upper()
+            self.recipe.metal = metal
+        elif len(input_metal) == 2:
+            metal = f"{input_metal[0].upper()}{input_metal[1].lower()}"
+            self.recipe.metal = metal 
+
+        self.metals = self.universe.select_atoms(f"element {metal}")
         if len(self.metals) == 0:
             raise ValueError(f"No atoms found for metal: {self.recipe.metal}")
         self.metal_resids = self.metals.resids
@@ -221,6 +228,8 @@ class Meze:
         input_system = system or self.system
         run_directory = os.path.join(recipe.workdir, process_name)
         os.makedirs(run_directory, exist_ok=True)
+        
+        namelist_options = namelist_options or []
 
         process = bss.Process.Amber(
             system = input_system,
