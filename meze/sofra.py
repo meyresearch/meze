@@ -621,21 +621,30 @@ class HotMeze(Meze):
 class QuantumMeze(Meze):
     recipe: MezeRecipe
     exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
+    metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
 
     def __post_init__(self):
         super().__post_init__()
         if isinstance(self.exclude_resids, int):
             self.exclude_resids = [self.exclude_resids]
+        
+        if isinstance(self.metal_resids_for_distance_restraints, int):
+            self.metal_resids_for_distance_restraints = [self.metal_resids_for_distance_restraints]
+        
         self.exclude_resids = set(self.exclude_resids or [])
         self.qm_region = self._define_qm_region()
         self.qm_charge = self._get_qm_charge()
+        self.distance_restraints = self._prepare_distance_restraints(
+            self.metal_resids_for_distance_restraints
+        )
 
     @classmethod
     def from_files(
         cls, 
         topology: str, 
         coordinates: str, 
-        exclude_resids: Optional[Union[int, list[int]]] = [],
+        exclude_resids: Optional[Union[int, list[int]]] = None,
+        metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
         **kwargs
     ) -> "QuantumMeze":
         """
@@ -647,6 +656,7 @@ class QuantumMeze(Meze):
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
+            metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
             recipe=recipe
         )
 
@@ -798,10 +808,13 @@ class QuantumMeze(Meze):
         
         qm_namelist = self._write_qm_namelist(qm_theory=qm_theory)
 
-        distance_restraints = self._prepare_distance_restraints(
-            metal_resids_for_distance_restraints
-        )
-
+        if metal_resids_for_distance_restraints is not None:
+            distance_restraints = self._prepare_distance_restraints(
+                metal_resids_for_distance_restraints
+            )
+        else:
+            distance_restraints = self.distance_restraints
+            
         if distance_restraints:
             config_options["nmropt"] = 1
             restraint_namelist = ["&wt TYPE='DUMPFREQ', istep1=1 /"]
