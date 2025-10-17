@@ -21,4 +21,11 @@ curl -O https://raw.githubusercontent.com/meyresearch/meze/main/environment.yml
 conda env create -f environment.yml
 conda activate meze-env
 ```
+ 
+# Updating environment after updates to `meze`
 
+```
+conda activate meze-env
+pip uninstall -y meze
+pip install --no-cache-dir git+https://github.com/meyresearch/meze.git@main
+```
