@@ -1,3 +1,5 @@
+import numpy as np 
+
 def residue_restraint_mask(residue_ids: list[int]) -> str:
     """Generate an Amber-style restraint mask.
 
@@ -38,3 +40,24 @@ def residue_restraint_mask(residue_ids: list[int]) -> str:
                 restraint_mask += f",{idx}"
 
     return restraint_mask
+
+def write_distance_restraints(
+        restraints: dict[tuple[int, int], tuple[float, float, float]]
+) -> list[str]:
+    lines = []
+
+    for (metal_id, ligating_atom_id), (distance, force_constant, flat_bottom_radius) in restraints.items():
+        
+        r1 = np.round(distance - flat_bottom_radius, 2)
+        r2 = np.round(distance - flat_bottom_radius / 2, 2)
+        r3 = np.round(distance + flat_bottom_radius / 2, 2)
+        r4 = np.round(distance + flat_bottom_radius, 2)
+
+        line = (
+            f"&rst iat={metal_id},{ligating_atom_id}, "
+            f"r1={r1}, r2={r2}, r3={r3}, r4={r4}, "
+            f"rk2={force_constant}, rk3={force_constant}, /\n"
+        )
+        lines.append(line)
+    return lines
+
