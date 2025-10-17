@@ -779,6 +779,48 @@ class QuantumMeze(Meze):
         ]
         distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
         return write_distance_restraints(distance_restraints_dict)
+    
+    def run_qm(
+        self,
+        recipe: MezeRecipe,
+        protocol: bss.Protocol,
+        system: Optional[bssSystem] = None,
+        process_name: Optional[str] = "qm-meze-run",
+        config_options: Optional[dict] = None,
+        qm_theory: str = "DFTB3",
+        metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+        is_gpu: bool = False
+    ) -> "QuantumMeze":
+        
+        self.qm_region = self._define_qm_region(
+            resids_to_exclude=metal_resids_for_distance_restraints
+        )
+        
+        qm_namelist = self._write_qm_namelist(qm_theory=qm_theory)
+
+        distance_restraints = self._prepare_distance_restraints(
+            metal_resids_for_distance_restraints
+        )
+
+        if distance_restraints:
+            config_options["nmropt"] = 1
+            restraint_namelist = ["&wt TYPE='DUMPFREQ', istep1=1 /"]
+        else:
+            restraint_namelist = []
+        
+        namelist = qm_namelist + restraint_namelist 
+
+        return super()._run(
+            protocol=protocol,
+            recipe=recipe,
+            system=system,
+            process_name=process_name,
+            config_options=config_options,
+            namelist_options=namelist,
+            is_gpu=is_gpu,
+            distance_restraints=distance_restraints
+        )
+
 
 
 @dataclass
@@ -834,9 +876,7 @@ class ColdQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
 
     ) -> "ColdQuantumMeze":
-        self.qm_region = self._define_qm_region(
-            resids_to_exclude=metal_resids_for_distance_restraints
-        )
+
         recipe = ColdMezeRecipe(
             workdir=workdir or self.recipe.workdir,
             max_cycles=max_cycles or self.recipe.max_cycles,
@@ -852,8 +892,6 @@ class ColdQuantumMeze(QuantumMeze):
             pressure=pressure or self.recipe.pressure,
             path_to_engine=engine_executable or self.recipe.path_to_engine
         )
-
-        qm_namelist = self._write_qm_namelist(qm_theory=qm_theory)
 
         config_options = {
             "cut": recipe.nb_cutoff,
@@ -901,13 +939,14 @@ class ColdQuantumMeze(QuantumMeze):
                 f"Invalid protocol type '{protocol_type}'. "
                 f"Must be one of {allowed}."
             )
-        return super()._run(
+        return super().run_qm(
             protocol=protocol,
             recipe=recipe,
             system=system,
             process_name=process_name,
+            qm_theory=qm_theory,
+            metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
             config_options=config_options,
-            namelist_options=qm_namelist,
             is_gpu=False,
         )
     
@@ -1007,15 +1046,13 @@ class HotQuantumMeze(QuantumMeze):
             timestep: Optional[Union[float, bssTime]] = 0.001,
             runtime: Optional[Union[float, bssTime]] = None,
             temperature: Optional[Union[float, bssTemperature]] = 300,
-            pressure: Optional[Union[float, bssPressure]] = 1,
+            pressure: Optional[Union[float, bssPressure]] = None,
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 500,
             qm_theory: Optional[str] = "DFTB3",
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> "HotQuantumMeze":
-        self.qm_region = self._define_qm_region(
-            resids_to_exclude=metal_resids_for_distance_restraints
-        )
+
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
             nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
@@ -1037,22 +1074,6 @@ class HotQuantumMeze(QuantumMeze):
             "ifqnt": 1
         }
         
-        qm_namelist = self._write_qm_namelist(qm_theory)
-
-        if metal_resids_for_distance_restraints:
-            config_options["nmropt"] = 1
-            metal_atom_ids = [
-                self.universe.select_atoms(f"resid {i}").ids[0] for i in metal_resids_for_distance_restraints
-            ]
-            distance_restraints = self.build_distance_restraints(metal_atom_ids)
-            restraints = write_distance_restraints(distance_restraints)
-            restraint_namelist = ["&wt TYPE='DUMPFREQ', istep1=1 /"]
-        else:
-            restraints = None
-            restraint_namelist = []
-        
-        namelist = qm_namelist + restraint_namelist
-
         protocol = bss.Protocol.Production(
             timestep=bss.Types.Time(recipe.dt, "ps"),
             runtime=bss.Types.Time(recipe.runtime, "ps"),
@@ -1060,13 +1081,13 @@ class HotQuantumMeze(QuantumMeze):
             pressure=None
         )
 
-        return super()._run(
+        return super().run_qm(
             protocol=protocol,
             recipe=recipe,
             system=system,
             process_name=process_name,
+            qm_theory=qm_theory,
+            metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
             config_options=config_options,
-            namelist_options=namelist,
             is_gpu=False,
-            distance_restraints=restraints
         )
