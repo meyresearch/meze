@@ -671,7 +671,7 @@ class QuantumMeze(Meze):
             dict[str, list]: QM region split into a list of whole residues and atom ids
         """
         exclude_resids = set(self.exclude_resids or [])
-
+        resids_to_exclude = resids_to_exclude or self.metal_resids_for_distance_restraints
         if resids_to_exclude is not None:
             if isinstance(resids_to_exclude, int):
                 resids_to_exclude = [resids_to_exclude]
@@ -735,25 +735,19 @@ class QuantumMeze(Meze):
         )
         return f"{qm_region_for_residue[0]}-{qm_region_for_residue[-1]}"
     
-    def _get_qm_charge(self):
+    def _get_qm_charge(self) -> int:
 
-        protein = self.universe.select_atoms("protein")
-        qm_region = []
-        active_site_residues = list(set([atom.residue for atom in self.get_active_site_atom_group()]))
-        for residue in active_site_residues:
-            if residue in protein.residues:
-                n_terminus = "name N or name H"
-                alpha_carbon = "name CA or name HA"
-                c_terminus = "name C or name O"
-                atoms_in_residue = self.universe.select_atoms(f"resid {residue.resid}")
-                qm_region_for_residue = atoms_in_residue.select_atoms(
-                    f"not ({n_terminus} or {alpha_carbon} or {c_terminus})"
-                )
-                qm_region.append(qm_region_for_residue)
-            else:
-                qm_residue = self.universe.select_atoms(f"resid {residue.resid}")
-                qm_region.append(qm_residue)
-        return sum([round(atom_group.charges.sum()) for atom_group in qm_region])
+        charge = 0.0
+        for residue in self.qm_region["whole_residues"]:
+            atoms = self.universe.select_atoms(f"resid {residue}")
+            charge += atoms.charges.sum()
+
+        for atom_selection in self.qm_region["atom_ids"]:
+            atom_id = atom_selection.replace("-", " to ")
+            atoms = self.universe.select_atoms(f"bynum {atom_id}")
+            charge += atoms.charges.sum()
+        return int(np.round(charge))
+
     
     def _write_qm_namelist(self, qm_theory: str = "DFTB3"):
 
