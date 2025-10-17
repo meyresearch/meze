@@ -17,7 +17,8 @@ cold_qm_meze = ColdQuantumMeze.from_files(
     path_to_executable=os.path.join(
         os.environ["AMBERHOME"], "bin", "sander"
     ),
-    exclude_resids=800
+    exclude_resids=800,
+    metal_resids_for_distance_restraints=[536, 537]
 )
 
 qmmm_dir = os.path.join(project_dir, "qmmm", "water")
@@ -26,8 +27,7 @@ os.makedirs(qmmm_dir, exist_ok=True)
 minimised_qm_meze = cold_qm_meze.minimise(
     process_name="01_qm_min",
     workdir=qmmm_dir,
-    max_cycles=5,
-    metal_resids_for_distance_restraints=[536, 537]
+    max_cycles=5
 )
 
 heated_qm_meze = minimised_qm_meze.heat(
@@ -35,8 +35,7 @@ heated_qm_meze = minimised_qm_meze.heat(
     workdir=qmmm_dir,
     runtime=5,
     start_temperature=100,
-    end_temperature=300,
-    metal_resids_for_distance_restraints=[536, 537]
+    end_temperature=300
 ) 
 
 hot_qm_meze = HotQuantumMeze.from_files(
@@ -46,7 +45,8 @@ hot_qm_meze = HotQuantumMeze.from_files(
     path_to_executable=os.path.join(
         os.environ["AMBERHOME"], "bin", "sander"
     ),
-    exclude_resids=800
+    exclude_resids=800,
+    metal_resids_for_distance_restraints=[536, 537]
 )
 
 qmmm_dir = os.path.join(project_dir, "qmmm", bridging_water)
@@ -56,6 +56,5 @@ os.makedirs(qmmm_dir, exist_ok=True)
 hot_qm_meze.run(
     workdir=qmmm_dir,
     process_name="03_qmmm_prod",
-    runtime=5,
-    metal_resids_for_distance_restraints=[536, 537]
+    runtime=5
 )

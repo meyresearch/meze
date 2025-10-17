@@ -244,6 +244,7 @@ class Meze:
                 file.write(f"DISANG=restraints.RST\n")
                 file.write(f"DUMPAVE=distances.out\n")
 
+
         process.start()
         process.wait()
 
@@ -802,19 +803,19 @@ class QuantumMeze(Meze):
         is_gpu: bool = False
     ) -> "QuantumMeze":
         
+        disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
+        
         self.qm_region = self._define_qm_region(
             resids_to_exclude=metal_resids_for_distance_restraints
         )
         
         qm_namelist = self._write_qm_namelist(qm_theory=qm_theory)
 
-        if metal_resids_for_distance_restraints is not None:
-            distance_restraints = self._prepare_distance_restraints(
-                metal_resids_for_distance_restraints
-            )
+        if disres is not None:
+            distance_restraints = self._prepare_distance_restraints(disres)
         else:
             distance_restraints = self.distance_restraints
-            
+
         if distance_restraints:
             config_options["nmropt"] = 1
             restraint_namelist = ["&wt TYPE='DUMPFREQ', istep1=1 /"]
@@ -838,19 +839,15 @@ class QuantumMeze(Meze):
 class ColdQuantumMeze(QuantumMeze):
     recipe: ColdMezeRecipe
     exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
-
-    def __post_init__(self):
-        super().__post_init__()
-        if isinstance(self.exclude_resids, int):
-            self.exclude_resids = [self.exclude_resids]
-        self.exclude_resids = set(self.exclude_resids or [])
+    metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
 
     @classmethod
     def from_files(
         cls, 
         topology: str, 
         coordinates: str, 
-        exclude_resids: Optional[Union[int, list[int]]] = [],
+        exclude_resids: Optional[Union[int, list[int]]] = None,
+        metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
         **kwargs
     ) -> "ColdQuantumMeze":
         """
@@ -862,6 +859,7 @@ class ColdQuantumMeze(QuantumMeze):
             topology=topology, 
             coordinates=coordinates,
             exclude_resids=exclude_resids,
+            metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
             recipe=recipe
         )
 
@@ -974,7 +972,8 @@ class ColdQuantumMeze(QuantumMeze):
             qm_theory: Optional[str] = "DFTB3",
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> "ColdQuantumMeze":  
-        
+        disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
+
         return self.run(
             protocol_type="minimisation",
             system=system,
@@ -986,7 +985,7 @@ class ColdQuantumMeze(QuantumMeze):
             method=method,
             engine_executable=engine_executable,
             qm_theory=qm_theory,
-            metal_resids_for_distance_restraints=metal_resids_for_distance_restraints
+            metal_resids_for_distance_restraints=disres
         )
     
     def heat(
@@ -1004,7 +1003,7 @@ class ColdQuantumMeze(QuantumMeze):
             qm_theory: Optional[str] = "DFTB3",
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> "ColdQuantumMeze":
-
+        disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
         return self.run(
             protocol_type="nvt",
             system=system,
@@ -1018,19 +1017,14 @@ class ColdQuantumMeze(QuantumMeze):
             end_temperature=end_temperature,
             engine_executable=engine_executable,
             qm_theory=qm_theory,
-            metal_resids_for_distance_restraints=metal_resids_for_distance_restraints
+            metal_resids_for_distance_restraints=disres
         )
     
 @dataclass
 class HotQuantumMeze(QuantumMeze):
     recipe: HotMezeRecipe
     exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
-
-    def __post_init__(self):
-        super().__post_init__()
-        if isinstance(self.exclude_resids, int):
-            self.exclude_resids = [self.exclude_resids]
-        self.exclude_resids = set(self.exclude_resids or [])
+    metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
 
     @classmethod
     def from_files(
@@ -1038,6 +1032,7 @@ class HotQuantumMeze(QuantumMeze):
         topology: str, 
         coordinates: str, 
         exclude_resids: Optional[Union[int, list[int]]] = [],
+        metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
         **kwargs
     ) -> "HotQuantumMeze":
         """
@@ -1049,6 +1044,7 @@ class HotQuantumMeze(QuantumMeze):
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
+            metal_resisds_for_distance_restraints=metal_resids_for_distance_restraints,
             recipe=recipe
         )
     
@@ -1067,7 +1063,7 @@ class HotQuantumMeze(QuantumMeze):
             qm_theory: Optional[str] = "DFTB3",
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> "HotQuantumMeze":
-
+        disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
             nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
@@ -1102,7 +1098,7 @@ class HotQuantumMeze(QuantumMeze):
             system=system,
             process_name=process_name,
             qm_theory=qm_theory,
-            metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
+            metal_resids_for_distance_restraints=disres,
             config_options=config_options,
             is_gpu=False,
         )
