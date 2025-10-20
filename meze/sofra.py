@@ -839,6 +839,9 @@ class QuantumMeze(Meze):
         is_gpu: bool = False
     ) -> "QuantumMeze":
         
+        config_options["ntc"] = 1
+        config_options["ntf"] = 1
+
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
         
         self.qm_region = self._define_qm_region(
