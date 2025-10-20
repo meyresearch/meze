@@ -188,6 +188,58 @@ class Meze:
                         np.round(flat_bottom_radius, 2)
                     )
         return restraints
+    
+    def _prepare_distance_restraints(
+        self
+    ) -> Optional[list[str]]:
+
+        metal_atom_ids = [
+            self.universe.select_atoms(f"resid {resid}").ids[0]
+            for resid in self.metal_resids
+        ]
+        distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
+        return write_distance_restraints(distance_restraints_dict)
+
+    def build_angle_restraints(
+            self,
+            metal_atom_ids: Optional[list[int]] = None,
+            force_constant: Optional[float] = 100.0,
+            flat_bottom_radius: Optional[float] = 5.0
+    ) -> dict[tuple[int, int], tuple[float, float, float]]:
+
+        metal_atom_ids = metal_atom_ids or list(self.coordinating_residues.keys())
+
+        restraints = {}
+        for metal_id, ligating_atoms in self.coordinating_residues.items():
+            if metal_id not in metal_atom_ids:
+                continue
+            
+            # if ligating_atom is in ligand, don't restrain angle ! 
+
+            n_ligands = len(ligating_atoms)
+
+            for i in range(n_ligands):
+                for j in range(i + 1, n_ligands):
+                    # continue from here
+                    pass
+            
+            atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
+
+            for ligating_atom in ligating_atoms:
+                key = (metal_id, ligating_atom.id)
+                atom_group_2 = self.universe.select_atoms(
+                    f"resid {ligating_atom.resid} and name {ligating_atom.name}"
+                )
+
+
+
+                restraints[key] = (
+                    np.round(angle, 2),
+                    np.round(force_constant, 2),
+                    np.round(flat_bottom_radius, 2)
+                )
+        return restraints
+
 
     def _set_metal(self):
         """Set metal residue names and indices based on MDAnalysis Universe
@@ -258,6 +310,10 @@ class Meze:
             is_gpu=is_gpu,
             exe=recipe.path_to_engine
         )
+
+        if self.model == 0:
+            distance_restraints = self._prepare_distance_restraints()
+
 
         if distance_restraints:
             config_file = process._config_file
