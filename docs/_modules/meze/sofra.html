@@ -1,0 +1,1286 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>meze.sofra &mdash; meze 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2709fde1"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            meze
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">meze</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">meze.sofra</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for meze.sofra</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;to-Python converter for std::__1::vector&quot;</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;numexpr.utils&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;MDAnalysis&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">dataclass</span><span class="p">,</span> 
+    <span class="n">field</span>
+<span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Field</span><span class="p">,</span>
+    <span class="n">BaseModel</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">Literal</span><span class="p">,</span>
+    <span class="n">Union</span>
+<span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">MDAnalysis</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mda</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">MDAnalysis.analysis.distances</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">MDAnalysis.core.groups</span><span class="w"> </span><span class="kn">import</span> <span class="n">Residue</span> <span class="k">as</span> <span class="n">mdaResidue</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">BioSimSpace</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">bss</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">BioSimSpace._SireWrappers</span><span class="w"> </span><span class="kn">import</span> <span class="n">System</span> <span class="k">as</span> <span class="n">bssSystem</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">BioSimSpace.Types._time</span><span class="w"> </span><span class="kn">import</span> <span class="n">Time</span> <span class="k">as</span> <span class="n">bssTime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">BioSimSpace.Types._temperature</span><span class="w"> </span><span class="kn">import</span> <span class="n">Temperature</span> <span class="k">as</span> <span class="n">bssTemperature</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">BioSimSpace.Types._pressure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pressure</span> <span class="k">as</span> <span class="n">bssPressure</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">residue_restraint_mask</span><span class="p">,</span>
+    <span class="n">write_distance_restraints</span>
+<span class="p">)</span>
+
+<div class="viewcode-block" id="MezeRecipe">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.MezeRecipe">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MezeRecipe</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Meze workflow recipe</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">workdir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Working directory&quot;</span><span class="p">)</span>
+    <span class="n">metal</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s2">&quot;ZN&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Metal element&quot;</span><span class="p">)</span>
+    <span class="n">group_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="s2">&quot;meze&quot;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Group name for project&quot;</span><span class="p">)</span>
+    <span class="n">coordination_cut_off</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">2.8</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Metal coordination cutoff in Å&quot;</span>
+    <span class="p">)</span>
+    <span class="n">path_to_engine</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Path to the MD engine executable (e.g. pmemd.cuda)&quot;</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Print recipe information as JSON</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_dump_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">fallback</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">warnings</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ColdMezeRecipe">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdMezeRecipe">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ColdMezeRecipe</span><span class="p">(</span><span class="n">MezeRecipe</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Meze workflow recipe for minimisation and equilibration</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">max_cycles</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of minimisation cycles&quot;</span><span class="p">)</span>
+    <span class="n">n_sd_cycles</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mi">1000</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Number of steepest descent cycles (if min_method=1)&quot;</span>
+    <span class="p">)</span> 
+    <span class="n">min_method</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mi">1</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Run steepest descent for n_sd_cycles, then conjugate gradient&quot;</span>
+    <span class="p">)</span>
+    <span class="n">barostat</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mi">2</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Type of barostat, 1: Berendsen, 2: MC&quot;</span>
+    <span class="p">)</span>
+    <span class="n">nb_cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">12.0</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Cut-off for electrostatics interactions&quot;</span>
+    <span class="p">)</span>
+    <span class="n">runtime</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">100.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Simulation time in picoseconds&quot;</span>
+    <span class="p">)</span>
+    <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">0.002</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Integrator timestep, in picoseconds&quot;</span>
+    <span class="p">)</span>
+    <span class="n">start_temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">300.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Simulation start temperature in kelvin&quot;</span>
+    <span class="p">)</span>
+    <span class="n">end_temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">300.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Simulation end temperature in kelvin&quot;</span>
+    <span class="p">)</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">300.0</span><span class="p">,</span>  <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Simulation temperature in kelvin&quot;</span>
+    <span class="p">)</span>
+    <span class="n">pressure</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">1.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Simulation pressure in atm&quot;</span>
+    <span class="p">)</span>
+    <span class="n">restraint_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">100.0</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Force constant for positional restraints in kcal/(mol*Å^2)&quot;</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="HotMezeRecipe">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.HotMezeRecipe">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">HotMezeRecipe</span><span class="p">(</span><span class="n">MezeRecipe</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Meze workflow recipe for production runs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nb_cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">12.0</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Cut-off for electrostatics interactions&quot;</span>
+    <span class="p">)</span>
+    <span class="n">runtime</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">100.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Simulation time in nanoseconds&quot;</span>
+    <span class="p">)</span>
+    <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">0.002</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Integrator timestep, in picoseconds&quot;</span>
+    <span class="p">)</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">300.0</span><span class="p">,</span>  <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Simulation temperature in kelvin&quot;</span>
+    <span class="p">)</span>
+    <span class="n">pressure</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="mf">1.0</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Simulation pressure in atm&quot;</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Meze">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.Meze">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Meze</span><span class="p">:</span>
+    <span class="n">topology</span><span class="p">:</span> <span class="nb">str</span> 
+    <span class="n">coordinates</span><span class="p">:</span> <span class="nb">str</span> 
+    <span class="n">recipe</span><span class="p">:</span> <span class="n">MezeRecipe</span> 
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">coordinate_extension</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">coordinate_extension</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;.rst7&quot;</span><span class="p">]:</span>
+            <span class="n">coordinate_format</span> <span class="o">=</span> <span class="s2">&quot;RESTRT&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">coordinate_format</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">universe</span> <span class="o">=</span> <span class="n">mda</span><span class="o">.</span><span class="n">Universe</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">topology</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span><span class="p">,</span>
+            <span class="n">topology_format</span><span class="o">=</span><span class="s2">&quot;PARM7&quot;</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="n">coordinate_format</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_metal</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coordinating_residues</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_metal_coordinating_residues</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_bss_system</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Meze.from_files">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.Meze.from_files">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_files</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">topology</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">coordinates</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Construct Meze from Amber topology and coordinates</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            topology (str): path to prm7/prmtop topology file</span>
+<span class="sd">            coordinates (str): path to rst7/inpcrd coordinate file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Meze: Meze class object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">MezeRecipe</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">topology</span><span class="o">=</span><span class="n">topology</span><span class="p">,</span> <span class="n">coordinates</span><span class="o">=</span><span class="n">coordinates</span><span class="p">,</span> <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Meze.build_distance_restraints">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.Meze.build_distance_restraints">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_distance_restraints</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">metal_atom_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">force_constant</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">100.0</span><span class="p">,</span>
+            <span class="n">flat_bottom_radius</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.00</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+
+        <span class="n">metal_atom_ids</span> <span class="o">=</span> <span class="n">metal_atom_ids</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordinating_residues</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="n">restraints</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">metal_id</span><span class="p">,</span> <span class="n">ligating_atoms</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinating_residues</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">metal_id</span> <span class="ow">in</span> <span class="n">metal_atom_ids</span><span class="p">:</span>
+                <span class="n">atom_group_1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metals</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;bynum </span><span class="si">{</span><span class="n">metal_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">ligating_atom</span> <span class="ow">in</span> <span class="n">ligating_atoms</span><span class="p">:</span>
+                    <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">metal_id</span><span class="p">,</span> <span class="n">ligating_atom</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="n">atom_group_2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;resid </span><span class="si">{</span><span class="n">ligating_atom</span><span class="o">.</span><span class="n">resid</span><span class="si">}</span><span class="s2"> and name </span><span class="si">{</span><span class="n">ligating_atom</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">distance</span> <span class="o">=</span> <span class="n">MDAnalysis</span><span class="o">.</span><span class="n">analysis</span><span class="o">.</span><span class="n">distances</span><span class="o">.</span><span class="n">dist</span><span class="p">(</span>
+                        <span class="n">atom_group_1</span><span class="p">,</span> <span class="n">atom_group_2</span>
+                    <span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">restraints</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">distance</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">force_constant</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">flat_bottom_radius</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                    <span class="p">)</span>
+        <span class="k">return</span> <span class="n">restraints</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_metal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set metal residue names and indices based on MDAnalysis Universe</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If no atoms matching to given metal name are found</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">input_metal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">metal</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_metal</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">metal</span> <span class="o">=</span> <span class="n">input_metal</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">metal</span> <span class="o">=</span> <span class="n">metal</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_metal</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">metal</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">input_metal</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}{</span><span class="n">input_metal</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">metal</span> <span class="o">=</span> <span class="n">metal</span> 
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">metals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;element </span><span class="si">{</span><span class="n">metal</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metals</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No atoms found for metal: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">metal</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metals</span><span class="o">.</span><span class="n">resids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metal_atomids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metals</span><span class="o">.</span><span class="n">atoms</span><span class="o">.</span><span class="n">ids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metal_resname</span> <span class="o">=</span> <span class="n">metal</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_metal_coordinating_residues</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">mda</span><span class="o">.</span><span class="n">AtomGroup</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get residues coordinating to metal</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[int, mda.AtomGroup]: key: metal atom id, value: atom group of coordinating residues</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cutoff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">coordination_cut_off</span>
+        <span class="n">metal_ligands</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metal_resids</span><span class="p">)):</span>
+            <span class="n">selection</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;element O or element N or element S&quot;</span> <span class="o">+</span> \
+            <span class="sa">f</span><span class="s2">&quot; and sphzone </span><span class="si">{</span><span class="n">cutoff</span><span class="si">}</span><span class="s2"> (resid </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">metal_resids</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="n">ligands</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="n">selection</span><span class="p">)</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_atomids</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> 
+            <span class="n">metal_ligands</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">ligands</span>
+        <span class="k">return</span> <span class="n">metal_ligands</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_bss_system</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">IO</span><span class="o">.</span><span class="n">readMolecules</span><span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">topology</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinates</span><span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">],</span> 
+            <span class="n">recipe</span><span class="p">:</span> <span class="n">MezeRecipe</span><span class="p">,</span>
+            <span class="n">protocol</span><span class="p">:</span> <span class="n">bss</span><span class="o">.</span><span class="n">Protocol</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;meze-run&quot;</span><span class="p">,</span>
+            <span class="n">config_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">namelist_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="n">input_system</span> <span class="o">=</span> <span class="n">system</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">system</span>
+        <span class="n">run_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">workdir</span><span class="p">,</span> <span class="n">process_name</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">run_directory</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="n">namelist_options</span> <span class="o">=</span> <span class="n">namelist_options</span> <span class="ow">or</span> <span class="p">[]</span>
+
+        <span class="n">process</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">Process</span><span class="o">.</span><span class="n">Amber</span><span class="p">(</span>
+            <span class="n">system</span> <span class="o">=</span> <span class="n">input_system</span><span class="p">,</span>
+            <span class="n">protocol</span> <span class="o">=</span> <span class="n">protocol</span><span class="p">,</span>
+            <span class="n">work_dir</span><span class="o">=</span><span class="n">run_directory</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">extra_options</span><span class="o">=</span><span class="n">config_options</span><span class="p">,</span>
+            <span class="n">extra_lines</span><span class="o">=</span><span class="n">namelist_options</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="o">=</span><span class="n">is_gpu</span><span class="p">,</span>
+            <span class="n">exe</span><span class="o">=</span><span class="n">recipe</span><span class="o">.</span><span class="n">path_to_engine</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">distance_restraints</span><span class="p">:</span>
+            <span class="n">config_file</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">_config_file</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">run_directory</span><span class="si">}</span><span class="s2">/restraints.RST&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+                <span class="n">file</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">distance_restraints</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">config_file</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+                <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DISANG=restraints.RST</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DUMPAVE=distances.out</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+        <span class="n">process</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">process</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+
+        <span class="n">new_system</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">getSystem</span><span class="p">()</span>
+        <span class="n">topology</span><span class="p">,</span> <span class="n">new_coordinates</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">IO</span><span class="o">.</span><span class="n">saveMolecules</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">run_directory</span><span class="si">}</span><span class="s2">/next&quot;</span><span class="p">,</span> <span class="n">system</span><span class="o">=</span><span class="n">new_system</span><span class="p">,</span> <span class="n">fileformat</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;prm7&quot;</span><span class="p">,</span> <span class="s2">&quot;rst7&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">topology</span><span class="o">=</span><span class="n">topology</span><span class="p">,</span>
+            <span class="n">coordinates</span><span class="o">=</span><span class="n">new_coordinates</span><span class="p">,</span>
+            <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span>
+        <span class="p">)</span>
+    
+
+<div class="viewcode-block" id="Meze.get_active_site_atom_group">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.Meze.get_active_site_atom_group">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_active_site_atom_group</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">mda</span><span class="o">.</span><span class="n">AtomGroup</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get active site based on metal and coordination cutoff</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            mda.AtomGroup: metal and residues in its coordination sphere</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coordinating_residues</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">metal_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_atomids</span><span class="p">:</span>
+            <span class="n">coordinating_residues</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinating_residues</span><span class="p">[</span><span class="n">metal_id</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">metals</span> <span class="o">+</span> <span class="n">coordinating_residues</span></div>
+</div>
+
+    
+
+<div class="viewcode-block" id="ColdMeze">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdMeze">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ColdMeze</span><span class="p">(</span><span class="n">Meze</span><span class="p">):</span>
+    <span class="n">recipe</span><span class="p">:</span> <span class="n">ColdMezeRecipe</span>
+    <span class="n">exclude_resids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__post_init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span> <span class="ow">or</span> <span class="p">[])</span>
+
+<div class="viewcode-block" id="ColdMeze.from_files">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdMeze.from_files">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_files</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> 
+        <span class="n">topology</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">coordinates</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">exclude_resids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[],</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ColdMeze&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a ColdMeze object from topology and coordinates.</span>
+<span class="sd">        Passes extra kwargs into ColdMezeRecipe.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">ColdMezeRecipe</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">topology</span><span class="o">=</span><span class="n">topology</span><span class="p">,</span> 
+            <span class="n">coordinates</span><span class="o">=</span><span class="n">coordinates</span><span class="p">,</span> 
+            <span class="n">exclude_resids</span><span class="o">=</span><span class="n">exclude_resids</span><span class="p">,</span>
+            <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span>
+        <span class="p">)</span></div>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_restraint_mask</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> 
+            <span class="n">position_restraints</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+            <span class="n">exclude_resids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build an amber-compatible restraint mask</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            position_restraints (str): what type of position restraints to apply</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If position_restraint option is invalid.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: amber-style restraintmask</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">allowed</span> <span class="o">=</span> <span class="p">{</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;solute&quot;</span><span class="p">,</span> <span class="s2">&quot;backbone&quot;</span><span class="p">,</span> <span class="s2">&quot;metal-coordination&quot;</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">position_restraints</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid restraint option &#39;</span><span class="si">{</span><span class="n">position_restraints</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Must be one of </span><span class="si">{</span><span class="n">allowed</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="n">exclude_resids</span> <span class="o">=</span> <span class="n">exclude_resids</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exclude_resids</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">exclude_resids</span> <span class="o">=</span> <span class="p">[</span><span class="n">exclude_resids</span><span class="p">]</span>
+        <span class="n">exclude_resids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">exclude_resids</span> <span class="ow">or</span> <span class="p">[])</span>
+
+        <span class="n">coordinating_atomgroups</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordinating_residues</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+        <span class="k">for</span> <span class="n">atomgroup</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordinating_residues</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">coordinating_atomgroups</span> <span class="o">+=</span> <span class="n">atomgroup</span>
+
+        <span class="n">coordinating_resids</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">atom</span><span class="o">.</span><span class="n">resnum</span> <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="n">coordinating_atomgroups</span>
+            <span class="k">if</span> <span class="n">atom</span><span class="o">.</span><span class="n">resnum</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude_resids</span>
+        <span class="p">]</span>
+        
+        <span class="k">if</span> <span class="n">position_restraints</span> <span class="o">==</span> <span class="s2">&quot;solute&quot;</span><span class="p">:</span>
+            <span class="n">protein_resids</span> <span class="o">=</span> <span class="p">[</span><span class="n">atom</span><span class="o">.</span><span class="n">resnum</span> <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="s2">&quot;protein&quot;</span><span class="p">)]</span>
+            <span class="n">constraint_resids</span> <span class="o">=</span> <span class="n">protein_resids</span> <span class="o">+</span> <span class="n">coordinating_resids</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;:</span><span class="si">{</span><span class="n">residue_restraint_mask</span><span class="p">(</span><span class="n">constraint_resids</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+        <span class="k">elif</span> <span class="n">position_restraints</span> <span class="o">==</span> <span class="s2">&quot;backbone&quot;</span><span class="p">:</span>
+            <span class="n">constraint_resids</span> <span class="o">=</span> <span class="n">coordinating_resids</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;(@N,CA,C,O &amp; !:WAT)|:</span><span class="si">{</span><span class="n">residue_restraint_mask</span><span class="p">(</span><span class="n">constraint_resids</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+        <span class="k">elif</span> <span class="n">position_restraints</span> <span class="o">==</span> <span class="s2">&quot;metal-coordination&quot;</span><span class="p">:</span>
+            <span class="n">constraint_resids</span> <span class="o">=</span> <span class="n">coordinating_resids</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;:</span><span class="si">{</span><span class="n">residue_restraint_mask</span><span class="p">(</span><span class="n">constraint_resids</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="k">return</span> <span class="kc">None</span>
+        
+<div class="viewcode-block" id="ColdMeze.run">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdMeze.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">protocol_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;minimisation&quot;</span><span class="p">,</span> <span class="s2">&quot;nvt&quot;</span><span class="p">,</span> <span class="s2">&quot;npt&quot;</span><span class="p">],</span>
+            <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">],</span> 
+            <span class="n">workdir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+            <span class="n">restart</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="n">position_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">restraint_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;meze-run&quot;</span><span class="p">,</span>
+            <span class="n">max_cycles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">barostat</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">n_sd_cycles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">timestep</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">start_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">end_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">pressure</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssPressure</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;str&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ColdMeze&quot;</span><span class="p">:</span>
+
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">ColdMezeRecipe</span><span class="p">(</span>
+            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">workdir</span><span class="p">,</span>
+            <span class="n">max_cycles</span><span class="o">=</span><span class="n">max_cycles</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">max_cycles</span><span class="p">,</span>
+            <span class="n">n_sd_cycles</span><span class="o">=</span><span class="n">n_sd_cycles</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">n_sd_cycles</span><span class="p">,</span>
+            <span class="n">min_method</span><span class="o">=</span><span class="n">method</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">min_method</span><span class="p">,</span>
+            <span class="n">barostat</span><span class="o">=</span><span class="n">barostat</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">barostat</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="o">=</span><span class="n">nb_cutoff</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">nb_cutoff</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="o">=</span><span class="n">runtime</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">runtime</span><span class="p">,</span>
+            <span class="n">dt</span><span class="o">=</span><span class="n">timestep</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="n">start_temperature</span><span class="o">=</span><span class="n">start_temperature</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">start_temperature</span><span class="p">,</span>
+            <span class="n">end_temperature</span><span class="o">=</span><span class="n">end_temperature</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">end_temperature</span><span class="p">,</span>
+            <span class="n">pressure</span><span class="o">=</span><span class="n">pressure</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">pressure</span><span class="p">,</span>
+            <span class="n">restraint_weight</span><span class="o">=</span><span class="n">restraint_weight</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">restraint_weight</span><span class="p">,</span>
+            <span class="n">path_to_engine</span><span class="o">=</span><span class="n">engine_executable</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">path_to_engine</span>
+        <span class="p">)</span>
+
+        <span class="n">config_options</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;cut&quot;</span><span class="p">:</span> <span class="n">recipe</span><span class="o">.</span><span class="n">nb_cutoff</span><span class="p">,</span>
+            <span class="s2">&quot;ntpr&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+            <span class="s2">&quot;iwrap&quot;</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">}</span>
+        
+        <span class="k">if</span> <span class="n">restart</span><span class="p">:</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;irest&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;ntx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+
+        <span class="k">if</span> <span class="n">position_restraints</span><span class="p">:</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;restraintmask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_restraint_mask</span><span class="p">(</span><span class="n">position_restraints</span><span class="p">)</span>
+        
+        <span class="n">allowed</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;minimisation&quot;</span><span class="p">,</span> <span class="s2">&quot;nvt&quot;</span><span class="p">,</span> <span class="s2">&quot;npt&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">protocol_type</span> <span class="o">==</span> <span class="s2">&quot;minimisation&quot;</span><span class="p">:</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;ntmin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">recipe</span><span class="o">.</span><span class="n">min_method</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;maxcyc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">recipe</span><span class="o">.</span><span class="n">max_cycles</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;ncyc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">recipe</span><span class="o">.</span><span class="n">n_sd_cycles</span>
+            <span class="n">protocol</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">Protocol</span><span class="o">.</span><span class="n">Minimisation</span><span class="p">(</span>
+                <span class="n">steps</span><span class="o">=</span><span class="n">recipe</span><span class="o">.</span><span class="n">max_cycles</span><span class="p">,</span> 
+                <span class="n">force_constant</span><span class="o">=</span><span class="n">recipe</span><span class="o">.</span><span class="n">restraint_weight</span><span class="p">,</span>
+                <span class="n">restraint</span><span class="o">=</span><span class="s2">&quot;all&quot;</span> <span class="k">if</span> <span class="n">position_restraints</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">protocol_type</span> <span class="o">==</span> <span class="s2">&quot;nvt&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">recipe</span><span class="o">.</span><span class="n">start_temperature</span> <span class="o">!=</span> <span class="n">recipe</span><span class="o">.</span><span class="n">end_temperature</span><span class="p">:</span>
+                <span class="n">temperature</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">temperature</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Temperature</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span> <span class="s2">&quot;K&quot;</span><span class="p">)</span>
+
+            <span class="n">protocol</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">Protocol</span><span class="o">.</span><span class="n">Equilibration</span><span class="p">(</span>
+                <span class="n">timestep</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Time</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="s2">&quot;ps&quot;</span><span class="p">),</span>
+                <span class="n">runtime</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Time</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">runtime</span><span class="p">,</span> <span class="s2">&quot;ps&quot;</span><span class="p">),</span>
+                <span class="n">temperature_start</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Temperature</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">start_temperature</span><span class="p">,</span> <span class="s2">&quot;K&quot;</span><span class="p">),</span>
+                <span class="n">temperature_end</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Temperature</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">end_temperature</span><span class="p">,</span> <span class="s2">&quot;K&quot;</span><span class="p">),</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+                <span class="n">pressure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">restraint</span><span class="o">=</span><span class="s2">&quot;all&quot;</span> <span class="k">if</span> <span class="n">position_restraints</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">force_constant</span><span class="o">=</span><span class="n">recipe</span><span class="o">.</span><span class="n">restraint_weight</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">protocol_type</span> <span class="o">==</span> <span class="s2">&quot;npt&quot;</span><span class="p">:</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;barostat&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">recipe</span><span class="o">.</span><span class="n">barostat</span>
+            <span class="n">protocol</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">Protocol</span><span class="o">.</span><span class="n">Equilibration</span><span class="p">(</span>
+                <span class="n">timestep</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Time</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="s2">&quot;ps&quot;</span><span class="p">),</span>
+                <span class="n">runtime</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Time</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">runtime</span><span class="p">,</span> <span class="s2">&quot;ps&quot;</span><span class="p">),</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Temperature</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span> <span class="s2">&quot;K&quot;</span><span class="p">),</span>
+                <span class="n">pressure</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Pressure</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">pressure</span><span class="p">,</span> <span class="s2">&quot;atm&quot;</span><span class="p">),</span>
+                <span class="n">restraint</span><span class="o">=</span><span class="s2">&quot;all&quot;</span> <span class="k">if</span> <span class="n">position_restraints</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">force_constant</span><span class="o">=</span><span class="n">recipe</span><span class="o">.</span><span class="n">restraint_weight</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid protocol type &#39;</span><span class="si">{</span><span class="n">protocol_type</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Must be one of </span><span class="si">{</span><span class="n">allowed</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span>
+            <span class="n">protocol</span><span class="o">=</span><span class="n">protocol</span><span class="p">,</span>
+            <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">config_options</span><span class="o">=</span><span class="n">config_options</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="o">=</span><span class="n">is_gpu</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ColdMeze.minimise">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdMeze.minimise">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">minimise</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">position_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+                <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;solute&quot;</span><span class="p">,</span> <span class="s2">&quot;backbone&quot;</span><span class="p">,</span> <span class="s2">&quot;metal-coordination&quot;</span><span class="p">]</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">restraint_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;min&quot;</span><span class="p">,</span>
+            <span class="n">max_cycles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">n_sd_cycles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ColdMeze&quot;</span><span class="p">:</span>  
+        
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">protocol_type</span><span class="o">=</span><span class="s2">&quot;minimisation&quot;</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
+            <span class="n">position_restraints</span><span class="o">=</span><span class="n">position_restraints</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">restraint_weight</span><span class="o">=</span><span class="n">restraint_weight</span><span class="p">,</span>
+            <span class="n">max_cycles</span><span class="o">=</span><span class="n">max_cycles</span><span class="p">,</span>
+            <span class="n">n_sd_cycles</span><span class="o">=</span><span class="n">n_sd_cycles</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="o">=</span><span class="n">nb_cutoff</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="o">=</span><span class="n">is_gpu</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="o">=</span><span class="n">engine_executable</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ColdMeze.heat">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdMeze.heat">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">heat</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">position_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+                <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;solute&quot;</span><span class="p">,</span> <span class="s2">&quot;backbone&quot;</span><span class="p">,</span> <span class="s2">&quot;metal-coordination&quot;</span><span class="p">]</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">restart</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="n">restraint_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">timestep</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">start_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">end_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;nvt&quot;</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ColdMeze&quot;</span><span class="p">:</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">protocol_type</span><span class="o">=</span><span class="s2">&quot;nvt&quot;</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
+            <span class="n">restart</span><span class="o">=</span><span class="n">restart</span><span class="p">,</span>
+            <span class="n">position_restraints</span><span class="o">=</span><span class="n">position_restraints</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">restraint_weight</span><span class="o">=</span><span class="n">restraint_weight</span><span class="p">,</span>
+            <span class="n">timestep</span><span class="o">=</span><span class="n">timestep</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="o">=</span><span class="n">runtime</span><span class="p">,</span>
+            <span class="n">start_temperature</span><span class="o">=</span><span class="n">start_temperature</span><span class="p">,</span>
+            <span class="n">end_temperature</span><span class="o">=</span><span class="n">end_temperature</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="o">=</span><span class="n">is_gpu</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="o">=</span><span class="n">engine_executable</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ColdMeze.pressurise">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdMeze.pressurise">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pressurise</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">position_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+                <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;solute&quot;</span><span class="p">,</span> <span class="s2">&quot;backbone&quot;</span><span class="p">,</span> <span class="s2">&quot;metal-coordination&quot;</span><span class="p">]</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">restart</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="n">restraint_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">timestep</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">pressure</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssPressure</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;npt&quot;</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ColdMeze&quot;</span><span class="p">:</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">protocol_type</span><span class="o">=</span><span class="s2">&quot;npt&quot;</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
+            <span class="n">restart</span><span class="o">=</span><span class="n">restart</span><span class="p">,</span>
+            <span class="n">position_restraints</span><span class="o">=</span><span class="n">position_restraints</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">restraint_weight</span><span class="o">=</span><span class="n">restraint_weight</span><span class="p">,</span>
+            <span class="n">timestep</span><span class="o">=</span><span class="n">timestep</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="o">=</span><span class="n">runtime</span><span class="p">,</span>
+            <span class="n">pressure</span><span class="o">=</span><span class="n">pressure</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="o">=</span><span class="n">is_gpu</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="o">=</span><span class="n">engine_executable</span>
+        <span class="p">)</span></div>
+</div>
+
+
+<div class="viewcode-block" id="HotMeze">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.HotMeze">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">HotMeze</span><span class="p">(</span><span class="n">Meze</span><span class="p">):</span>
+    <span class="n">recipe</span><span class="p">:</span> <span class="n">HotMezeRecipe</span>
+
+<div class="viewcode-block" id="HotMeze.from_files">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.HotMeze.from_files">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_files</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">topology</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">coordinates</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HotMeze&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a ColdMeze object from topology and coordinates.</span>
+<span class="sd">        Passes extra kwargs into ColdMezeRecipe.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">HotMezeRecipe</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">topology</span><span class="o">=</span><span class="n">topology</span><span class="p">,</span> <span class="n">coordinates</span><span class="o">=</span><span class="n">coordinates</span><span class="p">,</span> <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="HotMeze.run">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.HotMeze.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+            <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;meze-run&quot;</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">timestep</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">pressure</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssPressure</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">write_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">500000</span>
+    <span class="p">):</span>
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">HotMezeRecipe</span><span class="p">(</span>
+            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">workdir</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="o">=</span><span class="n">nb_cutoff</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">nb_cutoff</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="o">=</span> <span class="n">runtime</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">runtime</span><span class="p">,</span>
+            <span class="n">dt</span><span class="o">=</span><span class="n">timestep</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="n">pressure</span><span class="o">=</span><span class="n">pressure</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">pressure</span><span class="p">,</span>
+            <span class="n">path_to_engine</span><span class="o">=</span><span class="n">engine_executable</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">path_to_engine</span>
+        <span class="p">)</span>
+        <span class="n">config_options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cut&quot;</span><span class="p">:</span> <span class="n">recipe</span><span class="o">.</span><span class="n">nb_cutoff</span><span class="p">,</span>
+                          <span class="s2">&quot;ntpr&quot;</span><span class="p">:</span> <span class="n">write_frequency</span><span class="p">,</span>
+                          <span class="s2">&quot;ntwx&quot;</span><span class="p">:</span> <span class="n">write_frequency</span><span class="p">,</span>
+                          <span class="s2">&quot;ntwr&quot;</span><span class="p">:</span> <span class="n">write_frequency</span><span class="p">,</span>
+                          <span class="s2">&quot;irest&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                          <span class="s2">&quot;ntx&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> 
+                          <span class="s2">&quot;iwrap&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+        
+        <span class="n">protocol</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">Protocol</span><span class="o">.</span><span class="n">Production</span><span class="p">(</span>
+            <span class="n">timestep</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Time</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="s2">&quot;ps&quot;</span><span class="p">),</span>
+            <span class="n">runtime</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Time</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">runtime</span><span class="p">,</span> <span class="s2">&quot;ns&quot;</span><span class="p">),</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Temperature</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span> <span class="s2">&quot;K&quot;</span><span class="p">),</span>
+            <span class="n">pressure</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Pressure</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">pressure</span><span class="p">,</span> <span class="s2">&quot;atm&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span>
+            <span class="n">protocol</span><span class="o">=</span><span class="n">protocol</span><span class="p">,</span>
+            <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">config_options</span><span class="o">=</span><span class="n">config_options</span>
+        <span class="p">)</span></div>
+</div>
+
+        
+<div class="viewcode-block" id="QuantumMeze">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.QuantumMeze">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">QuantumMeze</span><span class="p">(</span><span class="n">Meze</span><span class="p">):</span>
+    <span class="n">recipe</span><span class="p">:</span> <span class="n">MezeRecipe</span>
+    <span class="n">exclude_resids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__post_init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metal_resids_for_distance_restraints</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids_for_distance_restraints</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">metal_resids_for_distance_restraints</span><span class="p">]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span> <span class="ow">or</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qm_region</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_define_qm_region</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">qm_charge</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_qm_charge</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">distance_restraints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_distance_restraints</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids_for_distance_restraints</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="QuantumMeze.from_files">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.QuantumMeze.from_files">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_files</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> 
+        <span class="n">topology</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">coordinates</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">exclude_resids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;QuantumMeze&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a Meze object from topology and coordinates.</span>
+<span class="sd">        Passes extra kwargs into MezeRecipe.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">MezeRecipe</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">topology</span><span class="o">=</span><span class="n">topology</span><span class="p">,</span> 
+            <span class="n">coordinates</span><span class="o">=</span><span class="n">coordinates</span><span class="p">,</span> 
+            <span class="n">exclude_resids</span><span class="o">=</span><span class="n">exclude_resids</span><span class="p">,</span>
+            <span class="n">metal_resids_for_distance_restraints</span><span class="o">=</span><span class="n">metal_resids_for_distance_restraints</span><span class="p">,</span>
+            <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_define_qm_region</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> 
+            <span class="n">resids_to_exclude</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a simple QM region </span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, list]: QM region split into a list of whole residues and atom ids</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">exclude_resids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_resids</span> <span class="ow">or</span> <span class="p">[])</span>
+        <span class="n">resids_to_exclude</span> <span class="o">=</span> <span class="n">resids_to_exclude</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids_for_distance_restraints</span>
+        <span class="k">if</span> <span class="n">resids_to_exclude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resids_to_exclude</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="n">resids_to_exclude</span> <span class="o">=</span> <span class="p">[</span><span class="n">resids_to_exclude</span><span class="p">]</span>
+            <span class="n">exclude_resids</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">resids_to_exclude</span><span class="p">)</span>
+
+        <span class="n">excluded_atoms</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">metal_atom_idx</span><span class="p">,</span> <span class="n">metal_ligands</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinating_residues</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">metal_resid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;bynum </span><span class="si">{</span><span class="n">metal_atom_idx</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">resids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">metal_resid</span> <span class="ow">in</span> <span class="n">exclude_resids</span><span class="p">:</span>
+                <span class="n">excluded_atoms</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">metal_atom_idx</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">residue</span> <span class="ow">in</span> <span class="n">metal_ligands</span><span class="o">.</span><span class="n">residues</span><span class="p">:</span>
+                    <span class="n">exclude_resids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">residue</span><span class="o">.</span><span class="n">resid</span><span class="p">)</span>
+
+        <span class="n">qm_region_atom_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">qm_region_whole_residues</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="n">protein</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="s2">&quot;protein&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">metal_id</span><span class="p">,</span> <span class="n">metal_ligands</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordinating_residues</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">metal_id</span> <span class="ow">in</span> <span class="n">excluded_atoms</span><span class="p">:</span>
+                <span class="k">continue</span> 
+
+            <span class="n">metal_atom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;bynum </span><span class="si">{</span><span class="n">metal_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">metal_atom</span><span class="o">.</span><span class="n">resid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">exclude_resids</span><span class="p">:</span>
+                <span class="n">qm_region_atom_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">metal_id</span><span class="p">))</span>
+
+            <span class="k">for</span> <span class="n">residue</span> <span class="ow">in</span> <span class="n">metal_ligands</span><span class="o">.</span><span class="n">residues</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">residue</span><span class="o">.</span><span class="n">resid</span> <span class="ow">in</span> <span class="n">exclude_resids</span><span class="p">:</span>
+                    <span class="k">continue</span>  
+
+                <span class="k">if</span> <span class="n">residue</span> <span class="ow">in</span> <span class="n">protein</span><span class="o">.</span><span class="n">residues</span><span class="p">:</span>
+                    <span class="n">side_chain_atoms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_side_chain_selection</span><span class="p">(</span><span class="n">residue</span><span class="p">)</span>
+                    <span class="n">qm_region_atom_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">side_chain_atoms</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">qm_region_whole_residues</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">residue</span><span class="o">.</span><span class="n">resid</span><span class="p">)</span>
+
+        <span class="n">qm_region</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;whole_residues&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">qm_region_whole_residues</span><span class="p">),</span>
+            <span class="s2">&quot;atom_ids&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">qm_region_atom_ids</span><span class="p">),</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">qm_region</span>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_side_chain_selection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">residue</span><span class="p">:</span> <span class="n">mdaResidue</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return amino acid side chain atom indices</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            residue (mdaResidue): amino acid residue</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: atom selection in the format {first_atom}-{last_atom}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_terminus</span> <span class="o">=</span> <span class="s2">&quot;name N or name H&quot;</span>
+        <span class="n">alpha_carbon</span> <span class="o">=</span> <span class="s2">&quot;name CA or name HA&quot;</span>
+        <span class="n">c_terminus</span> <span class="o">=</span> <span class="s2">&quot;name C or name O&quot;</span>
+        <span class="n">atoms_in_residue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;resid </span><span class="si">{</span><span class="n">residue</span><span class="o">.</span><span class="n">resid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">qm_region_for_residue</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="n">atoms_in_residue</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;not (</span><span class="si">{</span><span class="n">n_terminus</span><span class="si">}</span><span class="s2"> or </span><span class="si">{</span><span class="n">alpha_carbon</span><span class="si">}</span><span class="s2"> or </span><span class="si">{</span><span class="n">c_terminus</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">ids</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">qm_region_for_residue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">qm_region_for_residue</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_qm_charge</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+
+        <span class="n">charge</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">residue</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qm_region</span><span class="p">[</span><span class="s2">&quot;whole_residues&quot;</span><span class="p">]:</span>
+            <span class="n">atoms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;resid </span><span class="si">{</span><span class="n">residue</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">charge</span> <span class="o">+=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">charges</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">atom_selection</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qm_region</span><span class="p">[</span><span class="s2">&quot;atom_ids&quot;</span><span class="p">]:</span>
+            <span class="n">atom_id</span> <span class="o">=</span> <span class="n">atom_selection</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; to &quot;</span><span class="p">)</span>
+            <span class="n">atoms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;bynum </span><span class="si">{</span><span class="n">atom_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">charge</span> <span class="o">+=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">charges</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">charge</span><span class="p">))</span>
+
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_write_qm_namelist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qm_theory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;DFTB3&quot;</span><span class="p">):</span>
+
+        <span class="n">parsed_whole_residues</span> <span class="o">=</span> <span class="n">residue_restraint_mask</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qm_region</span><span class="p">[</span><span class="s2">&quot;whole_residues&quot;</span><span class="p">])</span>
+        <span class="n">atom_ids</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qm_region</span><span class="p">[</span><span class="s2">&quot;atom_ids&quot;</span><span class="p">])))</span>
+        
+        <span class="n">qm_config_options</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;qmmask&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;&#39;:</span><span class="si">{</span><span class="n">parsed_whole_residues</span><span class="si">}</span><span class="s2">|(@</span><span class="si">{</span><span class="n">atom_ids</span><span class="si">}</span><span class="s2">)&#39;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;writepdb&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;qmcharge&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qm_charge</span><span class="p">),</span>
+            <span class="s2">&quot;qm_theory&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">qm_theory</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;qmshake&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;qm_ewald&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;qm_pme&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span>
+        <span class="p">}</span>
+        <span class="n">qm_namelist</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">qm_config_options</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        <span class="n">qm_namelist</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;&amp;qmmm&quot;</span><span class="p">)</span>
+        <span class="n">qm_namelist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">qm_namelist</span>
+    
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_distance_restraints</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">metal_resids_for_distance_restraints</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">metal_resids_for_distance_restraints</span> <span class="o">=</span> <span class="p">[</span><span class="n">metal_resids_for_distance_restraints</span><span class="p">]</span>
+
+        <span class="n">metal_atom_ids</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">universe</span><span class="o">.</span><span class="n">select_atoms</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;resid </span><span class="si">{</span><span class="n">resid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">resid</span> <span class="ow">in</span> <span class="n">metal_resids_for_distance_restraints</span>
+        <span class="p">]</span>
+        <span class="n">distance_restraints_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_distance_restraints</span><span class="p">(</span><span class="n">metal_atom_ids</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">write_distance_restraints</span><span class="p">(</span><span class="n">distance_restraints_dict</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="QuantumMeze.run_qm">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.QuantumMeze.run_qm">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_qm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">recipe</span><span class="p">:</span> <span class="n">MezeRecipe</span><span class="p">,</span>
+        <span class="n">protocol</span><span class="p">:</span> <span class="n">bss</span><span class="o">.</span><span class="n">Protocol</span><span class="p">,</span>
+        <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;qm-meze-run&quot;</span><span class="p">,</span>
+        <span class="n">config_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">qm_theory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;DFTB3&quot;</span><span class="p">,</span>
+        <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">is_gpu</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;QuantumMeze&quot;</span><span class="p">:</span>
+        
+        <span class="n">disres</span><span class="o">=</span><span class="n">metal_resids_for_distance_restraints</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids_for_distance_restraints</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">qm_region</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_define_qm_region</span><span class="p">(</span>
+            <span class="n">resids_to_exclude</span><span class="o">=</span><span class="n">metal_resids_for_distance_restraints</span>
+        <span class="p">)</span>
+        
+        <span class="n">qm_namelist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_qm_namelist</span><span class="p">(</span><span class="n">qm_theory</span><span class="o">=</span><span class="n">qm_theory</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">disres</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">distance_restraints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_distance_restraints</span><span class="p">(</span><span class="n">disres</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">distance_restraints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance_restraints</span>
+
+        <span class="k">if</span> <span class="n">distance_restraints</span><span class="p">:</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;nmropt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">restraint_namelist</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&amp;wt TYPE=&#39;DUMPFREQ&#39;, istep1=1 /&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">restraint_namelist</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="n">namelist</span> <span class="o">=</span> <span class="n">qm_namelist</span> <span class="o">+</span> <span class="n">restraint_namelist</span> 
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_run</span><span class="p">(</span>
+            <span class="n">protocol</span><span class="o">=</span><span class="n">protocol</span><span class="p">,</span>
+            <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">config_options</span><span class="o">=</span><span class="n">config_options</span><span class="p">,</span>
+            <span class="n">namelist_options</span><span class="o">=</span><span class="n">namelist</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="o">=</span><span class="n">is_gpu</span><span class="p">,</span>
+            <span class="n">distance_restraints</span><span class="o">=</span><span class="n">distance_restraints</span>
+        <span class="p">)</span></div>
+</div>
+
+
+<div class="viewcode-block" id="ColdQuantumMeze">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdQuantumMeze">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ColdQuantumMeze</span><span class="p">(</span><span class="n">QuantumMeze</span><span class="p">):</span>
+    <span class="n">recipe</span><span class="p">:</span> <span class="n">ColdMezeRecipe</span>
+    <span class="n">exclude_resids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ColdQuantumMeze.from_files">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdQuantumMeze.from_files">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_files</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> 
+        <span class="n">topology</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">coordinates</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">exclude_resids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ColdQuantumMeze&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a Meze object from topology and coordinates.</span>
+<span class="sd">        Passes extra kwargs into MezeRecipe.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">ColdMezeRecipe</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">topology</span><span class="o">=</span><span class="n">topology</span><span class="p">,</span> 
+            <span class="n">coordinates</span><span class="o">=</span><span class="n">coordinates</span><span class="p">,</span>
+            <span class="n">exclude_resids</span><span class="o">=</span><span class="n">exclude_resids</span><span class="p">,</span>
+            <span class="n">metal_resids_for_distance_restraints</span><span class="o">=</span><span class="n">metal_resids_for_distance_restraints</span><span class="p">,</span>
+            <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ColdQuantumMeze.run">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdQuantumMeze.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">protocol_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;minimisation&quot;</span><span class="p">,</span> <span class="s2">&quot;nvt&quot;</span><span class="p">,</span> <span class="s2">&quot;npt&quot;</span><span class="p">],</span>
+            <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">],</span>
+            <span class="n">workdir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+            <span class="n">restart</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;qm-meze-run&quot;</span><span class="p">,</span>
+            <span class="n">max_cycles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">barostat</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">n_sd_cycles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">timestep</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">start_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">end_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">pressure</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssPressure</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">qm_theory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DFTB3&quot;</span><span class="p">,</span>
+            <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ColdQuantumMeze&quot;</span><span class="p">:</span>
+
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">ColdMezeRecipe</span><span class="p">(</span>
+            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">workdir</span><span class="p">,</span>
+            <span class="n">max_cycles</span><span class="o">=</span><span class="n">max_cycles</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">max_cycles</span><span class="p">,</span>
+            <span class="n">n_sd_cycles</span><span class="o">=</span><span class="n">n_sd_cycles</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">n_sd_cycles</span><span class="p">,</span>
+            <span class="n">min_method</span><span class="o">=</span><span class="n">method</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">min_method</span><span class="p">,</span>
+            <span class="n">barostat</span><span class="o">=</span><span class="n">barostat</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">barostat</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="o">=</span><span class="n">nb_cutoff</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">nb_cutoff</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="o">=</span><span class="n">runtime</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">runtime</span><span class="p">,</span>
+            <span class="n">dt</span><span class="o">=</span><span class="n">timestep</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="n">start_temperature</span><span class="o">=</span><span class="n">start_temperature</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">start_temperature</span><span class="p">,</span>
+            <span class="n">end_temperature</span><span class="o">=</span><span class="n">end_temperature</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">end_temperature</span><span class="p">,</span>
+            <span class="n">pressure</span><span class="o">=</span><span class="n">pressure</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">pressure</span><span class="p">,</span>
+            <span class="n">path_to_engine</span><span class="o">=</span><span class="n">engine_executable</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">path_to_engine</span>
+        <span class="p">)</span>
+
+        <span class="n">config_options</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;cut&quot;</span><span class="p">:</span> <span class="n">recipe</span><span class="o">.</span><span class="n">nb_cutoff</span><span class="p">,</span>
+            <span class="s2">&quot;ntpr&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+            <span class="s2">&quot;ntwx&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+            <span class="s2">&quot;ntwx&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+            <span class="s2">&quot;iwrap&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;ifqnt&quot;</span><span class="p">:</span> <span class="mi">1</span>
+        <span class="p">}</span>
+        
+        <span class="k">if</span> <span class="n">restart</span><span class="p">:</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;irest&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;ntx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+
+        <span class="n">allowed</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;minimisation&quot;</span><span class="p">,</span> <span class="s2">&quot;nvt&quot;</span><span class="p">,</span> <span class="s2">&quot;npt&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">protocol_type</span> <span class="o">==</span> <span class="s2">&quot;minimisation&quot;</span><span class="p">:</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;ntmin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">recipe</span><span class="o">.</span><span class="n">min_method</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;maxcyc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">recipe</span><span class="o">.</span><span class="n">max_cycles</span>
+            <span class="n">config_options</span><span class="p">[</span><span class="s2">&quot;ncyc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">recipe</span><span class="o">.</span><span class="n">n_sd_cycles</span>
+            <span class="n">protocol</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">Protocol</span><span class="o">.</span><span class="n">Minimisation</span><span class="p">(</span>
+                <span class="n">steps</span><span class="o">=</span><span class="n">recipe</span><span class="o">.</span><span class="n">max_cycles</span><span class="p">,</span> 
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">protocol_type</span> <span class="o">==</span> <span class="s2">&quot;nvt&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">recipe</span><span class="o">.</span><span class="n">start_temperature</span> <span class="o">!=</span> <span class="n">recipe</span><span class="o">.</span><span class="n">end_temperature</span><span class="p">:</span>
+                <span class="n">temperature</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">temperature</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Temperature</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span> <span class="s2">&quot;K&quot;</span><span class="p">)</span>
+
+            <span class="n">protocol</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">Protocol</span><span class="o">.</span><span class="n">Equilibration</span><span class="p">(</span>
+                <span class="n">timestep</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Time</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="s2">&quot;ps&quot;</span><span class="p">),</span>
+                <span class="n">runtime</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Time</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">runtime</span><span class="p">,</span> <span class="s2">&quot;ps&quot;</span><span class="p">),</span>
+                <span class="n">temperature_start</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Temperature</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">start_temperature</span><span class="p">,</span> <span class="s2">&quot;K&quot;</span><span class="p">),</span>
+                <span class="n">temperature_end</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Temperature</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">end_temperature</span><span class="p">,</span> <span class="s2">&quot;K&quot;</span><span class="p">),</span>
+                <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+                <span class="n">pressure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">protocol_type</span> <span class="o">==</span> <span class="s2">&quot;npt&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Protocol type &#39;</span><span class="si">{</span><span class="n">protocol_type</span><span class="si">}</span><span class="s2">&#39; not supported yet.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Must be one of </span><span class="si">{</span><span class="n">allowed</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid protocol type &#39;</span><span class="si">{</span><span class="n">protocol_type</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Must be one of </span><span class="si">{</span><span class="n">allowed</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">run_qm</span><span class="p">(</span>
+            <span class="n">protocol</span><span class="o">=</span><span class="n">protocol</span><span class="p">,</span>
+            <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">qm_theory</span><span class="o">=</span><span class="n">qm_theory</span><span class="p">,</span>
+            <span class="n">metal_resids_for_distance_restraints</span><span class="o">=</span><span class="n">metal_resids_for_distance_restraints</span><span class="p">,</span>
+            <span class="n">config_options</span><span class="o">=</span><span class="n">config_options</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ColdQuantumMeze.minimise">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdQuantumMeze.minimise">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">minimise</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;qm-min&quot;</span><span class="p">,</span>
+            <span class="n">max_cycles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">n_sd_cycles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">qm_theory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DFTB3&quot;</span><span class="p">,</span>
+            <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ColdQuantumMeze&quot;</span><span class="p">:</span>  
+        <span class="n">disres</span><span class="o">=</span><span class="n">metal_resids_for_distance_restraints</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids_for_distance_restraints</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">protocol_type</span><span class="o">=</span><span class="s2">&quot;minimisation&quot;</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">max_cycles</span><span class="o">=</span><span class="n">max_cycles</span><span class="p">,</span>
+            <span class="n">n_sd_cycles</span><span class="o">=</span><span class="n">n_sd_cycles</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="o">=</span><span class="n">nb_cutoff</span><span class="p">,</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="o">=</span><span class="n">engine_executable</span><span class="p">,</span>
+            <span class="n">qm_theory</span><span class="o">=</span><span class="n">qm_theory</span><span class="p">,</span>
+            <span class="n">metal_resids_for_distance_restraints</span><span class="o">=</span><span class="n">disres</span>
+        <span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="ColdQuantumMeze.heat">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.ColdQuantumMeze.heat">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">heat</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">restart</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="n">timestep</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">start_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">end_temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;qm-nvt&quot;</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">qm_theory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DFTB3&quot;</span><span class="p">,</span>
+            <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ColdQuantumMeze&quot;</span><span class="p">:</span>
+        <span class="n">disres</span><span class="o">=</span><span class="n">metal_resids_for_distance_restraints</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids_for_distance_restraints</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">protocol_type</span><span class="o">=</span><span class="s2">&quot;nvt&quot;</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span><span class="p">,</span>
+            <span class="n">restart</span><span class="o">=</span><span class="n">restart</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">timestep</span><span class="o">=</span><span class="n">timestep</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="o">=</span><span class="n">runtime</span><span class="p">,</span>
+            <span class="n">start_temperature</span><span class="o">=</span><span class="n">start_temperature</span><span class="p">,</span>
+            <span class="n">end_temperature</span><span class="o">=</span><span class="n">end_temperature</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="o">=</span><span class="n">engine_executable</span><span class="p">,</span>
+            <span class="n">qm_theory</span><span class="o">=</span><span class="n">qm_theory</span><span class="p">,</span>
+            <span class="n">metal_resids_for_distance_restraints</span><span class="o">=</span><span class="n">disres</span>
+        <span class="p">)</span></div>
+</div>
+
+    
+<div class="viewcode-block" id="HotQuantumMeze">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.HotQuantumMeze">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HotQuantumMeze</span><span class="p">(</span><span class="n">QuantumMeze</span><span class="p">):</span>
+    <span class="n">recipe</span><span class="p">:</span> <span class="n">HotMezeRecipe</span>
+    <span class="n">exclude_resids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="HotQuantumMeze.from_files">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.HotQuantumMeze.from_files">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_files</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> 
+        <span class="n">topology</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">coordinates</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
+        <span class="n">exclude_resids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">[],</span>
+        <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HotQuantumMeze&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Build a Meze object from topology and coordinates.</span>
+<span class="sd">        Passes extra kwargs into MezeRecipe.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">HotMezeRecipe</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">topology</span><span class="o">=</span><span class="n">topology</span><span class="p">,</span> 
+            <span class="n">coordinates</span><span class="o">=</span><span class="n">coordinates</span><span class="p">,</span> 
+            <span class="n">exclude_resids</span><span class="o">=</span><span class="n">exclude_resids</span><span class="p">,</span>
+            <span class="n">metal_resisds_for_distance_restraints</span><span class="o">=</span><span class="n">metal_resids_for_distance_restraints</span><span class="p">,</span>
+            <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span>
+        <span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="HotQuantumMeze.run">
+<a class="viewcode-back" href="../../meze.html#meze.sofra.HotQuantumMeze.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">workdir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+            <span class="n">system</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">bssSystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;qm-meze-run&quot;</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">timestep</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="mf">0.001</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTime</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssTemperature</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+            <span class="n">pressure</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">bssPressure</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">engine_executable</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">write_frequency</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span>
+            <span class="n">qm_theory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DFTB3&quot;</span><span class="p">,</span>
+            <span class="n">metal_resids_for_distance_restraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HotQuantumMeze&quot;</span><span class="p">:</span>
+        <span class="n">disres</span><span class="o">=</span><span class="n">metal_resids_for_distance_restraints</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_resids_for_distance_restraints</span>
+        <span class="n">recipe</span> <span class="o">=</span> <span class="n">HotMezeRecipe</span><span class="p">(</span>
+            <span class="n">workdir</span><span class="o">=</span><span class="n">workdir</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">workdir</span><span class="p">,</span>
+            <span class="n">nb_cutoff</span><span class="o">=</span><span class="n">nb_cutoff</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">nb_cutoff</span><span class="p">,</span>
+            <span class="n">runtime</span><span class="o">=</span> <span class="n">runtime</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">runtime</span><span class="p">,</span>
+            <span class="n">dt</span><span class="o">=</span><span class="n">timestep</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span>
+            <span class="n">pressure</span><span class="o">=</span><span class="n">pressure</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">pressure</span><span class="p">,</span>
+            <span class="n">path_to_engine</span><span class="o">=</span><span class="n">engine_executable</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">recipe</span><span class="o">.</span><span class="n">path_to_engine</span>
+        <span class="p">)</span>
+
+        <span class="n">config_options</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;cut&quot;</span><span class="p">:</span> <span class="n">recipe</span><span class="o">.</span><span class="n">nb_cutoff</span><span class="p">,</span>
+            <span class="s2">&quot;ntpr&quot;</span><span class="p">:</span> <span class="n">write_frequency</span><span class="p">,</span>
+            <span class="s2">&quot;ntwx&quot;</span><span class="p">:</span> <span class="n">write_frequency</span><span class="p">,</span>
+            <span class="s2">&quot;ntwx&quot;</span><span class="p">:</span> <span class="n">write_frequency</span><span class="p">,</span>
+            <span class="s2">&quot;iwrap&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;irest&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">&quot;ntx&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s2">&quot;ifqnt&quot;</span><span class="p">:</span> <span class="mi">1</span>
+        <span class="p">}</span>
+        
+        <span class="n">protocol</span> <span class="o">=</span> <span class="n">bss</span><span class="o">.</span><span class="n">Protocol</span><span class="o">.</span><span class="n">Production</span><span class="p">(</span>
+            <span class="n">timestep</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Time</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="s2">&quot;ps&quot;</span><span class="p">),</span>
+            <span class="n">runtime</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Time</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">runtime</span><span class="p">,</span> <span class="s2">&quot;ps&quot;</span><span class="p">),</span>
+            <span class="n">temperature</span><span class="o">=</span><span class="n">bss</span><span class="o">.</span><span class="n">Types</span><span class="o">.</span><span class="n">Temperature</span><span class="p">(</span><span class="n">recipe</span><span class="o">.</span><span class="n">temperature</span><span class="p">,</span> <span class="s2">&quot;K&quot;</span><span class="p">),</span>
+            <span class="n">pressure</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">run_qm</span><span class="p">(</span>
+            <span class="n">protocol</span><span class="o">=</span><span class="n">protocol</span><span class="p">,</span>
+            <span class="n">recipe</span><span class="o">=</span><span class="n">recipe</span><span class="p">,</span>
+            <span class="n">system</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+            <span class="n">process_name</span><span class="o">=</span><span class="n">process_name</span><span class="p">,</span>
+            <span class="n">qm_theory</span><span class="o">=</span><span class="n">qm_theory</span><span class="p">,</span>
+            <span class="n">metal_resids_for_distance_restraints</span><span class="o">=</span><span class="n">disres</span><span class="p">,</span>
+            <span class="n">config_options</span><span class="o">=</span><span class="n">config_options</span><span class="p">,</span>
+            <span class="n">is_gpu</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, J. Jasmin Guven.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
