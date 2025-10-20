@@ -112,8 +112,14 @@ class Meze:
     topology: str 
     coordinates: str 
     recipe: MezeRecipe 
+    model: Optional[int] = None
 
     def __post_init__(self):
+        if self.model is not None and isinstance(self.model, str):
+            try:
+                self.model = int(self.model)
+            except ValueError:
+                raise ValueError(f"Cannot convert model='{self.model}' to int")
         coordinate_extension = os.path.splitext(self.coordinates)[1]
         if coordinate_extension in [".rst7"]:
             coordinate_format = "RESTRT"
@@ -130,7 +136,13 @@ class Meze:
         self._setup_bss_system()
 
     @classmethod
-    def from_files(cls, topology: str, coordinates: str, **kwargs):
+    def from_files(
+        cls, 
+        topology: str, 
+        coordinates: str, 
+        model: Optional[int] = None,
+        **kwargs
+    ):
         """Construct Meze from Amber topology and coordinates
 
         Args:
@@ -141,7 +153,12 @@ class Meze:
             Meze: Meze class object
         """
         recipe = MezeRecipe(**kwargs)
-        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+        return cls(
+            topology=topology, 
+            coordinates=coordinates,
+            model=model,
+            recipe=recipe
+        )
 
     def build_distance_restraints(
             self,
@@ -299,6 +316,7 @@ class ColdMeze(Meze):
         topology: str, 
         coordinates: str, 
         exclude_resids: Optional[Union[int, list[int]]] = [],
+        model: Optional[int] = None,
         **kwargs
     ) -> "ColdMeze":
         """
@@ -310,6 +328,7 @@ class ColdMeze(Meze):
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
+            model=model,
             recipe=recipe
         )
     
@@ -417,6 +436,9 @@ class ColdMeze(Meze):
         if position_restraints:
             config_options["restraintmask"] = self._build_restraint_mask(position_restraints)
         
+        if self.model == 0:
+            config_options["nmropt"] = 1
+
         allowed = ["minimisation", "nvt", "npt"]
         if protocol_type == "minimisation":
             config_options["ntmin"] = recipe.min_method
@@ -574,13 +596,24 @@ class HotMeze(Meze):
     recipe: HotMezeRecipe
 
     @classmethod
-    def from_files(cls, topology: str, coordinates: str, **kwargs) -> "HotMeze":
+    def from_files(
+        cls, 
+        topology: str, 
+        coordinates: str, 
+        model: Optional[int] = None,
+        **kwargs
+    ) -> "HotMeze":
         """
         Build a ColdMeze object from topology and coordinates.
         Passes extra kwargs into ColdMezeRecipe.
         """
         recipe = HotMezeRecipe(**kwargs)
-        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+        return cls(
+            topology=topology, 
+            coordinates=coordinates, 
+            model=model,
+            recipe=recipe
+        )
 
     def run(
             self,
