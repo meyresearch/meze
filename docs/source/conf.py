@@ -4,9 +4,20 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 import os
 import sys
+from sphinx.ext.apidoc import main
+import pathlib
 
 # -- Path setup --------------------------------------------------------------
 sys.path.insert(0, os.path.abspath('../..'))
+
+# -- Docs setup --------------------------------------------------------------
+def run_apidoc(_):
+    package_dir = pathlib.Path(__file__).parent / "../../meze"
+    main(["-o", str(pathlib.Path(__file__).parent), str(package_dir), "--force"])
+
+def setup(app):
+    app.connect("builder-inited", run_apidoc)
+
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
