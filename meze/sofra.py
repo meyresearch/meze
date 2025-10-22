@@ -1047,7 +1047,7 @@ class HotQuantumMeze(QuantumMeze):
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
-            metal_resisds_for_distance_restraints=metal_resids_for_distance_restraints,
+            metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
             recipe=recipe
         )
     
