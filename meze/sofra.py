@@ -19,6 +19,8 @@ from typing import (
     Union
 )
 import os
+import mdtraj
+import math as m
 import MDAnalysis as mda
 import MDAnalysis.analysis.distances
 from MDAnalysis.core.groups import Residue as mdaResidue
@@ -112,8 +114,14 @@ class Meze:
     topology: str 
     coordinates: str 
     recipe: MezeRecipe 
+    model: Optional[int] = None
 
     def __post_init__(self):
+        if self.model is not None and isinstance(self.model, str):
+            try:
+                self.model = int(self.model)
+            except ValueError:
+                raise ValueError(f"Cannot convert model='{self.model}' to int")
         coordinate_extension = os.path.splitext(self.coordinates)[1]
         if coordinate_extension in [".rst7"]:
             coordinate_format = "RESTRT"
@@ -128,9 +136,16 @@ class Meze:
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
+        self.ligand_name = self.get_small_molecule_resname()
 
     @classmethod
-    def from_files(cls, topology: str, coordinates: str, **kwargs):
+    def from_files(
+        cls, 
+        topology: str, 
+        coordinates: str, 
+        model: Optional[int] = None,
+        **kwargs
+    ):
         """Construct Meze from Amber topology and coordinates
 
         Args:
@@ -141,9 +156,37 @@ class Meze:
             Meze: Meze class object
         """
         recipe = MezeRecipe(**kwargs)
-        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+        return cls(
+            topology=topology, 
+            coordinates=coordinates,
+            model=model,
+            recipe=recipe
+        )
 
-    def build_distance_restraints(
+
+    def get_small_molecule_resname(self) -> str | None:
+        
+        selection = self.universe.select_atoms(
+            "not protein and not water"
+        )
+
+        non_standard_residues = [
+            "MOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ"
+        ]
+
+        resname = None
+
+        for residue in selection.residues:
+            if (
+                residue.resname != self.metal_resname.upper()
+                and residue.resname not in non_standard_residues
+            ):
+                resname = residue.resname
+
+        return resname
+
+
+    def build_distance_restraints( # check for ligand???
             self,
             metal_atom_ids: Optional[list[int]] = None,
             force_constant: Optional[float] = 100.0,
@@ -158,18 +201,89 @@ class Meze:
                 atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
 
                 for ligating_atom in ligating_atoms:
-                    key = (metal_id, ligating_atom.id)
-                    atom_group_2 = self.universe.select_atoms(
-                        f"resid {ligating_atom.resid} and name {ligating_atom.name}"
-                    )
-                    distance = MDAnalysis.analysis.distances.dist(
-                        atom_group_1, atom_group_2
-                    )[-1][0]
-                    restraints[key] = (
-                        np.round(distance, 2),
-                        np.round(force_constant, 2),
-                        np.round(flat_bottom_radius, 2)
-                    )
+                    if ligating_atom.resname.upper() != self.ligand_name:
+                        key = (metal_id, ligating_atom.id)
+                        atom_group_2 = self.universe.select_atoms(
+                            f"resid {ligating_atom.resid} and name {ligating_atom.name}"
+                        )
+                        distance = MDAnalysis.analysis.distances.dist(
+                            atom_group_1, atom_group_2
+                        )[-1][0]
+                        restraints[key] = (
+                            np.round(distance, 2),
+                            np.round(force_constant, 2),
+                            np.round(flat_bottom_radius, 2)
+                        )
+        return restraints
+    
+    def _prepare_distance_restraints(
+        self
+    ) -> Optional[list[str]]:
+
+        metal_atom_ids = [
+            self.universe.select_atoms(f"resid {resid}").ids[0]
+            for resid in self.metal_resids
+        ]
+        distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
+        return write_distance_restraints(distance_restraints_dict)
+
+    def _prepare_angle_restraints(
+        self
+    ) -> Optional[list[str]]:
+
+        metal_atom_ids = [
+            self.universe.select_atoms(f"resid {resid}").ids[0]
+            for resid in self.metal_resids
+        ]
+        angle_restraints_dict = self.build_angle_restraints(metal_atom_ids)
+        return write_distance_restraints(angle_restraints_dict)
+    
+    def build_angle_restraints(
+            self,
+            metal_atom_ids: Optional[list[int]] = None,
+            force_constant: Optional[float] = 100.0,
+            flat_bottom_radius: Optional[float] = 1.00
+    ) -> dict[tuple[int, int], tuple[float, float, float]]:
+        """Enforce "angle" restraints through additional distance restraints between vertex atoms.
+        """
+        metal_atom_ids = metal_atom_ids or list(self.coordinating_residues.keys())
+
+        restraints = {}
+        for metal_id, ligating_atoms in self.coordinating_residues.items():
+            if metal_id in metal_atom_ids:
+                vertices = []
+                for ligating_atom in ligating_atoms:
+                    if ligating_atom.resname.upper() == self.ligand_name:
+                        continue
+                    if ligating_atom.id == metal_id:
+                        continue
+                    vertices.append(ligating_atom)
+
+                n_vertices = len(vertices)
+                for i in range(n_vertices):
+                    for j in range(i + 1, n_vertices):
+
+                        atom_i = vertices[i]
+                        atom_j = vertices[j]
+                        if atom_i.resid == atom_j.resid:
+                            continue
+
+                        key = (atom_i.id, atom_j.id)
+                        atom_group_1 = self.universe.select_atoms(
+                            f"resid {atom_i.resid} and name {atom_i.name}" 
+                        )
+                        atom_group_2 = self.universe.select_atoms(
+                            f"resid {atom_j.resid} and name {atom_j.name}"
+                        )
+                        distance = MDAnalysis.analysis.distances.dist(
+                            atom_group_1, atom_group_2
+                        )[-1][0]
+                        
+                        restraints[key] = (
+                            np.round(distance, 2),
+                            np.round(force_constant, 2),
+                            np.round(flat_bottom_radius, 2)
+                        )
         return restraints
 
     def _set_metal(self):
@@ -242,11 +356,20 @@ class Meze:
             exe=recipe.path_to_engine
         )
 
+        if self.model == 0:
+            coordination_restraints = self._prepare_distance_restraints()
+            angle_restraints = self._prepare_angle_restraints()
+            distance_restraints = coordination_restraints + angle_restraints
+
         if distance_restraints:
             config_file = process._config_file
 
             with open(f"{run_directory}/restraints.RST", "w") as file:
                 file.writelines(distance_restraints)
+            
+            if not namelist_options:
+                with open(config_file, "a") as file:
+                    file.write(f"&wt TYPE=\"END\", /\n")
 
             with open(config_file, "a") as file:
                 file.write("\n")
@@ -299,6 +422,7 @@ class ColdMeze(Meze):
         topology: str, 
         coordinates: str, 
         exclude_resids: Optional[Union[int, list[int]]] = [],
+        model: Optional[int] = None,
         **kwargs
     ) -> "ColdMeze":
         """
@@ -310,6 +434,7 @@ class ColdMeze(Meze):
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
+            model=model,
             recipe=recipe
         )
     
@@ -417,6 +542,9 @@ class ColdMeze(Meze):
         if position_restraints:
             config_options["restraintmask"] = self._build_restraint_mask(position_restraints)
         
+        if self.model == 0:
+            config_options["nmropt"] = 1
+
         allowed = ["minimisation", "nvt", "npt"]
         if protocol_type == "minimisation":
             config_options["ntmin"] = recipe.min_method
@@ -574,13 +702,24 @@ class HotMeze(Meze):
     recipe: HotMezeRecipe
 
     @classmethod
-    def from_files(cls, topology: str, coordinates: str, **kwargs) -> "HotMeze":
+    def from_files(
+        cls, 
+        topology: str, 
+        coordinates: str, 
+        model: Optional[int] = None,
+        **kwargs
+    ) -> "HotMeze":
         """
         Build a ColdMeze object from topology and coordinates.
         Passes extra kwargs into ColdMezeRecipe.
         """
         recipe = HotMezeRecipe(**kwargs)
-        return cls(topology=topology, coordinates=coordinates, recipe=recipe)
+        return cls(
+            topology=topology, 
+            coordinates=coordinates, 
+            model=model,
+            recipe=recipe
+        )
 
     def run(
             self,
@@ -806,6 +945,9 @@ class QuantumMeze(Meze):
         is_gpu: bool = False
     ) -> "QuantumMeze":
         
+        config_options["ntc"] = 1
+        config_options["ntf"] = 1
+
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
         
         self.qm_region = self._define_qm_region(
