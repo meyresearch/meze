@@ -5,8 +5,7 @@ logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
 logging.getLogger("MDAnalysis").setLevel(logging.ERROR)
 from dataclasses import (
     dataclass, 
-    field,
-    asdict
+    field
 )
 import dataclasses
 import numpy as np
@@ -21,9 +20,9 @@ from typing import (
     Union,
     Self
 )
-import json
+from .ligand import Ligand
 import os
-from pathlib import Path
+
 import MDAnalysis as mda
 import MDAnalysis.analysis.distances
 from MDAnalysis.core.groups import Residue as mdaResidue
@@ -131,8 +130,8 @@ class Meze:
     topology: str 
     coordinates: str 
     recipe: MezeRecipe 
-    ligand: bssSystem | None = None     
-    ligand_name: str | None = None 
+    ligand: Optional[Ligand] = None     
+
     
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
@@ -155,7 +154,11 @@ class Meze:
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
-        self.ligand_name = self.get_small_molecule_resname()
+        
+        if self.ligand:
+            self.ligand_resname = self.ligand.system.getResidue(0).name
+        else:        
+            self.ligand_resname = self.get_small_molecule_resname()
 
     @classmethod
     def from_files(
@@ -183,25 +186,22 @@ class Meze:
 
     def get_small_molecule_resname(self) -> str | None:
 
-        if self.ligand:
-            return self.ligand.getResidue(0).name()
-        else:
-            selection = self.universe.select_atoms(
-                "not protein and not water"
-            )
-            non_standard_residues = [
-                "MOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ"
-            ]
+        selection = self.universe.select_atoms(
+            "not protein and not water"
+        )
+        non_standard_residues = [
+            "MOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ"
+        ]
 
-            resname = None
-            for residue in selection.residues:
-                if (
-                    residue.resname != self.metal_resname.upper()
-                    and residue.resname not in non_standard_residues
-                ):
-                    resname = residue.resname
+        resname = None
+        for residue in selection.residues:
+            if (
+                residue.resname != self.metal_resname.upper()
+                and residue.resname not in non_standard_residues
+            ):
+                resname = residue.resname
 
-            return resname
+        return resname
 
 
     def build_distance_restraints( 
@@ -219,7 +219,7 @@ class Meze:
                 atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
 
                 for ligating_atom in ligating_atoms:
-                    if ligating_atom.resname.upper() != self.ligand_name:
+                    if ligating_atom.resname.upper() != self.ligand_resname:
                         key = (metal_id, ligating_atom.id)
                         atom_group_2 = self.universe.select_atoms(
                             f"resid {ligating_atom.resid} and name {ligating_atom.name}"
@@ -271,7 +271,7 @@ class Meze:
             if metal_id in metal_atom_ids:
                 vertices = []
                 for ligating_atom in ligating_atoms:
-                    if ligating_atom.resname.upper() == self.ligand_name:
+                    if ligating_atom.resname.upper() == self.ligand_resname:
                         continue
                     if ligating_atom.id == metal_id:
                         continue
@@ -409,7 +409,6 @@ class Meze:
             coordinates=new_coordinates,
             recipe=recipe
         )
-    
 
     def get_active_site_atom_group(self) -> mda.AtomGroup:
         """Get active site based on metal and coordination cutoff
@@ -425,36 +424,19 @@ class Meze:
     def add_ligand(
             self, 
             ligand_file: Union[str, list[str]], 
-            name: str | None = None
+            name: str | None = None,
+            ligand_charge: Optional[int] = 0
     ) -> Self:
-        if isinstance(ligand_file, str):
-            input_file = [ligand_file]
-        elif isinstance(ligand_file, list) and len(ligand_file) > 2:
-            raise ValueError(
-                f"Too many values for 'ligand_file': {ligand_file}."
-                f"Expected a 'str' or a list of at most 2 input files."
-            )
-        else: 
-            input_file = ligand_file
-        
-        if not name:
-            name = Path(ligand_file).stem
-            warnings.warn(
-                f"Ligand name not set, inferring from file name: {ligand_file}",
-                UserWarning
-            )
-
-        ligand_system = bss.IO.readMolecules(input_file)
+        ligand = Ligand(ligand_file, name=name, charge=ligand_charge)
         return dataclasses.replace(
             self,
-            ligand=ligand_system,
-            ligand_name=name
+            ligand=ligand,
         )
         
 
     def add_water(self) -> Self:
         pass
-    
+        
 
 @dataclass
 class ColdMeze(Meze):
