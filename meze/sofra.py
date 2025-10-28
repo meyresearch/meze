@@ -50,7 +50,7 @@ class MezeRecipe(BaseModel):
     model: Optional[int] = Field(
         None, description="Metal modelling option"
     )
-    
+
     @field_validator("model", mode="before")
     @classmethod
     def validate_model(cls, v):
@@ -136,12 +136,18 @@ class Meze:
             coordinate_format = "RESTRT"
         else:
             coordinate_format = None
-        self.universe = mda.Universe(
-            self.topology,
-            self.coordinates,
-            topology_format="PARM7",
-            format=coordinate_format
-        )
+        topology_extension = os.path.splitext(self.topology)[1]
+        if coordinate_extension == topology_extension:
+            self.universe = mda.Universe(
+                self.topology,
+            )   
+        else:         
+            self.universe = mda.Universe(
+                self.topology,
+                self.coordinates,
+                topology_format="PARM7",
+                format=coordinate_format
+            )
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
@@ -430,7 +436,7 @@ class ColdMeze(Meze):
         topology: Optional[str] = None, 
         coordinates: Optional[str] = None, 
         exclude_resids: Optional[Union[int, list[int]]] = [],
-        recipe: Optional[ColdMezeRecipe] = None,
+        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
         **kwargs
     ) -> "ColdMeze":
         """
@@ -447,6 +453,12 @@ class ColdMeze(Meze):
         
         if recipe is None:
             recipe = ColdMezeRecipe(**kwargs)
+        elif isinstance(recipe, dict):
+            recipe = ColdMezeRecipe(**recipe)
+        elif not isinstance(recipe, ColdMezeRecipe):
+            raise TypeError(
+                f"Expected 'recipe' to be a ColdMezeRecipe, dict, or None, but got {type(recipe).__name__}"
+            )
         
         return cls(
             topology=topology, 
