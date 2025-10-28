@@ -18,6 +18,8 @@ cold_meze = ColdMeze.from_files(
     pdb_file=f"{inputs_directory}/protein/vim2.fixed.pdb"
 )
 
+cold_system = cold_meze.add_ligand(f"{inputs_directory}/ligands/{ligand_name}.pdb")
+
 # solvate <-- write solvate.py script
 
 # heat meze
