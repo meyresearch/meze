@@ -19,6 +19,8 @@ from typing import (
     Union
 )
 import os
+import mdtraj
+import math as m
 import MDAnalysis as mda
 import MDAnalysis.analysis.distances
 from MDAnalysis.core.groups import Residue as mdaResidue
@@ -134,6 +136,7 @@ class Meze:
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
+        self.ligand_name = self.get_small_molecule_resname()
 
     @classmethod
     def from_files(
@@ -160,7 +163,30 @@ class Meze:
             recipe=recipe
         )
 
-    def build_distance_restraints(
+
+    def get_small_molecule_resname(self) -> str | None:
+        
+        selection = self.universe.select_atoms(
+            "not protein and not water"
+        )
+
+        non_standard_residues = [
+            "MOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ"
+        ]
+
+        resname = None
+
+        for residue in selection.residues:
+            if (
+                residue.resname != self.metal_resname.upper()
+                and residue.resname not in non_standard_residues
+            ):
+                resname = residue.resname
+
+        return resname
+
+
+    def build_distance_restraints( # check for ligand???
             self,
             metal_atom_ids: Optional[list[int]] = None,
             force_constant: Optional[float] = 100.0,
@@ -175,18 +201,19 @@ class Meze:
                 atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
 
                 for ligating_atom in ligating_atoms:
-                    key = (metal_id, ligating_atom.id)
-                    atom_group_2 = self.universe.select_atoms(
-                        f"resid {ligating_atom.resid} and name {ligating_atom.name}"
-                    )
-                    distance = MDAnalysis.analysis.distances.dist(
-                        atom_group_1, atom_group_2
-                    )[-1][0]
-                    restraints[key] = (
-                        np.round(distance, 2),
-                        np.round(force_constant, 2),
-                        np.round(flat_bottom_radius, 2)
-                    )
+                    if ligating_atom.resname.upper() != self.ligand_name:
+                        key = (metal_id, ligating_atom.id)
+                        atom_group_2 = self.universe.select_atoms(
+                            f"resid {ligating_atom.resid} and name {ligating_atom.name}"
+                        )
+                        distance = MDAnalysis.analysis.distances.dist(
+                            atom_group_1, atom_group_2
+                        )[-1][0]
+                        restraints[key] = (
+                            np.round(distance, 2),
+                            np.round(force_constant, 2),
+                            np.round(flat_bottom_radius, 2)
+                        )
         return restraints
     
     def _prepare_distance_restraints(
@@ -200,6 +227,17 @@ class Meze:
         distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
         return write_distance_restraints(distance_restraints_dict)
 
+    def _prepare_angle_restraints(
+        self
+    ) -> Optional[list[str]]:
+
+        metal_atom_ids = [
+            self.universe.select_atoms(f"resid {resid}").ids[0]
+            for resid in self.metal_resids
+        ]
+        angle_restraints_dict = self.build_angle_restraints(metal_atom_ids)
+        return angle_restraints_dict
+
     def build_angle_restraints(
             self,
             metal_atom_ids: Optional[list[int]] = None,
@@ -211,33 +249,38 @@ class Meze:
 
         restraints = {}
         for metal_id, ligating_atoms in self.coordinating_residues.items():
-            if metal_id not in metal_atom_ids:
-                continue
-            
-            # if ligating_atom is in ligand, don't restrain angle ! 
+            if metal_id in metal_atom_ids:
+                n_ligands = len(ligating_atoms)
 
-            n_ligands = len(ligating_atoms)
+                for i in range(n_ligands):
+                    for j in range(i + 1, n_ligands):
 
-            for i in range(n_ligands):
-                for j in range(i + 1, n_ligands):
-                    # continue from here
-                    pass
-            
-            atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
+                        atom_i = ligating_atoms[i]
+                        atom_j = ligating_atoms[j]
+                        if atom_i.resname.upper() != self.ligand_name and atom_j.resname.upper() != self.ligand_name:
+                            key = (atom_i.id, metal_id, atom_j.id)
 
-            for ligating_atom in ligating_atoms:
-                key = (metal_id, ligating_atom.id)
-                atom_group_2 = self.universe.select_atoms(
-                    f"resid {ligating_atom.resid} and name {ligating_atom.name}"
-                )
+                            metal_index = metal_id - 1
+                            i_index = atom_i.id - 1
+                            j_index = atom_j.id - 1
 
+                            angle_indices = np.array([[i_index, metal_index, j_index]])
+                            angles = mdtraj.compute_angles(
+                                traj=self.coordinates,
+                                angle_indices=angle_indices
+                            )
+                            if len(angles) > 1:
+                                raise UserWarning(
+                                    f"Number of angles for atoms {angle_indices} is more than 1."
+                                    "Using the first angle."
+                                )
+                            angle = m.degrees(angles[0])
 
-
-                restraints[key] = (
-                    np.round(angle, 2),
-                    np.round(force_constant, 2),
-                    np.round(flat_bottom_radius, 2)
-                )
+                            restraints[key] = (
+                                np.round(angle, 2),
+                                np.round(force_constant, 2),
+                                np.round(flat_bottom_radius, 2)
+                            )
         return restraints
 
 
@@ -313,7 +356,7 @@ class Meze:
 
         if self.model == 0:
             distance_restraints = self._prepare_distance_restraints()
-
+            angle_restraints = self._prepare_angle_restraints()
 
         if distance_restraints:
             config_file = process._config_file
