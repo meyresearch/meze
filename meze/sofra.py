@@ -11,6 +11,7 @@ import dataclasses
 import numpy as np
 from pydantic import (
     Field,
+    field_validator,
     BaseModel
 )
 from typing import (
@@ -46,6 +47,20 @@ class MezeRecipe(BaseModel):
     path_to_engine: Optional[str] = Field(
         None, description="Path to the MD engine executable (e.g. pmemd.cuda)"
     )
+    model: Optional[int] = Field(
+        None, description="Metal modelling option"
+    )
+    
+    @field_validator("model", mode="before")
+    @classmethod
+    def validate_model(cls, v):
+        if v is None:
+            return v
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            raise ValueError(f"Cannot covert model='{v}' to int")
+
     def __str__(self) -> str:
         """Print recipe information as JSON
         """
@@ -116,11 +131,6 @@ class Meze:
     recipe: MezeRecipe 
 
     def __post_init__(self):
-        if self.model is not None and isinstance(self.model, str):
-            try:
-                self.model = int(self.model)
-            except ValueError:
-                raise ValueError(f"Cannot convert model='{self.model}' to int")
         coordinate_extension = os.path.splitext(self.coordinates)[1]
         if coordinate_extension in [".rst7"]:
             coordinate_format = "RESTRT"
