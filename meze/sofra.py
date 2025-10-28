@@ -114,7 +114,6 @@ class Meze:
     topology: str 
     coordinates: str 
     recipe: MezeRecipe 
-    model: Optional[int] = None
 
     def __post_init__(self):
         if self.model is not None and isinstance(self.model, str):
@@ -143,7 +142,6 @@ class Meze:
         cls, 
         topology: str, 
         coordinates: str, 
-        model: Optional[int] = None,
         **kwargs
     ):
         """Construct Meze from Amber topology and coordinates
@@ -159,7 +157,6 @@ class Meze:
         return cls(
             topology=topology, 
             coordinates=coordinates,
-            model=model,
             recipe=recipe
         )
 
@@ -419,22 +416,32 @@ class ColdMeze(Meze):
     @classmethod
     def from_files(
         cls, 
-        topology: str, 
-        coordinates: str, 
+        pdb_file: Optional[str] = None,
+        topology: Optional[str] = None, 
+        coordinates: Optional[str] = None, 
         exclude_resids: Optional[Union[int, list[int]]] = [],
-        model: Optional[int] = None,
+        recipe: Optional[ColdMezeRecipe] = None,
         **kwargs
     ) -> "ColdMeze":
         """
         Build a ColdMeze object from topology and coordinates.
         Passes extra kwargs into ColdMezeRecipe.
         """
-        recipe = ColdMezeRecipe(**kwargs)
+        if pdb_file:
+            topology = pdb_file
+            coordinates = pdb_file
+        if not topology or not coordinates:
+            raise ValueError(
+                "You must supply either a pdb file or both a topology and coordinate file."
+            )
+        
+        if recipe is None:
+            recipe = ColdMezeRecipe(**kwargs)
+        
         return cls(
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
-            model=model,
             recipe=recipe
         )
     
@@ -706,7 +713,6 @@ class HotMeze(Meze):
         cls, 
         topology: str, 
         coordinates: str, 
-        model: Optional[int] = None,
         **kwargs
     ) -> "HotMeze":
         """
@@ -717,7 +723,6 @@ class HotMeze(Meze):
         return cls(
             topology=topology, 
             coordinates=coordinates, 
-            model=model,
             recipe=recipe
         )
 
