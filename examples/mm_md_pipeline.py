@@ -21,7 +21,7 @@ cold_meze = ColdMeze.from_files(
 cold_system = cold_meze.add_ligand(f"{inputs_directory}/ligands/{ligand_name}.pdb")
 
 # solvate <-- write solvate.py script
-
+print(cold_system)
 # heat meze
 
 # run production
