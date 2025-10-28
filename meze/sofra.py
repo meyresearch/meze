@@ -71,7 +71,7 @@ class ColdMezeRecipe(MezeRecipe):
         100.0, description="Simulation time in picoseconds"
     )
     dt: float = Field(
-        0.002, description="Integrator timestep, in picoseconds"
+        0.001, description="Integrator timestep, in picoseconds"
     )
     start_temperature: float = Field(
         300.0, description="Simulation start temperature in kelvin"
