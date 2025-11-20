@@ -11,16 +11,18 @@ import dataclasses
 import numpy as np
 from pydantic import (
     Field,
+    field_validator,
     BaseModel
 )
 from typing import (
     Optional,
     Literal,
-    Union
+    Union,
+    Self
 )
+from .ligand import Ligand
 import os
-import mdtraj
-import math as m
+
 import MDAnalysis as mda
 import MDAnalysis.analysis.distances
 from MDAnalysis.core.groups import Residue as mdaResidue
@@ -31,7 +33,8 @@ from BioSimSpace.Types._temperature import Temperature as bssTemperature
 from BioSimSpace.Types._pressure import Pressure as bssPressure
 from .utils import (
     residue_restraint_mask,
-    write_distance_restraints
+    write_distance_restraints,
+    write_tleap_solvation_input
 )
 
 class MezeRecipe(BaseModel):
@@ -46,6 +49,20 @@ class MezeRecipe(BaseModel):
     path_to_engine: Optional[str] = Field(
         None, description="Path to the MD engine executable (e.g. pmemd.cuda)"
     )
+    model: Optional[int] = Field(
+        None, description="Metal modelling option"
+    )
+
+    @field_validator("model", mode="before")
+    @classmethod
+    def validate_model(cls, v):
+        if v is None:
+            return v
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            raise ValueError(f"Cannot covert model='{v}' to int")
+
     def __str__(self) -> str:
         """Print recipe information as JSON
         """
@@ -71,7 +88,7 @@ class ColdMezeRecipe(MezeRecipe):
         100.0, description="Simulation time in picoseconds"
     )
     dt: float = Field(
-        0.002, description="Integrator timestep, in picoseconds"
+        0.001, description="Integrator timestep, in picoseconds"
     )
     start_temperature: float = Field(
         300.0, description="Simulation start temperature in kelvin"
@@ -114,36 +131,48 @@ class Meze:
     topology: str 
     coordinates: str 
     recipe: MezeRecipe 
-    model: Optional[int] = None
+    ligand: Optional[Ligand] = None 
+    non_standard_residue: Optional[Ligand] = None     
 
+    
     def __post_init__(self):
-        if self.model is not None and isinstance(self.model, str):
-            try:
-                self.model = int(self.model)
-            except ValueError:
-                raise ValueError(f"Cannot convert model='{self.model}' to int")
         coordinate_extension = os.path.splitext(self.coordinates)[1]
         if coordinate_extension in [".rst7"]:
             coordinate_format = "RESTRT"
         else:
             coordinate_format = None
-        self.universe = mda.Universe(
-            self.topology,
-            self.coordinates,
-            topology_format="PARM7",
-            format=coordinate_format
-        )
+        topology_extension = os.path.splitext(self.topology)[1]
+        try:
+            if coordinate_extension == topology_extension:
+                self.universe = mda.Universe(
+                    self.topology,
+                )   
+            else:         
+                self.universe = mda.Universe(
+                    self.topology,
+                    self.coordinates,
+                    topology_format="PARM7",
+                    format=coordinate_format
+                )
+        except FileNotFoundError:
+            print("Could not create meze object:\n")
+            raise
+        
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
-        self.ligand_name = self.get_small_molecule_resname()
+        
+        if self.ligand:
+            self.ligand_resname = self.ligand.system.getResidue(0).name
+        else:        
+            self.ligand_resname = self.get_small_molecule_resname()
+
 
     @classmethod
     def from_files(
         cls, 
         topology: str, 
         coordinates: str, 
-        model: Optional[int] = None,
         **kwargs
     ):
         """Construct Meze from Amber topology and coordinates
@@ -159,23 +188,20 @@ class Meze:
         return cls(
             topology=topology, 
             coordinates=coordinates,
-            model=model,
             recipe=recipe
         )
 
 
     def get_small_molecule_resname(self) -> str | None:
-        
+
         selection = self.universe.select_atoms(
             "not protein and not water"
         )
-
         non_standard_residues = [
             "MOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ"
         ]
 
         resname = None
-
         for residue in selection.residues:
             if (
                 residue.resname != self.metal_resname.upper()
@@ -186,7 +212,7 @@ class Meze:
         return resname
 
 
-    def build_distance_restraints( # check for ligand???
+    def build_distance_restraints( 
             self,
             metal_atom_ids: Optional[list[int]] = None,
             force_constant: Optional[float] = 100.0,
@@ -201,7 +227,7 @@ class Meze:
                 atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
 
                 for ligating_atom in ligating_atoms:
-                    if ligating_atom.resname.upper() != self.ligand_name:
+                    if ligating_atom.resname.upper() != self.ligand_resname:
                         key = (metal_id, ligating_atom.id)
                         atom_group_2 = self.universe.select_atoms(
                             f"resid {ligating_atom.resid} and name {ligating_atom.name}"
@@ -253,7 +279,7 @@ class Meze:
             if metal_id in metal_atom_ids:
                 vertices = []
                 for ligating_atom in ligating_atoms:
-                    if ligating_atom.resname.upper() == self.ligand_name:
+                    if ligating_atom.resname.upper() == self.ligand_resname:
                         continue
                     if ligating_atom.id == metal_id:
                         continue
@@ -391,7 +417,6 @@ class Meze:
             coordinates=new_coordinates,
             recipe=recipe
         )
-    
 
     def get_active_site_atom_group(self) -> mda.AtomGroup:
         """Get active site based on metal and coordination cutoff
@@ -404,6 +429,90 @@ class Meze:
             coordinating_residues += self.coordinating_residues[metal_id]
         return self.metals + coordinating_residues
     
+    def add_ligand(
+            self, 
+            ligand_file: Union[str, list[str]], 
+            name: str | None = None,
+            ligand_charge: Optional[int] = 0
+    ) -> Self:
+        ligand = Ligand(ligand_file, name=name, charge=ligand_charge)
+        return dataclasses.replace(
+            self,
+            ligand=ligand,
+        )
+    
+    def add_non_standard_residue(
+            self, 
+            file: Union[str, list[str]],
+            name: str | None = None, 
+            charge: Optional[int] = 0,
+            atom_type: Optional[str] = "gaff2"
+    ) -> Self:
+        residue = Ligand(
+            file, 
+            name=name, 
+            charge=charge,
+            atom_type=atom_type
+        )
+        return dataclasses.replace(
+            self,
+            non_standard_residue=residue,
+        )
+
+    def add_water(self, directory: str | None = None) -> Self:
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        parameterised_ligand = self.ligand.parameterise(directory)
+        
+        if self.non_standard_residue:
+            parameterised_non_standard_residue = self.non_standard_residue.parameterise(
+                path=directory,
+                atom_type=self.non_standard_residue.atom_type,
+                residue_name=self.non_standard_residue.name,
+            )
+
+        tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
+        tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
+        tleap_lines = write_tleap_solvation_input(
+            protein_file=self.topology,
+            ligand=parameterised_ligand,
+            non_standard_residue=parameterised_non_standard_residue
+        ) #TODO: put solvation options into MezeRecipe
+        with open(tleap_input_file, "w") as ifile:
+            ifile.writelines(tleap_lines)
+        
+        workdir = os.getcwd()
+        os.chdir(directory)
+        tleap_command = f"tleap -s -f {tleap_input_file} > {tleap_output_file}"
+        print(f"Running tleap with command:")
+        print(tleap_command)
+        os.system(tleap_command)
+
+        try:
+            solvated_topology = os.path.join(
+                directory, 
+                f"{parameterised_ligand.name}_complex_solv.prmtop"
+            )
+            solvated_coordinates = os.path.join(
+                directory, 
+                f"{parameterised_ligand.name}_complex_solv.inpcrd"
+            )
+            solvated_meze = dataclasses.replace(
+                self, 
+                topology=solvated_topology, 
+                coordinates=solvated_coordinates, 
+                ligand=parameterised_ligand
+            )
+        
+        except FileNotFoundError:
+            print("Failed to solvate meze.")
+            raise
+
+        os.chdir(workdir)
+        return solvated_meze
+
+
 
 @dataclass
 class ColdMeze(Meze):
@@ -419,22 +528,38 @@ class ColdMeze(Meze):
     @classmethod
     def from_files(
         cls, 
-        topology: str, 
-        coordinates: str, 
+        pdb_file: Optional[str] = None,
+        topology: Optional[str] = None, 
+        coordinates: Optional[str] = None, 
         exclude_resids: Optional[Union[int, list[int]]] = [],
-        model: Optional[int] = None,
+        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
         **kwargs
     ) -> "ColdMeze":
         """
         Build a ColdMeze object from topology and coordinates.
         Passes extra kwargs into ColdMezeRecipe.
         """
-        recipe = ColdMezeRecipe(**kwargs)
+        if pdb_file:
+            topology = pdb_file
+            coordinates = pdb_file
+        if not topology or not coordinates:
+            raise ValueError(
+                "You must supply either a pdb file or both a topology and coordinate file."
+            )
+        
+        if recipe is None:
+            recipe = ColdMezeRecipe(**kwargs)
+        elif isinstance(recipe, dict):
+            recipe = ColdMezeRecipe(**recipe)
+        elif not isinstance(recipe, ColdMezeRecipe):
+            raise TypeError(
+                f"Expected 'recipe' to be a ColdMezeRecipe, dict, or None, but got {type(recipe).__name__}"
+            )
+        
         return cls(
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
-            model=model,
             recipe=recipe
         )
     
@@ -706,7 +831,6 @@ class HotMeze(Meze):
         cls, 
         topology: str, 
         coordinates: str, 
-        model: Optional[int] = None,
         **kwargs
     ) -> "HotMeze":
         """
@@ -717,7 +841,6 @@ class HotMeze(Meze):
         return cls(
             topology=topology, 
             coordinates=coordinates, 
-            model=model,
             recipe=recipe
         )
 
