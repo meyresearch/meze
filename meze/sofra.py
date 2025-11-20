@@ -382,7 +382,7 @@ class Meze:
             exe=recipe.path_to_engine
         )
 
-        if self.model == 0:
+        if self.recipe.model == 0:
             coordination_restraints = self._prepare_distance_restraints()
             angle_restraints = self._prepare_angle_restraints()
             distance_restraints = coordination_restraints + angle_restraints
@@ -651,7 +651,8 @@ class ColdMeze(Meze):
             end_temperature=end_temperature or self.recipe.end_temperature,
             pressure=pressure or self.recipe.pressure,
             restraint_weight=restraint_weight or self.recipe.restraint_weight,
-            path_to_engine=engine_executable or self.recipe.path_to_engine
+            path_to_engine=engine_executable or self.recipe.path_to_engine,
+            model=self.recipe.model
         )
 
         config_options = {
@@ -667,7 +668,7 @@ class ColdMeze(Meze):
         if position_restraints:
             config_options["restraintmask"] = self._build_restraint_mask(position_restraints)
         
-        if self.model == 0:
+        if self.recipe.model == 0:
             config_options["nmropt"] = 1
 
         allowed = ["minimisation", "nvt", "npt"]
