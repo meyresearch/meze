@@ -88,17 +88,17 @@ def write_tleap_solvation_input(protein_file: str,
             "loadamberparams frcmod.ions1lm_126_tip3p\n"
         )
 
-    lines.append(
+    lines.extend([
         f"source leaprc.{ligand_ff}\n",
         f"loadamberparams {ligand.frcmod_file}\n",
         f"lig = loadmol2 {ligand.file[0]}\n",
         f"\n"
         f"protein = loadpdb {protein_file}\n",
-        "complex = {protein lig}\n",
+        "complex = combine {protein lig}\n",
         f"savepdb complex {ligand.name}_complex_dry.pdb\n",
         f"check complex\n"
         "\n"
-    )
+    ])
     if "oct" in box_shape.lower():
         lines.append(
             f"solvate{box_shape[:3]} complex {water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
@@ -108,14 +108,14 @@ def write_tleap_solvation_input(protein_file: str,
             f"solvate{box_shape[:3]} complex {water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
         )
 
-    lines.append(
+    lines.extend([
         "addions2 complex Na+ 0\n",
         "addions2 complex Cl- 0\n",
         "\n"
         f"savepdb complex {ligand.name}_complex_solv.pdb\n",
         f"saveamberparm complex {ligand.name}_complex_solv.prmtop {ligand.name}_complex_solv.inpcrd\n",
         "quit"
-    )
+    ])
     return lines
 
 

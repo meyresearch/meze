@@ -131,7 +131,8 @@ class Meze:
     topology: str 
     coordinates: str 
     recipe: MezeRecipe 
-    ligand: Optional[Ligand] = None     
+    ligand: Optional[Ligand] = None 
+    non_standard_residue: Optional[Ligand] = None     
 
     
     def __post_init__(self):
@@ -439,6 +440,24 @@ class Meze:
             self,
             ligand=ligand,
         )
+    
+    def add_non_standard_residue(
+            self, 
+            file: Union[str, list[str]],
+            name: str | None = None, 
+            charge: Optional[int] = 0,
+            atom_type: Optional[str] = "gaff2"
+    ) -> Self:
+        residue = Ligand(
+            file, 
+            name=name, 
+            charge=charge,
+            atom_type=atom_type
+        )
+        return dataclasses.replace(
+            self,
+            non_standard_residue=residue,
+        )
 
     def add_water(self, directory: str | None = None) -> Self:
         if directory:
@@ -449,7 +468,10 @@ class Meze:
         
         tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
         tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
-        tleap_lines = write_tleap_solvation_input(ligand=parameterised_ligand) #TODO: put solvation options into MezeRecipe
+        tleap_lines = write_tleap_solvation_input(
+            protein_file=self.topology,
+            ligand=parameterised_ligand
+        ) #TODO: put solvation options into MezeRecipe
         with open(tleap_input_file, "w") as ifile:
             ifile.writelines(tleap_lines)
         
@@ -469,12 +491,19 @@ class Meze:
                 directory, 
                 f"{parameterised_ligand.name}_complex_solv.inpcrd"
             )
-            
-
-        except FileNotFoundError as e:
-            print(e)
+            solvated_meze = dataclasses.replace(
+                self, 
+                topology=solvated_topology, 
+                coordinates=solvated_coordinates, 
+                ligand=parameterised_ligand
+            )
+        
+        except FileNotFoundError:
+            print("Failed to solvate meze.")
+            raise
 
         os.chdir(workdir)
+        return solvated_meze
 
 
 

@@ -17,6 +17,7 @@ class Ligand():
     name: Optional[str] = None
     charge: int = 0
     system: Optional[bssSystem] = None 
+    atom_type: Optional[str] = "gaff2"
     parameterised: bool = False
     frcmod_file: Optional[str] = None
 
