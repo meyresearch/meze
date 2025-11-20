@@ -67,7 +67,8 @@ def write_distance_restraints(
     return lines
 
 def write_tleap_solvation_input(protein_file: str,
-                                ligand: Optional[Ligand],
+                                ligand: Ligand,
+                                non_standard_residue: Optional[Ligand] = None,
                                 workdir: Optional[str] = "", #TODO move the below to model: 
                                 protein_ff: Optional[str] = "ff14SB",
                                 water_model: Optional[str] = "TIP3P",
@@ -76,7 +77,6 @@ def write_tleap_solvation_input(protein_file: str,
                                 solvent_closeness: Optional[float] = 0.75,
                                 ligand_ff: Optional[str] = "gaff2",
                                 ):
-    cwd = os.getcwd()
     if workdir:
         os.chdir(workdir)
     lines = [
@@ -88,17 +88,35 @@ def write_tleap_solvation_input(protein_file: str,
             "loadamberparams frcmod.ions1lm_126_tip3p\n"
         )
 
+    lines.append(
+        f"protein = loadpdb {protein_file}\n"
+    )
+
     lines.extend([
         f"source leaprc.{ligand_ff}\n",
         f"loadamberparams {ligand.frcmod_file}\n",
         f"lig = loadmol2 {ligand.file[0]}\n",
         f"\n"
-        f"protein = loadpdb {protein_file}\n",
-        "complex = combine {protein lig}\n",
-        f"savepdb complex {ligand.name}_complex_dry.pdb\n",
-        f"check complex\n"
-        "\n"
     ])
+    if non_standard_residue:
+        lines.extend([
+            f"loadamberparams {non_standard_residue.frcmod_file}\n"
+            f"res = loadmol2 {non_standard_residue.file[0]}\n"
+            f"\n",
+            "complex = combine {protein res lig}\n",
+            f"savepdb complex {ligand.name}_complex_dry.pdb\n",
+            f"check complex\n"
+            "\n"
+        ])
+
+    else:
+        lines.extend([
+            "complex = combine {protein lig}\n",
+            f"savepdb complex {ligand.name}_complex_dry.pdb\n",
+            f"check complex\n"
+            "\n"
+        ])
+        
     if "oct" in box_shape.lower():
         lines.append(
             f"solvate{box_shape[:3]} complex {water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"

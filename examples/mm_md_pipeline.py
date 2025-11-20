@@ -5,23 +5,40 @@ system_name = "vim2"
 bridging_water = "hydroxide"
 ligand_name = "ligand_11"
 
-project_dir = f"/Users/af25016/projects/indole-carboxylates/{system_name}/"
+project_dir = f"/Users/af25016/projects/meze/data/"
 
-inputs_directory = f"{project_dir}/inputs/"
 # set ColdMezeRecipe including model (i.e. metal params), ligand(?)
-with open(f"{inputs_directory}/model_0_recipe.json", "r") as file:
+with open(f"{project_dir}/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
 # load in protein files into ColdMeze
 cold_meze = ColdMeze.from_files(
     recipe=ColdMezeRecipe(**json_recipe),
-    pdb_file=f"{inputs_directory}/protein/vim2.fixed.pdb"
+    pdb_file=f"{project_dir}/protein/vim2.fixed.pdb"
 )
 
-cold_system = cold_meze.add_ligand(f"{inputs_directory}/ligands/{ligand_name}.pdb")
+cold_meze_with_lig = cold_meze.add_ligand(
+    ligand_file=f"{project_dir}/ligands/{ligand_name}.pdb",
+    ligand_charge=-1
+)
+
+#TODO make non standard res a union of Ligand and List[Ligand]
+cold_system = cold_meze_with_lig.add_non_standard_residue(
+    file=f"{project_dir}/protein/MOH.pdb",
+    charge=-1,
+    atom_type="amber"
+)
+
+print(cold_system)
 
 # solvate <-- write solvate.py script
-print(cold_system)
+#TODO: put solvation options into MezeRecipe
+solvate_dir = f"{project_dir}/protein/solvate_{ligand_name}_bound/"
+
+
+solvated_meze = cold_system.add_water(directory=solvate_dir)
+
+print(solvated_meze)
 # heat meze
 
 # run production

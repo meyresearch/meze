@@ -463,14 +463,21 @@ class Meze:
         if directory:
             os.makedirs(directory, exist_ok=True)
         
-        if self.ligand:
-            parameterised_ligand = self.ligand.parameterise(directory)
+        parameterised_ligand = self.ligand.parameterise(directory)
         
+        if self.non_standard_residue:
+            parameterised_non_standard_residue = self.non_standard_residue.parameterise(
+                path=directory,
+                atom_type=self.non_standard_residue.atom_type,
+                residue_name=self.non_standard_residue.name,
+            )
+
         tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
         tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
         tleap_lines = write_tleap_solvation_input(
             protein_file=self.topology,
-            ligand=parameterised_ligand
+            ligand=parameterised_ligand,
+            non_standard_residue=parameterised_non_standard_residue
         ) #TODO: put solvation options into MezeRecipe
         with open(tleap_input_file, "w") as ifile:
             ifile.writelines(tleap_lines)

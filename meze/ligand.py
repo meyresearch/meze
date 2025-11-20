@@ -77,6 +77,26 @@ class Ligand():
         print(antechamber_cmd)
         os.chdir(path)
         os.system(antechamber_cmd)
+        if not os.path.isfile(mol2_path): 
+            warnings.warn(
+                f"antechamber failed: missing output files for {self.name}.mol2",
+                UserWarning
+            )
+        
+        with open(mol2_path, "r") as ifile:
+            mol2_lines = ifile.readlines()
+        new_lines = []
+        for line in mol2_lines:
+            if "DU" in line:
+                warnings.warn(f"Atom type DU found in file {mol2_path}")
+                atom_name = line.split()[1]
+                new_line = line.replace("DU", atom_name)
+                warnings.warn(f"Replacing DU with {atom_name}")
+            else:
+                new_line = line
+            new_lines.append(new_line)
+        with open(mol2_path, "w") as ofile:
+            ofile.writelines(new_lines)
         
         frcmod_path = os.path.join(path, f"{self.name}.frcmod")
         parmcheck_cmd = (
@@ -87,11 +107,7 @@ class Ligand():
         print(parmcheck_cmd)
         os.system(parmcheck_cmd)
 
-        if not os.path.isfile(mol2_path): 
-            warnings.warn(
-                f"antechamber failed: missing output files for {self.name}.mol2",
-                UserWarning
-            )
+
         if not os.path.isfile(frcmod_path):
             warnings.warn(
                 f"parmchk2 failed: missing output files for {self.name}.frcmod",
