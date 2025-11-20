@@ -1,6 +1,7 @@
 import BioSimSpace as bss
 from BioSimSpace._SireWrappers import System as bssSystem
 from pathlib import Path
+import dataclasses
 from dataclasses import dataclass
 import warnings
 from typing import (
@@ -17,6 +18,7 @@ class Ligand():
     charge: int = 0
     system: Optional[bssSystem] = None 
     parameterised: bool = False
+    frcmod_file: Optional[str] = None
 
     def __post_init__(self):
         if isinstance(self.file, str):
@@ -47,7 +49,8 @@ class Ligand():
         
         self.system = bss.IO.readMolecules(self.file)
 
-    def parameterise(self, # NEED TO ADD CORRECT PATH! OTHERWISE IT'S IN THE CWD
+    def parameterise(self, 
+                     path: str | None = None,
                      atom_type: str = "gaff2",
                      charge_method: str = "bcc", 
                      residue_name: str = "MOL"):
@@ -57,21 +60,47 @@ class Ligand():
         else:
             file = self.file[0]
         
-        ext = os.path.splitext(file)
+        ext = Path(file).suffix[1:]
 
+        os.makedirs(path, exist_ok=True)
+
+        mol2_path = os.path.join(path, f"{self.name}.mol2")
+        workdir = os.getcwd()
         antechamber_cmd = (
             f"antechamber -fi {ext} -fo mol2 "
-            f"-i {file} -o {self.name}.mol2 "
-            f"-nc {charge_method} -c {self.charge} -at {atom_type} "
+            f"-i {file} -o {mol2_path} "
+            f"-c {charge_method} -nc {self.charge} -at {atom_type} "
             f"-pf y -rn {residue_name}"
         )
         print("Running antechamber with command:")
         print(antechamber_cmd)
+        os.chdir(path)
         os.system(antechamber_cmd)
+        
+        frcmod_path = os.path.join(path, f"{self.name}.frcmod")
         parmcheck_cmd = (
-            f"parmchk2 -i {self.name}.mol2 -o {self.name}.frcmod "
+            f"parmchk2 -i {mol2_path} -o {frcmod_path} "
             f"-f mol2 -s {atom_type}"
         )
         print("Running parmchk2 with command:")
         print(parmcheck_cmd)
         os.system(parmcheck_cmd)
+
+        if not os.path.isfile(mol2_path): 
+            warnings.warn(
+                f"antechamber failed: missing output files for {self.name}.mol2",
+                UserWarning
+            )
+        if not os.path.isfile(frcmod_path):
+            warnings.warn(
+                f"parmchk2 failed: missing output files for {self.name}.frcmod",
+                UserWarning
+            )
+        os.chdir(workdir)
+        return dataclasses.replace(
+            self,
+            file=mol2_path,
+            parameterised=True,
+            frcmod_file=frcmod_path
+        )       
+        

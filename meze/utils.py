@@ -1,4 +1,9 @@
 import numpy as np 
+from .ligand import Ligand
+from typing import (
+    Optional
+)
+import os
 
 def residue_restraint_mask(residue_ids: list[int]) -> str:
     """Generate an Amber-style restraint mask.
@@ -60,4 +65,57 @@ def write_distance_restraints(
         )
         lines.append(line)
     return lines
+
+def write_tleap_solvation_input(protein_file: str,
+                                ligand: Optional[Ligand],
+                                workdir: Optional[str] = "", #TODO move the below to model: 
+                                protein_ff: Optional[str] = "ff14SB",
+                                water_model: Optional[str] = "TIP3P",
+                                box_shape: Optional[str] = "octahedral",
+                                box_edges: Optional[float] = 10.0,
+                                solvent_closeness: Optional[float] = 0.75,
+                                ligand_ff: Optional[str] = "gaff2",
+                                ):
+    cwd = os.getcwd()
+    if workdir:
+        os.chdir(workdir)
+    lines = [
+        f"source oldff/leaprc.{protein_ff}\n",
+        f"source leaprc.water.{water_model}\n",       
+    ]
+    if "tip3p" in water_model.lower():
+        lines.append(
+            "loadamberparams frcmod.ions1lm_126_tip3p\n"
+        )
+
+    lines.append(
+        f"source leaprc.{ligand_ff}\n",
+        f"loadamberparams {ligand.frcmod_file}\n",
+        f"lig = loadmol2 {ligand.file[0]}\n",
+        f"\n"
+        f"protein = loadpdb {protein_file}\n",
+        "complex = {protein lig}\n",
+        f"savepdb complex {ligand.name}_complex_dry.pdb\n",
+        f"check complex\n"
+        "\n"
+    )
+    if "oct" in box_shape.lower():
+        lines.append(
+            f"solvate{box_shape[:3]} complex {water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
+        )
+    else:
+        lines.append(
+            f"solvate{box_shape[:3]} complex {water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
+        )
+
+    lines.append(
+        "addions2 complex Na+ 0\n",
+        "addions2 complex Cl- 0\n",
+        "\n"
+        f"savepdb complex {ligand.name}_complex_solv.pdb\n",
+        f"saveamberparm complex {ligand.name}_complex_solv.prmtop {ligand.name}_complex_solv.inpcrd\n",
+        "quit"
+    )
+    return lines
+
 

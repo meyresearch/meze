@@ -33,7 +33,8 @@ from BioSimSpace.Types._temperature import Temperature as bssTemperature
 from BioSimSpace.Types._pressure import Pressure as bssPressure
 from .utils import (
     residue_restraint_mask,
-    write_distance_restraints
+    write_distance_restraints,
+    write_tleap_solvation_input
 )
 
 class MezeRecipe(BaseModel):
@@ -140,17 +141,22 @@ class Meze:
         else:
             coordinate_format = None
         topology_extension = os.path.splitext(self.topology)[1]
-        if coordinate_extension == topology_extension:
-            self.universe = mda.Universe(
-                self.topology,
-            )   
-        else:         
-            self.universe = mda.Universe(
-                self.topology,
-                self.coordinates,
-                topology_format="PARM7",
-                format=coordinate_format
-            )
+        try:
+            if coordinate_extension == topology_extension:
+                self.universe = mda.Universe(
+                    self.topology,
+                )   
+            else:         
+                self.universe = mda.Universe(
+                    self.topology,
+                    self.coordinates,
+                    topology_format="PARM7",
+                    format=coordinate_format
+                )
+        except FileNotFoundError:
+            print("Could not create meze object:\n")
+            raise
+        
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
@@ -159,6 +165,7 @@ class Meze:
             self.ligand_resname = self.ligand.system.getResidue(0).name
         else:        
             self.ligand_resname = self.get_small_molecule_resname()
+
 
     @classmethod
     def from_files(
@@ -432,11 +439,44 @@ class Meze:
             self,
             ligand=ligand,
         )
-        
 
-    def add_water(self) -> Self:
-        pass
+    def add_water(self, directory: str | None = None) -> Self:
+        if directory:
+            os.makedirs(directory, exist_ok=True)
         
+        if self.ligand:
+            parameterised_ligand = self.ligand.parameterise(directory)
+        
+        tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
+        tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
+        tleap_lines = write_tleap_solvation_input(ligand=parameterised_ligand) #TODO: put solvation options into MezeRecipe
+        with open(tleap_input_file, "w") as ifile:
+            ifile.writelines(tleap_lines)
+        
+        workdir = os.getcwd()
+        os.chdir(directory)
+        tleap_command = f"tleap -s -f {tleap_input_file} > {tleap_output_file}"
+        print(f"Running tleap with command:")
+        print(tleap_command)
+        os.system(tleap_command)
+
+        try:
+            solvated_topology = os.path.join(
+                directory, 
+                f"{parameterised_ligand.name}_complex_solv.prmtop"
+            )
+            solvated_coordinates = os.path.join(
+                directory, 
+                f"{parameterised_ligand.name}_complex_solv.inpcrd"
+            )
+            
+
+        except FileNotFoundError as e:
+            print(e)
+
+        os.chdir(workdir)
+
+
 
 @dataclass
 class ColdMeze(Meze):
