@@ -71,7 +71,7 @@ def write_tleap_solvation_input(protein_file: str,
                                 non_standard_residue: Optional[Ligand] = None,
                                 workdir: Optional[str] = "", #TODO move the below to model: 
                                 protein_ff: Optional[str] = "ff14SB",
-                                water_model: Optional[str] = "TIP3P",
+                                water_model: Optional[str] = "tip3p",
                                 box_shape: Optional[str] = "octahedral",
                                 box_edges: Optional[float] = 10.0,
                                 solvent_closeness: Optional[float] = 0.75,
@@ -81,7 +81,7 @@ def write_tleap_solvation_input(protein_file: str,
         os.chdir(workdir)
     lines = [
         f"source oldff/leaprc.{protein_ff}\n",
-        f"source leaprc.water.{water_model}\n",       
+        f"source leaprc.water.{water_model.lower}\n",       
     ]
     if "tip3p" in water_model.lower():
         lines.append(
