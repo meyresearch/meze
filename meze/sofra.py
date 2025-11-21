@@ -399,10 +399,13 @@ class Meze:
             step_restraint_file = os.path.join(run_directory, "restraints.RST")
             shutil.copyfile(restraint_file, step_restraint_file)
             
+            with open(config_file, "a") as file:
+                file.write("&wt TYPE='DUMPFREQ', istep1=10 /\n")
+
             if not namelist_options:
                 with open(config_file, "a") as file:
                     file.write(f"&wt TYPE=\"END\", /\n")
-
+        
             with open(config_file, "a") as file:
                 file.write("\n")
                 file.write(f"DISANG=restraints.RST\n")

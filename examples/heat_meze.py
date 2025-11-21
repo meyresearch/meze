@@ -34,7 +34,7 @@ minimised_meze = cold_meze.minimise(
     process_name="01_min",
     workdir=equil_dir,
     position_restraints="solute",
-    max_cycles=100,
+    max_cycles=10,
     is_gpu=True
 )
 
@@ -44,9 +44,8 @@ hot_meze = minimised_meze.heat(
 
     process_name="02_heat",
     workdir=equil_dir,
-    # position_restraints="solute",
-    timestep=0.001,
-    runtime=10, 
+    position_restraints="solute",
+    timestep=0.001, 
     start_temperature=100,
     end_temperature=300            
 ) 
