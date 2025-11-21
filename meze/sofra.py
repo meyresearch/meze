@@ -36,6 +36,7 @@ from .utils import (
     write_distance_restraints,
     write_tleap_solvation_input
 )
+import shutil
 
 class MezeRecipe(BaseModel):
     """Meze workflow recipe
@@ -389,9 +390,14 @@ class Meze:
 
         if distance_restraints:
             config_file = process._config_file
+            restraint_file = os.path.join(recipe.workdir, "restraints.RST")
 
-            with open(f"{run_directory}/restraints.RST", "w") as file:
-                file.writelines(distance_restraints)
+            if not os.path.isfile(restraint_file):
+                with open(restraint_file, "w") as file:
+                    file.writelines(distance_restraints)
+            
+            step_restraint_file = os.path.join(run_directory, "restraints.RST")
+            shutil.copyfile(restraint_file, step_restraint_file)
             
             if not namelist_options:
                 with open(config_file, "a") as file:
