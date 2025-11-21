@@ -1,26 +1,31 @@
-from meze import ColdMeze
+from meze import ColdMeze, ColdMezeRecipe
 import os
-import sys
+import json
 
-system = sys.argv[1]
+system_name = "vim2"
+ligand_name = "ligand_11"
 
-project_dir = "/user/work/af25016/indole-carboxylates/"
+project_dir = f"/Users/af25016/projects/meze/data/"
 
-input_dir = f"{project_dir}/{system}"
+# set ColdMezeRecipe including model (i.e. metal params), ligand(?)
+with open(f"{project_dir}/model_0_recipe.json", "r") as file:
+    json_recipe = json.load(file)
+
+json_recipe["path_to_engine"] = os.path.join(
+        os.environ["AMBERHOME"], "bin", "sander"
+    )
+
+input_dir = f"{project_dir}/protein/solvate_{ligand_name}_bound/"
 
 cold_meze = ColdMeze.from_files(
-    topology=f"{input_dir}/vim2_solv.prmtop",
-    coordinates=f"{input_dir}/vim2_solv.inpcrd",
-    group_name=f"vim2_{system}",
-    path_to_engine=os.path.join(
-        os.environ["PMEMDHOME"], "bin", "pmemd.cuda"
-    ),
-    runtime=1000
+    topology=f"{input_dir}/{ligand_name}_complex_solv.prmtop",
+    coordinates=f"{input_dir}/{ligand_name}_complex_solv.inpcrd",
+    recipe=ColdMezeRecipe(**json_recipe)
 )
 
 print(cold_meze.recipe)
                     
-equil_dir = os.path.join(project_dir, "equilibration", f"{system}")
+equil_dir = os.path.join(project_dir, "equilibration", f"{ligand_name}")
 os.makedirs(equil_dir, exist_ok=True)
 
 print("Minimising")
@@ -29,26 +34,25 @@ minimised_meze = cold_meze.minimise(
     process_name="01_min",
     workdir=equil_dir,
     position_restraints="solute",
-    max_cycles=5000,
+    max_cycles=10,
     is_gpu=True
 )
 
 print("02 - Heating with restrained solute")
 
-hot_meze = cold_meze.heat(
-    system=minimised_meze.system,
+hot_meze = minimised_meze.heat(
+
     process_name="02_heat",
     workdir=equil_dir,
     position_restraints="solute",
-    timestep=0.001,
+    timestep=0.001, 
     start_temperature=100,
     end_temperature=300            
 ) 
 
 print("03 - Constant temperature with restrained solute")
 
-relax_meze = cold_meze.heat(
-    system=hot_meze.system,
+relax_meze = hot_meze.heat(
     restart=True,
     process_name="03_relax",
     workdir=equil_dir,
@@ -58,8 +62,7 @@ relax_meze = cold_meze.heat(
 
 print("04 - Add pressure with restrained solute")
 
-pressure_meze = cold_meze.pressurise(
-     system=relax_meze.system,
+pressure_meze = relax_meze.pressurise(
      restart=True,
      process_name="04_pressure",
      workdir=equil_dir, 
@@ -69,8 +72,7 @@ pressure_meze = cold_meze.pressurise(
 
 print("05 - Start lowering restraint weight on  solute")
 
-lower_restraint = cold_meze.pressurise(
-     system=pressure_meze.system,
+lower_restraint = pressure_meze.pressurise(
      restart=True,
      process_name="05_lower",
      workdir=equil_dir,
@@ -81,8 +83,7 @@ lower_restraint = cold_meze.pressurise(
 
 print("06 - Only restrain backbone atoms (and metal coordination)")
 
-relax_backbone = cold_meze.pressurise(
-     system=lower_restraint.system,
+relax_backbone = lower_restraint.pressurise(
      restart=True,
      process_name="06_relax",
      workdir=equil_dir,
@@ -93,8 +94,7 @@ relax_backbone = cold_meze.pressurise(
 
 print("07 - Continue restraint weight on backbone atoms (and metal coordination)")
 
-continue_lowering = cold_meze.pressurise(
-     system=relax_backbone.system, 
+continue_lowering = relax_backbone.pressurise(
      restart=True,
      process_name="07_continue",
      workdir=equil_dir,

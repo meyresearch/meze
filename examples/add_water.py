@@ -36,7 +36,6 @@ cold_system = cold_meze_with_lig.add_non_standard_residue(
 
 print(cold_system)
 
-# solvate <-- write solvate.py script
 #TODO: put solvation options into MezeRecipe
 solvate_dir = f"{project_dir}/protein/solvate_{ligand_name}_bound/"
 
@@ -44,32 +43,3 @@ solvate_dir = f"{project_dir}/protein/solvate_{ligand_name}_bound/"
 solvated_meze = cold_system.add_water(directory=solvate_dir)
 
 print(solvated_meze)
-
-# heat meze
-equil_dir = os.path.join(project_dir, "equilibration", f"{ligand_name}")
-os.makedirs(equil_dir, exist_ok=True)
-
-print("Minimising")
-
-minimised_meze = solvated_meze.minimise(
-    process_name="01_min",
-    workdir=equil_dir,
-    position_restraints="solute",
-    max_cycles=50,
-    is_gpu=False
-)
-
-print("02 - Heating with restrained solute")
-
-hot_meze = minimised_meze.heat(
-    process_name="02_heat",
-    workdir=equil_dir,
-    position_restraints="solute",
-    timestep=0.001,
-    runtime=20,
-    start_temperature=100,
-    end_temperature=300,
-    is_gpu=False            
-) 
-
-# run production
