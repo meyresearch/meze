@@ -24,7 +24,8 @@ equil_dir = f"{project_dir}/equilibration/{ligand_name}/repeat_{repeat}/"
 hot_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
     topology=f"{equil_dir}/08_free/next.prm7",
-    coordinates=f"{equil_dir}/08_free/next.rst7"
+    coordinates=f"{equil_dir}/08_free/next.rst7",
+    restraint_file=f"{equil_dir}/restraints.RST"
 ) 
 
 production_dir = os.path.join(project_dir, "outputs", f"{ligand_name}", f"repeat_{repeat}")

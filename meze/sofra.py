@@ -835,19 +835,40 @@ class ColdMeze(Meze):
 
 class HotMeze(Meze):
     recipe: HotMezeRecipe
+    restraint_file: Optional[str] = field(default_factory=str)
 
     @classmethod
     def from_files(
         cls, 
         topology: str, 
         coordinates: str, 
+        restraint_file: Optional[str] = "",
         **kwargs
     ) -> "HotMeze":
         """
-        Build a ColdMeze object from topology and coordinates.
-        Passes extra kwargs into ColdMezeRecipe.
+        Build a HotMeze object from topology and coordinates.
+        Passes extra kwargs into HotMezeRecipe.
         """
-        recipe = HotMezeRecipe(**kwargs)
+        if recipe is None:
+            recipe = HotMezeRecipe(**kwargs)
+        elif isinstance(recipe, dict):
+            recipe = HotMezeRecipe(**recipe)
+        elif not isinstance(recipe, HotMezeRecipe):
+            raise TypeError(
+                f"Expected 'recipe' to be a HotMezeRecipe, dict, or None, but got {type(recipe).__name__}"
+        )
+
+        if restraint_file:
+            if not os.path.isfile(restraint_file):
+                raise FileNotFoundError(
+                    f"Restraint file not found: {restraint_file}"
+                )
+        elif not restraint_file and recipe.model == 0:
+            warnings.warn(
+                "No restraint file supplied while model is 0."
+                "Restraints will be determined from input files."
+            )
+
         return cls(
             topology=topology, 
             coordinates=coordinates, 
@@ -874,8 +895,10 @@ class HotMeze(Meze):
             dt=timestep or self.recipe.dt,
             temperature=temperature or self.recipe.temperature,
             pressure=pressure or self.recipe.pressure,
-            path_to_engine=engine_executable or self.recipe.path_to_engine
+            path_to_engine=engine_executable or self.recipe.path_to_engine,
+            model=self.recipe.model
         )
+
         config_options = {"cut": recipe.nb_cutoff,
                           "ntpr": write_frequency,
                           "ntwx": write_frequency,
@@ -883,7 +906,10 @@ class HotMeze(Meze):
                           "irest": 1,
                           "ntx": 5, 
                           "iwrap": 0}
-        
+
+        if self.recipe.model == 0:
+            config_options["nmropt"] = 1
+
         protocol = bss.Protocol.Production(
             timestep=bss.Types.Time(recipe.dt, "ps"),
             runtime=bss.Types.Time(recipe.runtime, "ns"),
