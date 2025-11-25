@@ -12,7 +12,7 @@ with open(f"{project_dir}/inputs/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
 json_recipe["path_to_engine"] = os.path.join(
-    os.environ["PMEMDHOME"], "bin", "pmemd.cuda"        
+    os.environ["AMBERHOME"], "bin", "sander"        
 )
 
 #TODO make a separate coldmezerecipe.json and a hotmezerecipe.json
@@ -32,6 +32,6 @@ production_dir = os.path.join(project_dir, "outputs", f"{ligand_name}", f"repeat
 os.makedirs(production_dir, exist_ok=True)
 
 hot_meze.run(
-    process_name="model-0-prod",
+    process_name="prod",
     workdir=production_dir
 )
