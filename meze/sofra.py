@@ -364,7 +364,8 @@ class Meze:
             config_options: Optional[dict] = None,
             namelist_options: Optional[list] = None,
             is_gpu: bool = True,
-            distance_restraints: Optional[list] = None
+            distance_restraints: Optional[list] = None,
+            distance_write_frequency: Optional[int] = 100,
     ):
         input_system = system or self.system
         run_directory = os.path.join(recipe.workdir, process_name)
@@ -400,7 +401,7 @@ class Meze:
             shutil.copyfile(restraint_file, step_restraint_file)
             
             with open(config_file, "a") as file:
-                file.write("&wt TYPE='DUMPFREQ', istep1=10 /\n")
+                file.write(f"&wt TYPE='DUMPFREQ', istep1={distance_write_frequency} /\n")
 
             if not namelist_options:
                 with open(config_file, "a") as file:
@@ -833,9 +834,24 @@ class ColdMeze(Meze):
             engine_executable=engine_executable
         )
 
+@dataclass
 class HotMeze(Meze):
     recipe: HotMezeRecipe
-    restraint_file: Optional[str] = field(default_factory=str)
+    restraint_file: Optional[str] = None
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        if self.restraint_file:
+            if not os.path.isfile(self.restraint_file):
+                raise FileNotFoundError(
+                    f"Restraint file not found: {self.restraint_file}"
+                )
+        elif not self.restraint_file and self.recipe.model == 0:
+            warnings.warn(
+                "No restraint file supplied while model is 0."
+                "Restraints will be determined from input files."
+            )
 
     @classmethod
     def from_files(
@@ -843,6 +859,7 @@ class HotMeze(Meze):
         topology: str, 
         coordinates: str, 
         restraint_file: Optional[str] = "",
+        recipe: Optional[Union[dict, "HotMezeRecipe"]] = None,
         **kwargs
     ) -> "HotMeze":
         """
@@ -858,21 +875,11 @@ class HotMeze(Meze):
                 f"Expected 'recipe' to be a HotMezeRecipe, dict, or None, but got {type(recipe).__name__}"
         )
 
-        if restraint_file:
-            if not os.path.isfile(restraint_file):
-                raise FileNotFoundError(
-                    f"Restraint file not found: {restraint_file}"
-                )
-        elif not restraint_file and recipe.model == 0:
-            warnings.warn(
-                "No restraint file supplied while model is 0."
-                "Restraints will be determined from input files."
-            )
-
         return cls(
             topology=topology, 
             coordinates=coordinates, 
-            recipe=recipe
+            recipe=recipe,
+            restraint_file=restraint_file
         )
 
     def run(
@@ -886,7 +893,8 @@ class HotMeze(Meze):
             temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = 1,
             engine_executable: Optional[str] = None,
-            write_frequency: Optional[int] = 500000
+            write_frequency: Optional[int] = 500000,
+            distance_write_frequency: Optional[int] = 10000
     ):
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
@@ -916,13 +924,17 @@ class HotMeze(Meze):
             temperature=bss.Types.Temperature(recipe.temperature, "K"),
             pressure=bss.Types.Pressure(recipe.pressure, "atm")
         )
+        if os.path.isfile(self.restraint_file):
+            step_restraint_file = os.path.join(recipe.workdir, "restraints.RST")
+            shutil.copyfile(self.restraint_file, step_restraint_file)
 
         return super()._run(
             protocol=protocol,
             recipe=recipe,
             system=system,
             process_name=process_name,
-            config_options=config_options
+            config_options=config_options,
+            distance_write_frequency=distance_write_frequency
         )
         
 @dataclass
