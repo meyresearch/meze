@@ -1,0 +1,9 @@
+GLZ     4
+1       1       H       N       -C      CA
+1       5       HA      CA      N       CB      C
+2       6       HB      CB      CA      CG
+2       6       HG      CG      CB      CD
+ASZ     3
+1       1       H       N       -C      CA
+1       5       HA      CA      N       CB      C
+2       6       HB      CB      CA      CG

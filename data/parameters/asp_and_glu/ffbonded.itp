@@ -1,0 +1,13 @@
+[ bondtypes ]
+; i    j  func       b0          kb
+OZ         1    0.12500   548940.8 ; 7,(1986),230; GLU,ASP
+
+[ angletypes ]
+;  i    j    k  func       th0       cth
+CT  C   OZ           1   117.000    585.760 ;
+OZ  C   O2           1   126.000    669.440 ; AA GLU            (SCH JPC 79,2379)
+
+[ dihedraltypes ]
+;i  j   k  l	 func      phase      kd      pn
+X   OZ  C   O2       4      180.00    43.93200     2    ; JCC,7,(1986),230
+X   O2  C   OZ       4      180.00    43.93200     2    ; JCC,7,(1986),230
