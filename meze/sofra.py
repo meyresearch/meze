@@ -893,7 +893,7 @@ class HotMeze(Meze):
             temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = 1,
             engine_executable: Optional[str] = None,
-            write_frequency: Optional[int] = 500000,
+            write_frequency: Optional[int] = 100000,
             distance_write_frequency: Optional[int] = 10000
     ):
         recipe = HotMezeRecipe(
