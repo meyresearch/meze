@@ -25,7 +25,6 @@ cold_meze_with_lig = cold_meze.add_ligand(
     ligand_file=f"{project_dir}/inputs/hybrid_model/ligands/{ligand_name}.pdb",
     ligand_charge=-1,
     name="MOL"
-)
 
 #TODO make non standard res a union of Ligand and List[Ligand]
 cold_system = cold_meze_with_lig.add_non_standard_residue(
