@@ -15,12 +15,12 @@ from pydantic import (
     BaseModel
 )
 from typing import (
-    Iterable,
     List,
     Optional,
     Literal,
     Union,
-    Self
+    Self,
+    List
 )
 from .ligand import Ligand
 import os
@@ -137,7 +137,7 @@ class Meze:
     disulfide_bridges: Optional[List[dict[str, int]]] = None
     ligand: Optional[Ligand] = None 
     non_standard_residues: dict[dict] = field(default_factory=dict)   
-    
+
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
         if coordinate_extension in [".rst7"]:
@@ -554,7 +554,7 @@ class Meze:
             self,
             ligand=ligand,
         )
-    
+
     def _validate_non_standard_residues(self):
         for residue, properties in self.non_standard_residues.items():
             if not {"charge", "atom_type"} <= properties.keys():
