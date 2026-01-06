@@ -667,7 +667,7 @@ class Meze:
         components = [self.coordinates]
 
         if self.ligand:
-            components.append(self.ligand.file[0])
+            components.append(f"{path}/{self.ligand.name}.pdb")
 
         if self.non_standard_residue:
             components.append(self.non_standard_residue.file[0])
