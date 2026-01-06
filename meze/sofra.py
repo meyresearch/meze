@@ -572,7 +572,6 @@ class Meze:
                     f"Non-standard residue '{residue}' has unsupported 'atom_type': {properties['atom_type']}"
                 )
             
-
     def add_water(self, directory: str | None = None) -> Self:
         if directory:
             os.makedirs(directory, exist_ok=True)
