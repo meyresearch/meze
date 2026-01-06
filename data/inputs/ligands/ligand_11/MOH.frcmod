@@ -1,0 +1,20 @@
+Remark line goes here
+MASS
+OH 16.000        0.465               same as oh 
+HO 1.008         0.135               same as ho 
+
+BOND
+HO-OH  371.40   0.973       same as ho-oh, penalty score=  0.0
+
+ANGLE
+
+DIHE
+
+IMPROPER
+
+NONBON
+  OH          1.7210  0.2104             same as oh 
+  HO          0.0000  0.0000             same as ho 
+
+
+
