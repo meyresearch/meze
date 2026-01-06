@@ -556,7 +556,6 @@ class Meze:
             ligand=ligand,
         )
 
-
     def _validate_non_standard_residues(self):
         for residue, properties in self.non_standard_residues.items():
             if not {"charge", "atom_type"} <= properties.keys():
