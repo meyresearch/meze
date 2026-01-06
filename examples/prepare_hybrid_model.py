@@ -48,11 +48,19 @@ parameterised_hydroxide = cold_complex.non_standard_residue.parameterise(
 )
 
 cold_complex.prepare_metals_for_ezaff(
+<<<<<<< HEAD
     path=f"{project_dir}/inputs/hybrid_model/ligands/{ligand_name}/"
 )
 
 prepared_complex = cold_complex.write_complex(
     path=f"{project_dir}/inputs/hybrid_model/ligands/{ligand_name}/",
+=======
+    path=f"{project_dir}/inputs/ligands/{ligand_name}/"
+)
+
+prepared_complex = cold_complex.write_complex(
+    path=f"{project_dir}/inputs/ligands/{ligand_name}/",
+>>>>>>> 3049430 (wip: prepare ezaff/hybrid model)
     ligand_name=ligand_name
 )
 
