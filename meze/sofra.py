@@ -665,7 +665,11 @@ class Meze:
         components = [self.coordinates]
 
         if self.ligand:
+<<<<<<< HEAD
             components.append(f"{path}/{self.ligand.name}.pdb")
+=======
+            components.append(self.ligand.file[0])
+>>>>>>> 55b8965 (feat: save ligand pdb as mol.pdb)
 
         if self.non_standard_residue:
             components.append(self.non_standard_residue.file[0])
