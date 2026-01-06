@@ -62,6 +62,16 @@ class Ligand():
         else:
             file = self.file[0]
         
+        with open(file, "r") as ifile:
+            lines = ifile.readlines()
+
+        old_resname = [line.split()[3] for line in lines][0]
+        new_lines = [line.replace(old_resname, residue_name) for line in lines]
+        with open(f"{path}/{residue_name}.pdb", "w") as ofile:
+            ofile.writelines(new_lines)
+
+        file = f"{path}/{residue_name}.pdb"
+
         ext = Path(file).suffix[1:]
 
         os.makedirs(path, exist_ok=True)

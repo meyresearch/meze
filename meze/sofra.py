@@ -45,6 +45,7 @@ class MezeRecipe(BaseModel):
     """
     workdir: str = Field(default_factory=os.getcwd, description="Working directory")
     metal: str = Field("ZN", description="Metal element")
+    metal_charge: int = Field(2, description="Metal charge")
     group_name: str = Field("meze", description="Group name for project")
     coordination_cut_off: float = Field(
         2.8, ge=0, description="Metal coordination cutoff in Å"
@@ -555,6 +556,7 @@ class Meze:
             ligand=ligand,
         )
 
+
     def _validate_non_standard_residues(self):
         for residue, properties in self.non_standard_residues.items():
             if not {"charge", "atom_type"} <= properties.keys():
@@ -648,6 +650,51 @@ class Meze:
 
         os.chdir(workdir)
         return solvated_meze
+
+    def prepare_metals_for_ezaff(self, path: str) -> None:
+
+        for i, metal in enumerate(self.metals):
+            metal_atomgroup = self.universe.select_atoms(f"resid {metal.resid}")
+            metal_mcpb_resname = f"{metal.name.upper()}{i+1}"
+
+            metal_atomgroup.write(f"{path}/{metal_mcpb_resname}.pdb")
+
+            metal_to_pdb_command = f"metalpdb2mol2.py -i {path}/{metal_mcpb_resname}.pdb -o {path}/{metal_mcpb_resname}.mol2 -c {self.recipe.metal_charge}"
+
+            os.system(metal_to_pdb_command)
+    
+    def write_complex(self, path: str, ligand_name: str = "ligand") -> Self:
+        components = [self.coordinates]
+
+        if self.ligand:
+            components.append(self.ligand.file[0])
+
+        if self.non_standard_residue:
+            components.append(self.non_standard_residue.file[0])
+
+        if self.crystal_waters:
+            components.append(self.crystal_waters.file[0])
+
+        components_str = " ".join(components)
+        if self.ligand:
+            cat_command = "cat " + components_str + f" > {path}/{ligand_name}_complex.pdb"
+            pdb4amber_command = f"pdb4amber -i {path}/{ligand_name}_complex.pdb -o {path}/vim2_{ligand_name}.amber.pdb"
+        else: 
+            cat_command = "cat " + components_str + f" > {path}/complex.pdb"
+            pdb4amber_command = f"pdb4amber -i complex.pdb -o vim2_complex.amber.pdb"
+        
+        print(f"Combining complex files with command:\n{cat_command}")
+        os.system(cat_command)
+
+        print(f"Running pdb4amber with command:\n{pdb4amber_command}")
+        os.system(pdb4amber_command)
+
+        return dataclasses.replace(
+            self,
+            coordinates=f"{path}/vim2_{ligand_name}.amber.pdb",
+            topology=f"{path}/vim2_{ligand_name}.amber.pdb"
+        )
+        
 
 
 
