@@ -3,10 +3,10 @@
 -I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/parm to search path.
 -I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/cmd to search path.
 -s: Ignoring all leaprc startup files.
--f: Source /Users/af25016/projects/meze/data//protein/solvate_ligand_11_bound/tleap_solvate.in.
+-f: Source /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/tleap_solvate.in.
 
 Welcome to LEaP!
-Sourcing: /Users/af25016/projects/meze/data//protein/solvate_ligand_11_bound/tleap_solvate.in
+Sourcing: /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/tleap_solvate.in
 ----- Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/oldff/leaprc.ff14SB
 ----- Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/oldff/leaprc.ff14SB done
 Log file: ./leap.log
@@ -23,8 +23,8 @@ Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/aminont12.lib
 Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/nucleic12.lib
 Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/atomic_ions.lib
 Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/solvents.lib
------ Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.water.TIP3P
------ Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.water.TIP3P done
+----- Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.water.tip3p
+----- Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.water.tip3p done
 Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/atomic_ions.lib
 Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/solvents.lib
 Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.tip3p
@@ -47,7 +47,7 @@ Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ion
 Reading force field modification type file (frcmod)
 Reading title:
 Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
-Loading PDB file: /Users/af25016/projects/meze/data//protein/vim2.fixed.pdb
+Loading PDB file: /Users/af25016/projects/meze/data//inputs/model_0/protein/vim2.fixed.pdb
   total atoms in file: 3997
 ----- Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.gaff2
 ----- Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.gaff2 done
@@ -55,17 +55,17 @@ Log file: ./leap.log
 Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/gaff2.dat
 Reading title:
 AMBER General Force Field for organic molecules (Version 2.2.20, March 2021)
-Loading parameters: /Users/af25016/projects/meze/data//protein/solvate_ligand_11_bound/ligand_11.frcmod
+Loading parameters: /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/ligand_11.frcmod
 Reading force field modification type file (frcmod)
 Reading title:
 Remark line goes here
-Loading Mol2 file: /Users/af25016/projects/meze/data//protein/solvate_ligand_11_bound/ligand_11.mol2
+Loading Mol2 file: /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/ligand_11.mol2
 Reading MOLECULE named MOL
-Loading parameters: /Users/af25016/projects/meze/data//protein/solvate_ligand_11_bound/MOH.frcmod
+Loading parameters: /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/MOH.frcmod
 Reading force field modification type file (frcmod)
 Reading title:
 Remark line goes here
-Loading Mol2 file: /Users/af25016/projects/meze/data//protein/solvate_ligand_11_bound/MOH.mol2
+Loading Mol2 file: /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/MOH.mol2
 Reading MOLECULE named MOH
 Writing pdb file: ligand_11_complex_dry.pdb
 

@@ -1,13 +1,13 @@
 source oldff/leaprc.ff14SB
-source leaprc.water.TIP3P
+source leaprc.water.tip3p
 loadamberparams frcmod.ions1lm_126_tip3p
-protein = loadpdb /Users/af25016/projects/meze/data//protein/vim2.fixed.pdb
+protein = loadpdb /Users/af25016/projects/meze/data//inputs/model_0/protein/vim2.fixed.pdb
 source leaprc.gaff2
-loadamberparams /Users/af25016/projects/meze/data//protein/solvate_ligand_11_bound/ligand_11.frcmod
-lig = loadmol2 /Users/af25016/projects/meze/data//protein/solvate_ligand_11_bound/ligand_11.mol2
+loadamberparams /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/ligand_11.frcmod
+lig = loadmol2 /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/ligand_11.mol2
 
-loadamberparams /Users/af25016/projects/meze/data//protein/solvate_ligand_11_bound/MOH.frcmod
-res = loadmol2 /Users/af25016/projects/meze/data//protein/solvate_ligand_11_bound/MOH.mol2
+loadamberparams /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/MOH.frcmod
+res = loadmol2 /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/MOH.mol2
 
 complex = combine {protein res lig}
 savepdb complex ligand_11_complex_dry.pdb
