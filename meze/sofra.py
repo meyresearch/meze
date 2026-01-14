@@ -497,7 +497,7 @@ class Meze:
         tleap_lines = write_tleap_solvation_input(
             protein_file=self.topology,
             ligand=parameterised_ligand,
-            parameterised_non_standard_residues=parameterised_non_standard_residues
+            non_standard_residues=parameterised_non_standard_residues
         ) #TODO: put solvation options into MezeRecipe
         with open(tleap_input_file, "w") as ifile:
             ifile.writelines(tleap_lines)
@@ -522,7 +522,8 @@ class Meze:
                 self, 
                 topology=solvated_topology, 
                 coordinates=solvated_coordinates, 
-                ligand=parameterised_ligand
+                ligand=parameterised_ligand,
+                non_standard_residues=parameterised_non_standard_residues
             )
         
         except FileNotFoundError:
