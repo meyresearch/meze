@@ -8,14 +8,14 @@ ligand_name = "ligand_11"
 project_dir = f"/Users/af25016/projects/meze/data/"
 
 # set ColdMezeRecipe including model (i.e. metal params), ligand(?)
-with open(f"{project_dir}/model_0_recipe.json", "r") as file:
+with open(f"{project_dir}/inputs/protein/{system_name}/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
 json_recipe["path_to_engine"] = os.path.join(
         os.environ["AMBERHOME"], "bin", "sander"
     )
 
-input_dir = f"{project_dir}/protein/solvate_{ligand_name}_bound/"
+input_dir = f"{project_dir}/inputs/protein/{system_name}/solvate_{ligand_name}_bound/"
 
 cold_meze = ColdMeze.from_files(
     topology=f"{input_dir}/{ligand_name}_complex_solv.prmtop",
@@ -24,8 +24,8 @@ cold_meze = ColdMeze.from_files(
 )
 
 print(cold_meze.recipe)
-                    
-equil_dir = os.path.join(project_dir, "equilibration", f"{ligand_name}")
+
+equil_dir = os.path.join(project_dir, "equilibration", system_name, f"{ligand_name}")
 os.makedirs(equil_dir, exist_ok=True)
 
 print("Minimising")

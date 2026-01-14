@@ -15,6 +15,7 @@ from pydantic import (
     BaseModel
 )
 from typing import (
+    List,
     Optional,
     Literal,
     Union,
@@ -133,7 +134,7 @@ class Meze:
     coordinates: str 
     recipe: MezeRecipe 
     ligand: Optional[Ligand] = None 
-    non_standard_residue: Optional[Ligand] = None     
+    non_standard_residue: List[Optional[Ligand]] = None     
 
     
     def __post_init__(self):
