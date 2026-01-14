@@ -6,8 +6,18 @@ __pycache__/
 # C extensions
 *.so
 
+# Data -> add these manually as needed
+*.pdb
+*.prmtop
+*.inpcrd
+*.mol2
+*.frcmod
+*.rst7
+*.prm7
+
 # Distribution / packaging
 .Python
+*.DS_Store
 build/
 develop-eggs/
 dist/

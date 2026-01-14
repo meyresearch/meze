@@ -15,6 +15,8 @@ from pydantic import (
     BaseModel
 )
 from typing import (
+    Iterable,
+    List,
     Optional,
     Literal,
     Union,
@@ -133,7 +135,7 @@ class Meze:
     coordinates: str 
     recipe: MezeRecipe 
     ligand: Optional[Ligand] = None 
-    non_standard_residue: Optional[Ligand] = None     
+    non_standard_residues: List[Optional[Ligand]] = field(default_factory=list)     
 
     
     def __post_init__(self):
@@ -453,20 +455,48 @@ class Meze:
     
     def add_non_standard_residue(
             self, 
-            file: Union[str, list[str]],
-            name: str | None = None, 
-            charge: Optional[int] = 0,
-            atom_type: Optional[str] = "gaff2"
+            files: str | Iterable[str],
+            names: Optional[Union[str, Iterable[str]]] = None,
+            charges: Optional[Union[int, Iterable[int]]] = 0,
+            atom_types: Optional[Union[str, Iterable[str]]] = "gaff2",
     ) -> Self:
-        residue = Ligand(
-            file, 
-            name=name, 
-            charge=charge,
-            atom_type=atom_type
-        )
+
+        if isinstance(files, str):
+            validated_files = [files]
+        else:
+            validated_files = list(files)
+
+        if isinstance(names, str):
+            validated_names = [names] * len(validated_files)
+        elif names is None:
+            validated_names = [None] * len(validated_files)
+        else:
+            validated_names = list(names)
+
+        if isinstance(charges, int):
+            validated_charges = [charges] * len(validated_files)
+        else:
+            validated_charges = list(charges)
+
+        if isinstance(atom_types, str):
+            validated_atom_types = [atom_types] * len(validated_files)
+        else:
+            validated_atom_types = list(atom_types)
+
+        if not (len(validated_files) == len(validated_names) == len(validated_charges) == len(validated_atom_types)):
+            raise ValueError(
+                "files, names, charges, and atom_types must have the same length",
+                f"Got files: {len(validated_files)}, names:{len(validated_names)}, charges: {len(validated_charges)}, atom_types: {len(validated_atom_types)}"
+            )
+        
+        new_residues = [
+            Ligand(
+                f, name=n, charge=c, atom_type=at)
+            for f, n, c, at in zip(validated_files, validated_names, validated_charges, validated_atom_types)
+        ]
         return dataclasses.replace(
             self,
-            non_standard_residue=residue,
+            non_standard_residues=new_residues,
         )
 
     def add_water(self, directory: str | None = None) -> Self:
@@ -474,20 +504,25 @@ class Meze:
             os.makedirs(directory, exist_ok=True)
         
         parameterised_ligand = self.ligand.parameterise(directory)
-        
-        if self.non_standard_residue:
-            parameterised_non_standard_residue = self.non_standard_residue.parameterise(
-                path=directory,
-                atom_type=self.non_standard_residue.atom_type,
-                residue_name=self.non_standard_residue.name,
-            )
+
+        if self.non_standard_residues:
+            parameterised_non_standard_residues = [
+                non_standard_residue.parameterise(
+                    path=directory,
+                    atom_type=non_standard_residue.atom_type,
+                    residue_name=non_standard_residue.name
+                )
+                for non_standard_residue in self.non_standard_residues
+            ]
+        else:
+            parameterised_non_standard_residues = None
 
         tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
         tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
         tleap_lines = write_tleap_solvation_input(
             protein_file=self.topology,
             ligand=parameterised_ligand,
-            non_standard_residue=parameterised_non_standard_residue
+            non_standard_residues=parameterised_non_standard_residues
         ) #TODO: put solvation options into MezeRecipe
         with open(tleap_input_file, "w") as ifile:
             ifile.writelines(tleap_lines)
@@ -512,7 +547,8 @@ class Meze:
                 self, 
                 topology=solvated_topology, 
                 coordinates=solvated_coordinates, 
-                ligand=parameterised_ligand
+                ligand=parameterised_ligand,
+                non_standard_residues=parameterised_non_standard_residues
             )
         
         except FileNotFoundError:

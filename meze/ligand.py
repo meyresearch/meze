@@ -20,6 +20,7 @@ class Ligand():
     atom_type: Optional[str] = "gaff2"
     parameterised: bool = False
     frcmod_file: Optional[str] = None
+    residue_name: Optional[str] = None
 
     def __post_init__(self):
         if isinstance(self.file, str):
@@ -114,10 +115,12 @@ class Ligand():
                 UserWarning
             )
         os.chdir(workdir)
+
         return dataclasses.replace(
             self,
             file=mol2_path,
             parameterised=True,
-            frcmod_file=frcmod_path
+            frcmod_file=frcmod_path,
+            residue_name=residue_name
         )       
         

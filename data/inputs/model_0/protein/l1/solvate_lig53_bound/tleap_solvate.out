@@ -1,0 +1,716 @@
+-I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/prep to search path.
+-I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/lib to search path.
+-I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/parm to search path.
+-I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/cmd to search path.
+-s: Ignoring all leaprc startup files.
+-f: Source /Users/af25016/projects/meze/data//inputs/model_0/protein/l1/solvate_lig53_bound/tleap_solvate.in.
+
+Welcome to LEaP!
+Sourcing: /Users/af25016/projects/meze/data//inputs/model_0/protein/l1/solvate_lig53_bound/tleap_solvate.in
+----- Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/oldff/leaprc.ff14SB
+----- Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/oldff/leaprc.ff14SB done
+Log file: ./leap.log
+Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/parm10.dat
+Reading title:
+PARM99 + frcmod.ff99SB + frcmod.parmbsc0 + OL3 for RNA
+Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ff14SB
+Reading force field modification type file (frcmod)
+Reading title:
+ff14SB protein backbone and sidechain parameters
+Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/amino12.lib
+Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/aminoct12.lib
+Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/aminont12.lib
+Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/nucleic12.lib
+Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/atomic_ions.lib
+Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/solvents.lib
+----- Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.water.tip3p
+----- Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.water.tip3p done
+Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/atomic_ions.lib
+Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/solvents.lib
+Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+This is the additional/replacement parameter set for TIP3P water
+Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ionsjc_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Monovalent ion parameters for Ewald and TIP3P water from Joung & Cheatham JPCB (2008)
+Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ions234lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of divalent to tetravalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
+Loading PDB file: /Users/af25016/projects/meze/data//inputs/model_0/protein/l1/l1.fixed.pdb
+  total atoms in file: 9604
+----- Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.gaff2
+----- Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.gaff2 done
+Log file: ./leap.log
+Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/gaff2.dat
+Reading title:
+AMBER General Force Field for organic molecules (Version 2.2.20, March 2021)
+Loading parameters: /Users/af25016/projects/meze/data//inputs/model_0/protein/l1/solvate_lig53_bound/lig53.frcmod
+Reading force field modification type file (frcmod)
+Reading title:
+Remark line goes here
+Loading Mol2 file: /Users/af25016/projects/meze/data//inputs/model_0/protein/l1/solvate_lig53_bound/lig53.mol2
+Reading MOLECULE named MOL
+Loading parameters: /Users/af25016/projects/meze/data//inputs/model_0/protein/l1/solvate_lig53_bound/MOH.frcmod
+Reading force field modification type file (frcmod)
+Reading title:
+Remark line goes here
+Loading Mol2 file: /Users/af25016/projects/meze/data//inputs/model_0/protein/l1/solvate_lig53_bound/MOH.mol2
+Reading MOLECULE named MOH
+Loading parameters: /Users/af25016/projects/meze/data//inputs/model_0/protein/l1/solvate_lig53_bound/DOH.frcmod
+Reading force field modification type file (frcmod)
+Reading title:
+Remark line goes here
+Loading Mol2 file: /Users/af25016/projects/meze/data//inputs/model_0/protein/l1/solvate_lig53_bound/DOH.mol2
+Reading MOLECULE named DOH
+Writing pdb file: lig53_complex_dry.pdb
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+ Converting N-terminal residue name to PDB format: NGLU -> GLU
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+ Converting C-terminal residue name to PDB format: CGLY -> GLY
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+ Converting N-terminal residue name to PDB format: NGLU -> GLU
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+ Converting C-terminal residue name to PDB format: CGLY -> GLY
+Checking 'complex'....
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+The unperturbed charge of the unit (-5.000000) is not zero.
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.443 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 1094>.A<H2 3> and .R<WAT 999>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.000 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 1093>.A<H2 3> and .R<LEU 389>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.454 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 1089>.A<H1 2> and .R<GLU 362>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.149 angstroms between nonbonded atoms H2 and HE2
+-------  .R<WAT 1087>.A<H2 3> and .R<HIE 390>.A<HE2 13>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.326 angstroms between nonbonded atoms H2 and NE2
+-------  .R<WAT 1085>.A<H2 3> and .R<HID 296>.A<NE2 13>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.153 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 1083>.A<H2 3> and .R<ASN 463>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.129 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 1081>.A<H2 3> and .R<HID 427>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.826 angstroms between nonbonded atoms H2 and HD1
+-------  .R<WAT 1079>.A<H2 3> and .R<HID 356>.A<HD1 10>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.402 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 1075>.A<H1 2> and .R<THR 490>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.256 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 1070>.A<H2 3> and .R<WAT 1060>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.455 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 1067>.A<H1 2> and .R<ALA 361>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.275 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 1056>.A<H1 2> and .R<WAT 1027>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.435 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 1052>.A<H2 3> and .R<WAT 838>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.413 angstroms between nonbonded atoms H2 and O
+-------  .R<WAT 1051>.A<H2 3> and .R<WAT 927>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.405 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 1051>.A<H2 3> and .R<WAT 927>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.341 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 1050>.A<H2 3> and .R<LYS 514>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.245 angstroms between nonbonded atoms H1 and HD1
+-------  .R<WAT 1048>.A<H1 2> and .R<HID 492>.A<HD1 10>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.459 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 1045>.A<H1 2> and .R<HIE 329>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.436 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 1041>.A<H1 2> and .R<WAT 924>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.253 angstroms between nonbonded atoms H1 and HH11
+-------  .R<WAT 1038>.A<H1 2> and .R<ARG 97>.A<HH11 18>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.213 angstroms between nonbonded atoms H2 and O
+-------  .R<WAT 1033>.A<H2 3> and .R<WAT 995>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.337 angstroms between nonbonded atoms H2 and HG1
+-------  .R<WAT 1025>.A<H2 3> and .R<THR 435>.A<HG1 12>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.067 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 1023>.A<H1 2> and .R<LEU 453>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.248 angstroms between nonbonded atoms O and HH21
+-------  .R<WAT 1022>.A<O 1> and .R<ARG 465>.A<HH21 21>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.084 angstroms between nonbonded atoms H2 and HH21
+-------  .R<WAT 1022>.A<H2 3> and .R<ARG 465>.A<HH21 21>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.172 angstroms between nonbonded atoms H1 and HD21
+-------  .R<WAT 1018>.A<H1 2> and .R<ASN 401>.A<HD21 11>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.432 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 1004>.A<H1 2> and .R<GLN 292>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.417 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 1001>.A<H1 2> and .R<SER 283>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.161 angstroms between nonbonded atoms H2 and HH21
+-------  .R<WAT 995>.A<H2 3> and .R<ARG 404>.A<HH21 21>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.184 angstroms between nonbonded atoms H2 and HE1
+-------  .R<WAT 986>.A<H2 3> and .R<TRP 298>.A<HE1 12>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.425 angstroms between nonbonded atoms O and HB2
+-------  .R<WAT 984>.A<O 1> and .R<ASN 401>.A<HB2 6>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.368 angstroms between nonbonded atoms H1 and HB2
+-------  .R<WAT 984>.A<H1 2> and .R<ASN 401>.A<HB2 6>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.374 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 970>.A<H1 2> and .R<WAT 925>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.486 angstroms between nonbonded atoms O and H1
+-------  .R<WAT 967>.A<O 1> and .R<WAT 946>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.044 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 964>.A<H1 2> and .R<ALA 277>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.054 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 963>.A<H1 2> and .R<GLN 274>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.379 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 960>.A<H1 2> and .R<ASP 393>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.367 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 958>.A<H1 2> and .R<THR 396>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.218 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 951>.A<H2 3> and .R<WAT 819>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.189 angstroms between nonbonded atoms O and H1
+-------  .R<WAT 949>.A<O 1> and .R<WAT 820>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.284 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 947>.A<H1 2> and .R<WAT 887>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.147 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 940>.A<H1 2> and .R<ALA 289>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.029 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 936>.A<H1 2> and .R<ALA 455>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.474 angstroms between nonbonded atoms O and H2
+-------  .R<WAT 933>.A<O 1> and .R<WAT 874>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.343 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 932>.A<H2 3> and .R<WAT 868>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.172 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 918>.A<H2 3> and .R<WAT 885>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.204 angstroms between nonbonded atoms O and O
+-------  .R<WAT 912>.A<O 1> and .R<WAT 739>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.807 angstroms between nonbonded atoms O and H1
+-------  .R<WAT 912>.A<O 1> and .R<WAT 739>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.067 angstroms between nonbonded atoms O and H2
+-------  .R<WAT 912>.A<O 1> and .R<WAT 739>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.354 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 912>.A<H1 2> and .R<WAT 892>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.124 angstroms between nonbonded atoms H1 and O
+-------  .R<WAT 912>.A<H1 2> and .R<WAT 739>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.204 angstroms between nonbonded atoms H1 and H1
+-------  .R<WAT 912>.A<H1 2> and .R<WAT 739>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.882 angstroms between nonbonded atoms H2 and O
+-------  .R<WAT 912>.A<H2 3> and .R<WAT 739>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.359 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 912>.A<H2 3> and .R<WAT 739>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.204 angstroms between nonbonded atoms H2 and H2
+-------  .R<WAT 912>.A<H2 3> and .R<WAT 739>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.007 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 901>.A<H1 2> and .R<WAT 897>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.292 angstroms between nonbonded atoms O and O
+-------  .R<WAT 900>.A<O 1> and .R<WAT 725>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.062 angstroms between nonbonded atoms O and H1
+-------  .R<WAT 900>.A<O 1> and .R<WAT 725>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.149 angstroms between nonbonded atoms O and H2
+-------  .R<WAT 900>.A<O 1> and .R<WAT 725>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.935 angstroms between nonbonded atoms H1 and O
+-------  .R<WAT 900>.A<H1 2> and .R<WAT 725>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.292 angstroms between nonbonded atoms H1 and H1
+-------  .R<WAT 900>.A<H1 2> and .R<WAT 725>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.827 angstroms between nonbonded atoms H2 and O
+-------  .R<WAT 900>.A<H2 3> and .R<WAT 725>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.478 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 900>.A<H2 3> and .R<WAT 725>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.292 angstroms between nonbonded atoms H2 and H2
+-------  .R<WAT 900>.A<H2 3> and .R<WAT 725>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.286 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 898>.A<H2 3> and .R<WAT 842>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.316 angstroms between nonbonded atoms H1 and HE
+-------  .R<WAT 886>.A<H1 2> and .R<ARG 337>.A<HE 15>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.496 angstroms between nonbonded atoms H1 and HH22
+-------  .R<WAT 882>.A<H1 2> and .R<ARG 465>.A<HH22 22>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.107 angstroms between nonbonded atoms H2 and HG3
+-------  .R<WAT 880>.A<H2 3> and .R<ARG 475>.A<HG3 10>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.155 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 866>.A<H1 2> and .R<ALA 282>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.996 angstroms between nonbonded atoms H2 and HZ3
+-------  .R<WAT 864>.A<H2 3> and .R<LYS 443>.A<HZ3 20>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.452 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 859>.A<H1 2> and .R<WAT 841>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.819 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 847>.A<H2 3> and .R<WAT 809>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.279 angstroms between nonbonded atoms H2 and HG2
+-------  .R<WAT 828>.A<H2 3> and .R<PRO 273>.A<HG2 6>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.379 angstroms between nonbonded atoms H1 and O
+-------  .R<WAT 827>.A<H1 2> and .R<WAT 770>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.194 angstroms between nonbonded atoms H2 and O
+-------  .R<WAT 825>.A<H2 3> and .R<WAT 816>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.935 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 825>.A<H2 3> and .R<WAT 816>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.130 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 809>.A<H2 3> and .R<WAT 807>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.222 angstroms between nonbonded atoms H2 and HH22
+-------  .R<WAT 807>.A<H2 3> and .R<ARG 365>.A<HH22 22>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.298 angstroms between nonbonded atoms H2 and HG1
+-------  .R<WAT 805>.A<H2 3> and .R<THR 532>.A<HG1 12>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.064 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 798>.A<H1 2> and .R<WAT 657>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.191 angstroms between nonbonded atoms H1 and ZN
+-------  .R<WAT 793>.A<H1 2> and .R<ZN 268>.A<ZN 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.343 angstroms between nonbonded atoms H2 and OH
+-------  .R<WAT 793>.A<H2 3> and .R<DOH 1096>.A<OH 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.969 angstroms between nonbonded atoms H2 and H101
+-------  .R<WAT 793>.A<H2 3> and .R<MOL 1097>.A<H101 34>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.163 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 792>.A<H2 3> and .R<GLU 203>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.411 angstroms between nonbonded atoms H1 and O
+-------  .R<WAT 790>.A<H1 2> and .R<WAT 771>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.493 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 784>.A<H1 2> and .R<WAT 654>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.311 angstroms between nonbonded atoms H1 and HD1
+-------  .R<WAT 763>.A<H1 2> and .R<TYR 10>.A<HD1 10>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.920 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 760>.A<H1 2> and .R<WAT 699>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.112 angstroms between nonbonded atoms H2 and O
+-------  .R<WAT 754>.A<H2 3> and .R<WAT 634>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.292 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 754>.A<H2 3> and .R<WAT 634>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.764 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 753>.A<H2 3> and .R<WAT 687>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.405 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 747>.A<H2 3> and .R<WAT 623>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.287 angstroms between nonbonded atoms H1 and HE21
+-------  .R<WAT 742>.A<H1 2> and .R<GLN 18>.A<HE21 14>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.393 angstroms between nonbonded atoms H1 and HE
+-------  .R<WAT 734>.A<H1 2> and .R<ARG 69>.A<HE 15>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.334 angstroms between nonbonded atoms H2 and HZ3
+-------  .R<WAT 731>.A<H2 3> and .R<LYS 102>.A<HZ3 20>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.370 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 727>.A<H1 2> and .R<WAT 645>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.415 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 717>.A<H2 3> and .R<ARG 8>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.461 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 706>.A<H2 3> and .R<VAL 2>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.491 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 703>.A<H2 3> and .R<WAT 558>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.181 angstroms between nonbonded atoms H2 and O
+-------  .R<WAT 696>.A<H2 3> and .R<WAT 640>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.005 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 696>.A<H2 3> and .R<WAT 640>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.044 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 688>.A<H2 3> and .R<WAT 621>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.331 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 686>.A<H1 2> and .R<ALA 14>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.310 angstroms between nonbonded atoms O and H1
+-------  .R<WAT 684>.A<O 1> and .R<WAT 677>.A<H1 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.297 angstroms between nonbonded atoms H1 and O
+-------  .R<WAT 681>.A<H1 2> and .R<WAT 653>.A<O 1>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.996 angstroms between nonbonded atoms H2 and HH21
+-------  .R<WAT 681>.A<H2 3> and .R<ARG 206>.A<HH21 21>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.405 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 679>.A<H1 2> and .R<WAT 573>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.435 angstroms between nonbonded atoms H1 and HE1
+-------  .R<WAT 678>.A<H1 2> and .R<TRP 16>.A<HE1 12>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.468 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 665>.A<H1 2> and .R<SER 15>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 0.959 angstroms between nonbonded atoms H2 and HE
+-------  .R<WAT 653>.A<H2 3> and .R<ARG 206>.A<HE 15>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.068 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 645>.A<H1 2> and .R<GLN 6>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.130 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 643>.A<H1 2> and .R<ALA 21>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.334 angstroms between nonbonded atoms H2 and HE21
+-------  .R<WAT 637>.A<H2 3> and .R<GLN 259>.A<HE21 14>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.036 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 635>.A<H1 2> and .R<ALA 9>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.431 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 616>.A<H1 2> and .R<ASP 125>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.178 angstroms between nonbonded atoms H1 and HH11
+-------  .R<WAT 615>.A<H1 2> and .R<ARG 213>.A<HH11 18>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.481 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 608>.A<H1 2> and .R<GLN 24>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.477 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 605>.A<H2 3> and .R<ASP 13>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.365 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 598>.A<H1 2> and .R<WAT 555>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.180 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 597>.A<H2 3> and .R<TYR 232>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.473 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 595>.A<H1 2> and .R<WAT 552>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.057 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 592>.A<H1 2> and .R<ALA 187>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.162 angstroms between nonbonded atoms H1 and HH12
+-------  .R<WAT 588>.A<H1 2> and .R<ARG 365>.A<HH12 19>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.170 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 586>.A<H1 2> and .R<LEU 185>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.307 angstroms between nonbonded atoms H1 and HD1
+-------  .R<WAT 578>.A<H1 2> and .R<HID 224>.A<HD1 10>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.387 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 575>.A<H1 2> and .R<ASN 106>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.137 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 572>.A<H2 3> and .R<ILE 202>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.336 angstroms between nonbonded atoms H2 and HH12
+-------  .R<WAT 571>.A<H2 3> and .R<ARG 97>.A<HH12 19>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.064 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 568>.A<H2 3> and .R<ASP 140>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.353 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 567>.A<H1 2> and .R<HIE 61>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.166 angstroms between nonbonded atoms H2 and HE
+-------  .R<WAT 562>.A<H2 3> and .R<ARG 136>.A<HE 15>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.398 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 550>.A<H2 3> and .R<HID 224>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.410 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 549>.A<H2 3> and .R<LEU 81>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.479 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 548>.A<H1 2> and .R<WAT 537>.A<H2 3>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.080 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 548>.A<H2 3> and .R<ALA 86>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.484 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 539>.A<H1 2> and .R<THR 222>.A<H 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.130 angstroms between nonbonded atoms ZN and HO
+-------  .R<ZN 536>.A<ZN 1> and .R<MOH 1095>.A<HO 2>
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+Close contact of 1.204 angstroms between nonbonded atoms ZN and HO
+-------  .R<ZN 268>.A<ZN 1> and .R<DOH 1096>.A<HO 2>
+Checking parameters for unit 'complex'.
+Checking for bond parameters.
+Checking for angle parameters.
+check:  Warnings: 139
+Unit is OK.
+Scaling up box by a factor of 1.128662 to meet diagonal cut criterion
+  Solute vdw bounding box:              50.629 68.756 98.478
+  Total bounding box for atom centers:  121.051 121.051 121.051
+      (box expansion for 'iso' is 119.2%)
+  Solvent unit box:                     18.774 18.774 18.774
+  Volume: 909061.270 A^3 (oct)
+  Total mass 514853.738 amu,  Density 0.940 g/cc
+  Added 24831 residues.
+5 Na+ ions required to neutralize.
+Adding 5 counter ions to "complex" using 1A grid
+Grid extends from solute vdw + 1.48  to  7.47
+Resolution:      1.00 Angstrom.
+Calculating grid charges
+Placed Na+ in complex at (-8.88, -32.86, -15.20).
+Placed Na+ in complex at (30.12, 4.14, -6.20).
+Placed Na+ in complex at (1.12, -26.86, -23.20).
+Placed Na+ in complex at (49.12, 24.14, 31.80).
+Placed Na+ in complex at (14.12, -42.86, 46.80).
+
+Done adding ions.
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+addIons: 1st Ion & target unit have charges of the same sign:
+     unit charge = -7.99361e-15; ion1 charge = -1;
+     can't neutralize.
+Writing pdb file: lig53_complex_solv.pdb
+   printing CRYST1 record to PDB file with box info
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+ Converting N-terminal residue name to PDB format: NGLU -> GLU
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+ Converting C-terminal residue name to PDB format: CGLY -> GLY
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+ Converting N-terminal residue name to PDB format: NGLU -> GLU
+
+/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+ Converting C-terminal residue name to PDB format: CGLY -> GLY
+Checking Unit.
+Building topology.
+Building atom parameters.
+Building bond parameters.
+Building angle parameters.
+Building proper torsion parameters.
+Building improper torsion parameters.
+ total 1644 improper torsions applied
+Building H-Bond parameters.
+Incorporating Non-Bonded adjustments.
+Not Marking per-residue atom chain types.
+Marking per-residue atom chain types.
+  (Residues lacking connect0/connect1 - 
+   these don't have chain types marked:
+
+	res	total affected
+
+	CGLY	2
+	DOH	1
+	MOH	1
+	MOL	1
+	NGLU	2
+	WAT	25389
+  )
+ (no restraints)
+	Quit
+
+Exiting LEaP: Errors = 0; Warnings = 148; Notes = 0.

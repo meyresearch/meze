@@ -4,7 +4,7 @@ import sys
 
 system = sys.argv[1]
 
-project_dir = "/user/work/af25016/indole-carboxylates/"
+project_dir = "/Users/af25016/projects/meze/data/"
 
 input_dir = f"{project_dir}/equilibration/{system}"
 

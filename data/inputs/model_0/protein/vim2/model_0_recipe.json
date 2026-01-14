@@ -9,5 +9,7 @@
     "nb_cutoff": 12.0,
     "runtime": 100.0,
     "dt": 0.001,
-    "model": 0
+    "model": 0,
+    "non_standard_residues": ["MOH", "DOH"],
+    "ligand_charge": -1
 }

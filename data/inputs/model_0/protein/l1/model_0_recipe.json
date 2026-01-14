@@ -1,0 +1,15 @@
+{
+    "workdir": "",
+    "metal": "ZN",
+    "group_name": "l1_model_0",
+    "max_cycles": 5000,
+    "n_sd_cycles": 1000,
+    "min_method": 1,
+    "barostat": 2,
+    "nb_cutoff": 12.0,
+    "runtime": 100.0,
+    "dt": 0.001,
+    "model": 0,
+    "non_standard_residues": ["MOH", "DOH"],
+    "ligand_charge": -1
+}
