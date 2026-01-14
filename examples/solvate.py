@@ -29,15 +29,15 @@ cold_meze_with_lig = cold_meze.add_ligand(
 
 #TODO make non standard res a union of Ligand and List[Ligand]
 cold_system = cold_meze_with_lig.add_non_standard_residue(
-    file=[f"{project_dir}/inputs/model_0/protein/{system_name}/MOH.pdb",
+    files=[f"{project_dir}/inputs/model_0/protein/{system_name}/MOH.pdb",
           f"{project_dir}/inputs/model_0/protein/{system_name}/DOH.pdb"],
-    charge=-1, #TODO make these int | list[int]
-    atom_type="amber" #TODO make this str | list[str]
+    charges=[-1, -1], 
+    atom_types=["amber", "amber"],
+    names=["MOH", "DOH"] 
 )
 
 print(cold_system)
 
-# solvate <-- write solvate.py script
 #TODO: put solvation options into MezeRecipe
 solvate_dir = f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{ligand_name}_bound/"
 solvated_meze = cold_system.add_water(directory=solvate_dir)

@@ -455,21 +455,44 @@ class Meze:
     
     def add_non_standard_residue(
             self, 
-            file: str | Iterable[str],
-            name: str | None = None, 
-            charge: Optional[int] = 0,
-            atom_type: Optional[str] = "gaff2"
+            files: str | Iterable[str],
+            names: Optional[Union[str, Iterable[str]]] = None,
+            charges: Optional[Union[int, Iterable[int]]] = 0,
+            atom_types: Optional[Union[str, Iterable[str]]] = "gaff2",
     ) -> Self:
-        
-        if isinstance(file, str):
-            files = [file]
-        else:
-            files = list(file)
 
+        if isinstance(files, str):
+            validated_files = [files]
+        else:
+            validated_files = list(files)
+
+        if isinstance(names, str):
+            validated_names = [names] * len(validated_files)
+        elif names is None:
+            validated_names = [None] * len(validated_files)
+        else:
+            validated_names = list(names)
+
+        if isinstance(charges, int):
+            validated_charges = [charges] * len(validated_files)
+        else:
+            validated_charges = list(charges)
+
+        if isinstance(atom_types, str):
+            validated_atom_types = [atom_types] * len(validated_files)
+        else:
+            validated_atom_types = list(atom_types)
+
+        if not (len(validated_files) == len(validated_names) == len(validated_charges) == len(validated_atom_types)):
+            raise ValueError(
+                "files, names, charges, and atom_types must have the same length",
+                f"Got files: {len(validated_files)}, names:{len(validated_names)}, charges: {len(validated_charges)}, atom_types: {len(validated_atom_types)}"
+            )
+        
         new_residues = [
             Ligand(
-                f, name=name, charge=charge, atom_type=atom_type)
-            for f in files
+                f, name=n, charge=c, atom_type=at)
+            for f, n, c, at in zip(validated_files, validated_names, validated_charges, validated_atom_types)
         ]
         return dataclasses.replace(
             self,
@@ -491,6 +514,8 @@ class Meze:
                 )
                 for non_standard_residue in self.non_standard_residues
             ]
+        else:
+            parameterised_non_standard_residues = None
 
         tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
         tleap_output_file = os.path.join(directory, f"tleap_solvate.out")

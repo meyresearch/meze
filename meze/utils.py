@@ -1,6 +1,7 @@
 import numpy as np 
 from .ligand import Ligand
 from typing import (
+    List,
     Optional
 )
 import os
@@ -68,8 +69,8 @@ def write_distance_restraints(
 
 def write_tleap_solvation_input(protein_file: str,
                                 ligand: Ligand,
-                                non_standard_residues: Optional[Ligand] = None,
-                                workdir: Optional[str] = "", #TODO move the below to model: 
+                                non_standard_residues: Optional[List[Ligand]] = None,
+                                workdir: Optional[str] = "", #TODO move the below to model recipe: 
                                 protein_ff: Optional[str] = "ff14SB",
                                 water_model: Optional[str] = "tip3p",
                                 box_shape: Optional[str] = "octahedral",
