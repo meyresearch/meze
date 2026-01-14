@@ -114,6 +114,7 @@ class Ligand():
                 UserWarning
             )
         os.chdir(workdir)
+        self.residue_name = residue_name
         return dataclasses.replace(
             self,
             file=mol2_path,

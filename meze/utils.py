@@ -68,7 +68,7 @@ def write_distance_restraints(
 
 def write_tleap_solvation_input(protein_file: str,
                                 ligand: Ligand,
-                                non_standard_residue: Optional[Ligand] = None,
+                                non_standard_residues: Optional[Ligand] = None,
                                 workdir: Optional[str] = "", #TODO move the below to model: 
                                 protein_ff: Optional[str] = "ff14SB",
                                 water_model: Optional[str] = "tip3p",
@@ -98,17 +98,27 @@ def write_tleap_solvation_input(protein_file: str,
         f"lig = loadmol2 {ligand.file[0]}\n",
         f"\n"
     ])
-    if non_standard_residue:
+    if non_standard_residues:
+        res_names = []
+
+        for i, res in enumerate(non_standard_residues, start=1):
+            var = res.residue_name 
+            res_names.append(var)
+
+            lines.extend([
+                f"loadamberparams {res.frcmod_file}\n",
+                f"{var} = loadmol2 {res.file[0]}\n",
+                "\n"
+            ])
+
+        all_components = " ".join(["protein", *res_names, "lig"])
+
         lines.extend([
-            f"loadamberparams {non_standard_residue.frcmod_file}\n"
-            f"res = loadmol2 {non_standard_residue.file[0]}\n"
-            f"\n",
-            "complex = combine {protein res lig}\n",
+            f"complex = combine {{{all_components}}}\n",
             f"savepdb complex {ligand.name}_complex_dry.pdb\n",
-            f"check complex\n"
+            f"check complex\n",
             "\n"
         ])
-
     else:
         lines.extend([
             "complex = combine {protein lig}\n",

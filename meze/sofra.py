@@ -15,6 +15,7 @@ from pydantic import (
     BaseModel
 )
 from typing import (
+    Iterable,
     List,
     Optional,
     Literal,
@@ -134,7 +135,7 @@ class Meze:
     coordinates: str 
     recipe: MezeRecipe 
     ligand: Optional[Ligand] = None 
-    non_standard_residue: List[Optional[Ligand]] = None     
+    non_standard_residues: List[Optional[Ligand]] = field(default_factory=list)     
 
     
     def __post_init__(self):
@@ -454,20 +455,25 @@ class Meze:
     
     def add_non_standard_residue(
             self, 
-            file: Union[str, list[str]],
+            file: str | Iterable[str],
             name: str | None = None, 
             charge: Optional[int] = 0,
             atom_type: Optional[str] = "gaff2"
     ) -> Self:
-        residue = Ligand(
-            file, 
-            name=name, 
-            charge=charge,
-            atom_type=atom_type
-        )
+        
+        if isinstance(file, str):
+            files = [file]
+        else:
+            files = list(file)
+
+        new_residues = [
+            Ligand(
+                f, name=name, charge=charge, atom_type=atom_type)
+            for f in files
+        ]
         return dataclasses.replace(
             self,
-            non_standard_residue=residue,
+            non_standard_residues=new_residues,
         )
 
     def add_water(self, directory: str | None = None) -> Self:
@@ -475,20 +481,23 @@ class Meze:
             os.makedirs(directory, exist_ok=True)
         
         parameterised_ligand = self.ligand.parameterise(directory)
-        
-        if self.non_standard_residue:
-            parameterised_non_standard_residue = self.non_standard_residue.parameterise(
-                path=directory,
-                atom_type=self.non_standard_residue.atom_type,
-                residue_name=self.non_standard_residue.name,
-            )
+
+        if self.non_standard_residues:
+            parameterised_non_standard_residues = [
+                non_standard_residue.parameterise(
+                    path=directory,
+                    atom_type=non_standard_residue.atom_type,
+                    residue_name=non_standard_residue.name
+                )
+                for non_standard_residue in self.non_standard_residues
+            ]
 
         tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
         tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
         tleap_lines = write_tleap_solvation_input(
             protein_file=self.topology,
             ligand=parameterised_ligand,
-            non_standard_residue=parameterised_non_standard_residue
+            parameterised_non_standard_residues=parameterised_non_standard_residues
         ) #TODO: put solvation options into MezeRecipe
         with open(tleap_input_file, "w") as ifile:
             ifile.writelines(tleap_lines)
