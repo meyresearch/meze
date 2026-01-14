@@ -55,6 +55,15 @@ class MezeRecipe(BaseModel):
     model: Optional[int] = Field(
         None, description="Metal modelling option"
     )
+    non_standard_residues: Optional[List[str]] = Field(
+        None, description="List of non-standard residue names"
+    )
+    ligand_charge: Optional[int] = Field(
+        0, description="Total charge of the ligand"
+    )
+    disulfide_bridges: Optional[List[dict["str", int]]] = Field(
+        None, description="List of disulfide bridges to form, each as a dict with keys 'resid1' and 'resid2'"
+    )
 
     @field_validator("model", mode="before")
     @classmethod
@@ -135,9 +144,8 @@ class Meze:
     coordinates: str 
     recipe: MezeRecipe 
     ligand: Optional[Ligand] = None 
-    non_standard_residues: List[Optional[Ligand]] = field(default_factory=list)     
-
     
+
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
         if coordinate_extension in [".rst7"]:
