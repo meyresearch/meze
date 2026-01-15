@@ -157,10 +157,11 @@ class Meze:
                     topology_format="PARM7",
                     format=coordinate_format
                 )
+
         except FileNotFoundError:
             print("Could not create meze object:\n")
-            raise
-        
+            raise            
+
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
@@ -331,9 +332,24 @@ class Meze:
             metal = f"{input_metal[0].upper()}{input_metal[1].lower()}"
             self.recipe.metal = metal 
 
-        self.metals = self.universe.select_atoms(f"element {metal}")
+        try:
+            self.metals = self.universe.select_atoms(f"element {metal}")
+        except AttributeError as e:
+            if "elements" in str(e):
+                warnings.warn(
+                    "\nNo element information found in PDB file.\n"
+                    "Guessing element information from atom names.\n"
+                    "This may lead to incorrect identification of metal atoms.\n"
+                    "Consider fixing your PDB file with e.g. pdb4amber.\n",
+                    UserWarning
+                )
+                self.metals = self.universe.select_atoms(f"name {metal.upper()}")
+            else:
+                raise e
+
         if len(self.metals) == 0:
             raise ValueError(f"No atoms found for metal: {self.recipe.metal}")
+
         self.metal_resids = self.metals.resids
         self.metal_atomids = self.metals.atoms.ids
         self.metal_resname = metal
@@ -346,12 +362,29 @@ class Meze:
         """
         cutoff = self.recipe.coordination_cut_off
         metal_ligands = {}
-        for i in range(len(self.metal_resids)):
-            selection = f"element O or element N or element S" + \
-            f" and sphzone {cutoff} (resid {self.metal_resids[i]})"
-            ligands = self.universe.select_atoms(selection)
-            key = self.metal_atomids[i] 
-            metal_ligands[key] = ligands
+        try:
+            for i in range(len(self.metal_resids)):
+                selection = f"element O or element N or element S" + \
+                f" and sphzone {cutoff} (resid {self.metal_resids[i]})"
+                ligands = self.universe.select_atoms(selection)
+                key = self.metal_atomids[i] 
+                metal_ligands[key] = ligands
+        except AttributeError as e:
+            if "elements" in str(e):
+                warnings.warn(
+                    "\nNo element information found in PDB file.\n"
+                    "Guessing element information from atom names.\n"
+                    "This may lead to incorrect identification of metal coordination.\n"
+                    "Consider fixing your PDB file with e.g. pdb4amber.\n",
+                    UserWarning
+                )    
+                selection = f"name O or name N or name S" + \
+                f" and sphzone {cutoff} (resid {self.metal_resids[i]})"
+                ligands = self.universe.select_atoms(selection)
+                key = self.metal_atomids[i] 
+                metal_ligands[key] = ligands
+            else:
+                raise e
         return metal_ligands
 
     def _setup_bss_system(self):
