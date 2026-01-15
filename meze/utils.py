@@ -70,6 +70,7 @@ def write_distance_restraints(
 def write_tleap_solvation_input(protein_file: str,
                                 ligand: Ligand,
                                 non_standard_residues: Optional[List[Ligand]] = None,
+                                disulfide_bridges: Optional[List[dict[str, int]]] = None,
                                 workdir: Optional[str] = "", #TODO move the below to model recipe: 
                                 protein_ff: Optional[str] = "ff14SB",
                                 water_model: Optional[str] = "tip3p",
@@ -89,10 +90,6 @@ def write_tleap_solvation_input(protein_file: str,
             "loadamberparams frcmod.ions1lm_126_tip3p\n"
         )
 
-    lines.append(
-        f"protein = loadpdb {protein_file}\n"
-    )
-
     lines.extend([
         f"source leaprc.{ligand_ff}\n",
         f"loadamberparams {ligand.frcmod_file}\n",
@@ -101,8 +98,7 @@ def write_tleap_solvation_input(protein_file: str,
     ])
     if non_standard_residues:
         res_names = []
-
-        for i, res in enumerate(non_standard_residues, start=1):
+        for _, res in enumerate(non_standard_residues, start=1):
             var = res.residue_name 
             res_names.append(var)
 
@@ -111,22 +107,26 @@ def write_tleap_solvation_input(protein_file: str,
                 f"{var} = loadmol2 {res.file[0]}\n",
                 "\n"
             ])
+    lines.append(
+        f"protein = loadpdb {protein_file}\n"
+    )
 
-        all_components = " ".join(["protein", *res_names, "lig"])
+    if disulfide_bridges:
 
-        lines.extend([
-            f"complex = combine {{{all_components}}}\n",
-            f"savepdb complex {ligand.name}_complex_dry.pdb\n",
-            f"check complex\n",
-            "\n"
-        ])
-    else:
-        lines.extend([
-            "complex = combine {protein lig}\n",
-            f"savepdb complex {ligand.name}_complex_dry.pdb\n",
-            f"check complex\n"
-            "\n"
-        ])
+        for bridge in disulfide_bridges:
+            resid1 = bridge["resid1"]
+            resid2 = bridge["resid2"]
+            lines.append(
+                f"bond protein.{resid1}.SG protein.{resid2}.SG\n"
+            )
+        lines.append("\n")
+
+    lines.extend([
+        "complex = combine {protein lig}\n",
+        f"savepdb complex {ligand.name}_complex_dry.pdb\n",
+        f"check complex\n"
+        "\n"
+    ])
         
     if "oct" in box_shape.lower():
         lines.append(
