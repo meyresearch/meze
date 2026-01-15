@@ -16,7 +16,14 @@ with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.js
 
 cold_meze = ColdMeze.from_files(
     recipe=ColdMezeRecipe(**json_recipe),
-    pdb_file=f"{project_dir}/inputs/model_0/protein/{system_name}/{system_name}.fixed.pdb"
+    pdb_file=f"{project_dir}/inputs/model_0/protein/{system_name}/{system_name}.fixed.pdb",
+    disulfide_bridges=[{
+        "resid1": 217,
+        "resid2": 245
+    }, {
+        "resid1": 486,
+        "resid2": 514
+    }]
 )
 
 cold_meze_with_lig = cold_meze.add_ligand(
@@ -26,7 +33,7 @@ cold_meze_with_lig = cold_meze.add_ligand(
 
 cold_system = cold_meze_with_lig.add_non_standard_residue(
     files=[f"{project_dir}/inputs/model_0/protein/{system_name}/MOH.pdb",
-          f"{project_dir}/inputs/model_0/protein/{system_name}/DOH.pdb"],
+           f"{project_dir}/inputs/model_0/protein/{system_name}/DOH.pdb"],
     charges=[-1, -1], 
     atom_types=["amber", "amber"],
     names=["MOH", "DOH"] 

@@ -55,15 +55,6 @@ class MezeRecipe(BaseModel):
     model: Optional[int] = Field(
         None, description="Metal modelling option"
     )
-    non_standard_residues: Optional[List[str]] = Field(
-        None, description="List of non-standard residue names"
-    )
-    ligand_charge: Optional[int] = Field(
-        0, description="Total charge of the ligand"
-    )
-    disulfide_bridges: Optional[List[dict["str", int]]] = Field(
-        None, description="List of disulfide bridges to form, each as a dict with keys 'resid1' and 'resid2'"
-    )
 
     @field_validator("model", mode="before")
     @classmethod
@@ -143,9 +134,10 @@ class Meze:
     topology: str 
     coordinates: str 
     recipe: MezeRecipe 
+    disulfide_bridges: Optional[List[dict[str, int]]] = None
     ligand: Optional[Ligand] = None 
+    non_standard_residues: List[dict] = field(default_factory=list)   
     
-
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
         if coordinate_extension in [".rst7"]:
@@ -172,12 +164,13 @@ class Meze:
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
-        
+
+        self._validate_disulfide_bridges()
+
         if self.ligand:
             self.ligand_resname = self.ligand.system.getResidue(0).name
         else:        
             self.ligand_resname = self.get_small_molecule_resname()
-
 
     @classmethod
     def from_files(
@@ -364,6 +357,53 @@ class Meze:
         self.system = bss.IO.readMolecules(
             [self.topology, self.coordinates]
         )
+
+    def _validate_disulfide_bridges(self):
+        if not self.disulfide_bridges:
+            return
+        
+        seen_bridges = set()
+
+        for bridge in self.disulfide_bridges:
+            if not {"resid1", "resid2"} <= bridge.keys():
+                raise ValueError(f"Invalid disulfide bridge entry: {bridge}")
+            
+            r1, r2 = bridge["resid1"], bridge["resid2"]
+
+            if r1 == r2:
+                raise ValueError(f"Disulfide bridge cannot connect residue {r1} to itself.")
+
+            pair = tuple(sorted((r1, r2)))
+
+            if pair in seen_bridges:
+                raise ValueError(f"Duplicate disulfide bridge: {pair}")
+            seen_bridges.add(pair)
+
+            try:
+                cyx1 = self.universe.select_atoms(f"resid {r1}").residues[0]
+                cyx2 = self.universe.select_atoms(f"resid {r2}").residues[0]
+
+            except IndexError:
+                raise ValueError(f"Residue {r1} or {r2} not found in structure.")
+
+            if cyx1.resname != "CYX" or cyx2.resname != "CYX":
+                raise ValueError(
+                    f"Disulfide bonds require CYX residues. "
+                    f"Got {cyx1.resname} and {cyx2.resname} for {r1}-{r2}."
+                )
+
+            sg1 = cyx1.atoms.select_atoms("name SG")
+            sg2 = cyx2.atoms.select_atoms("name SG")
+
+            if len(sg1) == 0 or len(sg2) == 0:
+                raise ValueError(f"Missing SG atom in residues {r1} or {r2}.")
+
+            _, _, dists = MDAnalysis.analysis.distances.dist(sg1, sg2)
+            distance = dists[0]
+            if distance > 3.0:
+                raise ValueError(
+                    f"Disulfide {r1}-{r2} too long: {distance:.2f} Å (likely incorrect)."
+                )
 
     def _run(
             self,
@@ -587,6 +627,9 @@ class ColdMeze(Meze):
         coordinates: Optional[str] = None, 
         exclude_resids: Optional[Union[int, list[int]]] = [],
         recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
+        ligand: Optional[Ligand] = None,
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
+        non_standard_residues: Optional[List[dict]] = None,
         **kwargs
     ) -> "ColdMeze":
         """
@@ -614,7 +657,10 @@ class ColdMeze(Meze):
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
-            recipe=recipe
+            recipe=recipe,
+            ligand=ligand,
+            disulfide_bridges=disulfide_bridges,
+            non_standard_residues=non_standard_residues or []
         )
     
     def _build_restraint_mask(
