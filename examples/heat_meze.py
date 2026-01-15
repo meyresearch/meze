@@ -2,10 +2,10 @@ from meze import ColdMeze, ColdMezeRecipe
 import os
 import json
 
-system_name = "vim2"
-ligand_name = "ligand_11"
+system_name = "l1"
+ligand_name = "lig1"
 
-project_dir = f"/Users/af25016/projects/meze/data/"
+project_dir = f"data/"
 
 # set ColdMezeRecipe including model (i.e. metal params), ligand(?)
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
@@ -17,35 +17,32 @@ json_recipe["path_to_engine"] = os.path.join(
 
 input_dir = f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{ligand_name}_bound/"
 
-cold_meze = ColdMeze.from_files(
+solvated_meze = ColdMeze.from_files(
     topology=f"{input_dir}/{ligand_name}_complex_solv.prmtop",
     coordinates=f"{input_dir}/{ligand_name}_complex_solv.inpcrd",
     recipe=ColdMezeRecipe(**json_recipe)
 )
-
-print(cold_meze.recipe)
 
 equil_dir = os.path.join(project_dir, "equilibration", "model_0", system_name, f"{ligand_name}")
 os.makedirs(equil_dir, exist_ok=True)
 
 print("Minimising")
 
-minimised_meze = cold_meze.minimise(
+minimised_meze = solvated_meze.minimise(
     process_name="01_min",
     workdir=equil_dir,
     position_restraints="solute",
-    max_cycles=10,
+    max_cycles=5000,
     is_gpu=True
 )
 
 print("02 - Heating with restrained solute")
 
 hot_meze = minimised_meze.heat(
-
     process_name="02_heat",
     workdir=equil_dir,
     position_restraints="solute",
-    timestep=0.001, 
+    timestep=0.001,
     start_temperature=100,
     end_temperature=300            
 ) 
@@ -92,13 +89,23 @@ relax_backbone = lower_restraint.pressurise(
      restraint_weight=10.0
 )
 
-print("07 - Continue restraint weight on backbone atoms (and metal coordination)")
+print("07 - Reduce restraint")
 
-continue_lowering = relax_backbone.pressurise(
+reduce_restraint = relax_backbone.pressurise(
      restart=True,
-     process_name="07_continue",
+     process_name="07_reduce",
      workdir=equil_dir,
-     position_restraints="backbone",
      timestep=0.001,
-     restraint_weight=0.1
+     position_restraints="metal-coordination",
+     restraint_weight=1.0,
 )
+
+print("08 - No restraint")
+
+free = reduce_restraint.pressurise(
+     restart=True,
+     process_name="08_free",
+     workdir=equil_dir,
+     timestep=0.001,
+)
+
