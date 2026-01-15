@@ -134,9 +134,9 @@ class Meze:
     topology: str 
     coordinates: str 
     recipe: MezeRecipe 
+    disulfide_bridges: Optional[List[dict[str, int]]] = None
     ligand: Optional[Ligand] = None 
-    non_standard_residues: List[Optional[Ligand]] = field(default_factory=list)     
-
+    non_standard_residues: dict[dict] = field(default_factory=dict)   
     
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
@@ -164,12 +164,14 @@ class Meze:
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
-        
-        if self.ligand:
+
+        if self.ligand: #TODO ADD
             self.ligand_resname = self.ligand.system.getResidue(0).name
         else:        
             self.ligand_resname = self.get_small_molecule_resname()
 
+        if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
+            self._validate_non_standard_residues()
 
     @classmethod
     def from_files(
@@ -357,6 +359,73 @@ class Meze:
             [self.topology, self.coordinates]
         )
 
+    def _validate_disulfide_bridges(self):    
+        with open(self.coordinates, "r") as pdb:
+            pdb_lines = pdb.readlines()
+        
+        conect_lines = {}
+        counter = 1
+        for line in pdb_lines:
+            if "CONECT" in line:
+                parts = line.split()
+                conect_lines[f"CONECT{counter}"] = [int(parts[1]), int(parts[2])]
+                counter += 1  
+
+        seen_bridges = set()
+
+        for bridge in self.disulfide_bridges:
+            if not {"resid1", "resid2"} <= bridge.keys():
+                raise ValueError(f"Invalid disulfide bridge entry: {bridge}")
+            
+            r1, r2 = bridge["resid1"], bridge["resid2"]
+
+            if r1 == r2:
+                raise ValueError(f"Disulfide bridge cannot connect residue {r1} to itself.")
+
+            pair = tuple(sorted((r1, r2)))
+
+            if pair in seen_bridges:
+                raise ValueError(f"Duplicate disulfide bridge: {pair}")
+            seen_bridges.add(pair)
+
+            try:
+                cyx1 = self.universe.select_atoms(f"resid {r1}").residues[0]
+                cyx2 = self.universe.select_atoms(f"resid {r2}").residues[0]
+
+            except IndexError:
+                raise ValueError(f"Residue {r1} or {r2} not found in structure.")
+
+            if cyx1.resname != "CYX" or cyx2.resname != "CYX":
+                raise ValueError(
+                    f"Disulfide bonds require CYX residues. "
+                    f"Got {cyx1.resname} and {cyx2.resname} for {r1} and {r2}."
+                )
+
+            sg1 = cyx1.atoms.select_atoms("name SG")
+            sg2 = cyx2.atoms.select_atoms("name SG")
+
+            if len(sg1) == 0 or len(sg2) == 0:
+                raise ValueError(f"Missing SG atom in residues {r1} or {r2}.")
+            
+            _, _, dists = MDAnalysis.analysis.distances.dist(sg1, sg2)
+            distance = dists[0]
+            if distance > 3.0:
+                raise ValueError(
+                    f"Disulfide {r1}-{r2} too long: {distance:.2f} Å (likely incorrect)."
+                )
+            
+            for _, ids in conect_lines.items():
+                if sg1.ids[0] in ids or sg2.ids[0] in ids:
+                    warnings.warn(
+                        f"Residues {r1} and {r2} appear to already have a disulfide bond "
+                        f"in the CONECT records."
+                        f"No explicit bond will be added in tleap."
+                    )
+                    self.disulfide_bridges = None
+                    
+
+
+
     def _run(
             self,
             system: Optional[bssSystem], 
@@ -453,77 +522,66 @@ class Meze:
             ligand=ligand,
         )
     
-    def add_non_standard_residue(
-            self, 
-            files: str | Iterable[str],
-            names: Optional[Union[str, Iterable[str]]] = None,
-            charges: Optional[Union[int, Iterable[int]]] = 0,
-            atom_types: Optional[Union[str, Iterable[str]]] = "gaff2",
-    ) -> Self:
-
-        if isinstance(files, str):
-            validated_files = [files]
-        else:
-            validated_files = list(files)
-
-        if isinstance(names, str):
-            validated_names = [names] * len(validated_files)
-        elif names is None:
-            validated_names = [None] * len(validated_files)
-        else:
-            validated_names = list(names)
-
-        if isinstance(charges, int):
-            validated_charges = [charges] * len(validated_files)
-        else:
-            validated_charges = list(charges)
-
-        if isinstance(atom_types, str):
-            validated_atom_types = [atom_types] * len(validated_files)
-        else:
-            validated_atom_types = list(atom_types)
-
-        if not (len(validated_files) == len(validated_names) == len(validated_charges) == len(validated_atom_types)):
-            raise ValueError(
-                "files, names, charges, and atom_types must have the same length",
-                f"Got files: {len(validated_files)}, names:{len(validated_names)}, charges: {len(validated_charges)}, atom_types: {len(validated_atom_types)}"
-            )
-        
-        new_residues = [
-            Ligand(
-                f, name=n, charge=c, atom_type=at)
-            for f, n, c, at in zip(validated_files, validated_names, validated_charges, validated_atom_types)
-        ]
-        return dataclasses.replace(
-            self,
-            non_standard_residues=new_residues,
-        )
+    def _validate_non_standard_residues(self):
+        for residue, properties in self.non_standard_residues.items():
+            if not {"charge", "atom_type"} <= properties.keys():
+                raise ValueError(
+                    f"Non-standard residue '{residue}' must have 'charge' and 'atom_type' properties."
+                )
+            if not isinstance(properties["charge"], int):
+                raise ValueError(
+                    f"Non-standard residue '{residue}' has invalid 'charge': {properties['charge']}"
+                )
+            if properties["atom_type"] not in ["amber", "gaff", "gaff2"]:
+                raise ValueError(
+                    f"Non-standard residue '{residue}' has unsupported 'atom_type': {properties['atom_type']}"
+                )
+            
 
     def add_water(self, directory: str | None = None) -> Self:
         if directory:
             os.makedirs(directory, exist_ok=True)
         
+        self._validate_disulfide_bridges()
+
         parameterised_ligand = self.ligand.parameterise(directory)
 
         if self.non_standard_residues:
+            
+            for residue in self.non_standard_residues.keys():
+                ag = self.universe.select_atoms(f"resname {residue}")
+                ag.write(f"{directory}/{residue}.pdb")
+
+            non_standard_residues = [
+                Ligand(
+                    file=f"{directory}/{residue}.pdb",
+                    name=residue,
+                    charge=properties["charge"],
+                    atom_type=properties["atom_type"]
+                )
+                for residue, properties in self.non_standard_residues.items()
+            ]
             parameterised_non_standard_residues = [
                 non_standard_residue.parameterise(
                     path=directory,
                     atom_type=non_standard_residue.atom_type,
                     residue_name=non_standard_residue.name
                 )
-                for non_standard_residue in self.non_standard_residues
+                for non_standard_residue in non_standard_residues
             ]
         else:
             parameterised_non_standard_residues = None
 
         tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
         tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
+
         tleap_lines = write_tleap_solvation_input(
             protein_file=self.topology,
             ligand=parameterised_ligand,
-            non_standard_residues=parameterised_non_standard_residues
+            non_standard_residues=parameterised_non_standard_residues,
+            disulfide_bridges=self.disulfide_bridges
         ) #TODO: put solvation options into MezeRecipe
+
         with open(tleap_input_file, "w") as ifile:
             ifile.writelines(tleap_lines)
         
@@ -579,6 +637,9 @@ class ColdMeze(Meze):
         coordinates: Optional[str] = None, 
         exclude_resids: Optional[Union[int, list[int]]] = [],
         recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
+        ligand: Optional[Ligand] = None,
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
+        non_standard_residues: Optional[dict[dict]] = None,
         **kwargs
     ) -> "ColdMeze":
         """
@@ -606,7 +667,10 @@ class ColdMeze(Meze):
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
-            recipe=recipe
+            recipe=recipe,
+            ligand=ligand,
+            disulfide_bridges=disulfide_bridges,
+            non_standard_residues=non_standard_residues
         )
     
     def _build_restraint_mask(
