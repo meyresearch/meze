@@ -1,11 +1,12 @@
 from meze import ColdMeze, ColdMezeRecipe
 import os
 import json
+import sys
 
-system_name = "l1"
-ligand_name = "lig1"
-
-project_dir = f"data/"
+project_dir = sys.argv[1]
+system_name = sys.argv[2]
+ligand_name = sys.argv[3]
+repeat = sys.argv[4]
 
 # set ColdMezeRecipe including model (i.e. metal params), ligand(?)
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
@@ -23,7 +24,8 @@ solvated_meze = ColdMeze.from_files(
     recipe=ColdMezeRecipe(**json_recipe)
 )
 
-equil_dir = os.path.join(project_dir, "equilibration", "model_0", system_name, f"{ligand_name}")
+equil_dir = os.path.join(project_dir, "equilibration", "model_0", system_name, f"{ligand_name}", f"repeat_{repeat}")
+
 os.makedirs(equil_dir, exist_ok=True)
 
 print("Minimising")
