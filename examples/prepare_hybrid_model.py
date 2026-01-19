@@ -2,7 +2,7 @@ from meze import ColdMeze, ColdMezeRecipe
 import os
 import sys
 import json
-
+import pathlib
 
 project_dir = sys.argv[1] 
 system_name = "vim2" 
@@ -12,9 +12,9 @@ ligand_name = sys.argv[2]
 with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
-# json_recipe["path_to_engine"] = os.path.join(
-#     os.environ["PMEMDHOME"], "bin", "pmemd.cuda"        
-# )
+json_recipe["path_to_engine"] = os.path.join(
+    os.environ["PMEMDHOME"], "bin", "pmemd.cuda"        
+)
 
 cold_meze = ColdMeze.from_files(
     recipe=ColdMezeRecipe(**json_recipe),
@@ -35,9 +35,22 @@ input_directory = f"{project_dir}/inputs/hybrid_model/protein/{system_name}/{lig
 prepared_complex = cold_complex.prepare_mcpb_system(directory=input_directory,
                                                     ligand_name=ligand_name)
 
-# run step 1 of MCPB.py
-prepared_complex.run_mcpb_step_1(ligand_name=ligand_name)
+scratch_dir = os.path.join(prepared_complex.parameterisation_directory, "scratch")
+os.makedirs(scratch_dir, exist_ok=True)
 
-# write out Gaussian input scripts for RESP calculation (fix scripts)
-
+prepared_complex.prepare_resp_calculation(
+    ligand_name=ligand_name,
+    sbatch_options={
+        "nodes": 1,
+        "partition": "short",
+        "ntasks-per-node": 8,
+        "mem": "24GB",
+        "account": "",
+    },
+    additional_lines=[
+        "module load apps/gaussian\n",
+        "LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH\n",
+        f"export GAUSS_SCRDIR={scratch_dir}\n",
+    ]
+)
 

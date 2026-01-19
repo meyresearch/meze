@@ -30,7 +30,7 @@ The variable frcmod_files is :  ['MOL.frcmod', 'MOH.frcmod']
 The variable gaff is :  2
 The variable group_name is :  vim2_ezaff_ligand_11
 The variable ion_paraset is :  12_6 (Only for the ions using the nonbonded model).
-The variable large_opt is :  0
+The variable large_opt is :  1
 The variable lgmodel_chg is :  -99
 The variable lgmodel_spin is :  -99
              -99 means program will assign a charge automatically.

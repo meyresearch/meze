@@ -1,3 +1,4 @@
+import glob 
 import warnings
 import logging
 warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
@@ -36,7 +37,8 @@ from BioSimSpace.Types._pressure import Pressure as bssPressure
 from .utils import (
     residue_restraint_mask,
     write_distance_restraints,
-    write_tleap_solvation_input
+    write_tleap_solvation_input,
+    write_gaussian_script
 )
 import shutil
 
@@ -59,6 +61,10 @@ class MezeRecipe(BaseModel):
     gaussian_version: str = Field(
         "g16", description="Gaussian version"
     )
+    memory: float = Field(12000, description="Memory for Gaussian calculations in MB")
+
+    nprocshared: int = Field(8, description="Number of processors for Gaussian calculations")
+
     only_optimise_hydrogens: bool = Field(
         True, description="Only optimise hydrogen atoms"
     )
@@ -95,7 +101,6 @@ class MezeRecipe(BaseModel):
         """Print recipe information as JSON
         """
         return self.model_dump_json(indent=4, fallback=str, warnings="none")
-
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
@@ -133,7 +138,6 @@ class ColdMezeRecipe(MezeRecipe):
     restraint_weight: float = Field(
         100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
     )
-
 class HotMezeRecipe(MezeRecipe):
     """Meze workflow recipe for production runs
     """
@@ -379,6 +383,7 @@ class Meze:
         self.metal_resids = self.metals.resids
         self.metal_atomids = self.metals.atoms.ids
         self.metal_resname = metal
+        self.metal_element = metal.capitalize()
 
     def _get_metal_coordinating_residues(self) -> dict[int, mda.AtomGroup]:
         """Get residues coordinating to metal
@@ -746,7 +751,7 @@ class Meze:
             ),
             "software_version": self.recipe.gaussian_version,
             "ion_ids": " ".join(str(atomid) for atomid in self.metal_atomids),
-            "large_opt": int(not self.recipe.only_optimise_hydrogens),
+            "large_opt": int(self.recipe.only_optimise_hydrogens),
             "force_field": self.recipe.protein_forcefield,
             "water_model": self.recipe.water_model,
             "gaff": self.recipe.ligand_forcefield.replace("gaff", "")
@@ -758,9 +763,13 @@ class Meze:
 
         return mcpb_input_file
     
-    def run_mcpb_step_1(self,
-                        ligand_name: str = "ligand"):
-        # check prepare mcpb files exist
+    def prepare_resp_calculation(self,
+                                 ligand_name: str = "ligand",
+                                 split_large_files: bool = True,
+                                 sbatch_options: Optional[dict] = None,
+                                 additional_lines: Optional[list[str]] = None):
+        
+        #TODO check prepare mcpb files exist
         if not self.parameterisation_directory:
             raise ValueError("MCPB parameterisation directory not set.")
         
@@ -785,8 +794,96 @@ class Meze:
         print(f"Running MCPB.py step 1 with command:\n{mcpb_command}")
         os.system(mcpb_command)
 
+        com_files = sorted(glob.glob(f"{self.parameterisation_directory}/*.com"))
+
+        if not com_files:
+            raise ValueError(f"No Gaussian .com files found in {self.parameterisation_directory}.")
+        
+        if split_large_files:
+            self.update_gaussian_inputs(directory=self.parameterisation_directory)
+            large_opt = [f for f in com_files if "large_opt" in f][0]
+            geo_opt = write_gaussian_script(
+                job_name=f"{ligand_name}-g-opt",
+                gaussian_version=self.recipe.gaussian_version,
+                script_name="slurm_g_opt.sh",
+                directory=self.parameterisation_directory,
+                com_file=large_opt,
+                sbatch_options=sbatch_options,
+                additional_lines=additional_lines
+            )
+            os.system(f"chmod +x {geo_opt}")
+
+        large_mk = [f for f in com_files if "large_mk" in f][0]
+        mk = write_gaussian_script(
+            job_name=f"{ligand_name}-mk",
+            gaussian_version=self.recipe.gaussian_version,
+            script_name="slurm_mk.sh",
+            directory=self.parameterisation_directory,
+            com_file=large_mk,
+            sbatch_options=sbatch_options,
+            additional_lines=additional_lines
+        )
+        os.system(f"chmod +x {mk}")
+
         os.chdir(workdir)
-    
+
+
+    def update_gaussian_inputs(self,
+                               directory: str):
+        
+        com_files = sorted(glob.glob(f"{directory}/*.com"))
+        for com_file in com_files:
+            with open(com_file, "r") as file:
+                lines = file.readlines()
+            
+            new_lines = []
+            for line in lines:
+                if "%mem" in line:
+                    new_lines.append(f"%mem={self.recipe.memory}MB\n")
+                elif "%nprocshared" in line:
+                    new_lines.append(f"%nprocshared={self.recipe.nprocshared}\n")
+                else:
+                    new_lines.append(line)
+            
+            with open(com_file, "w") as file:
+                file.writelines(new_lines)
+        
+            if "large_mk" in com_file:
+                large_file = com_file
+                with open(large_file, "r") as ilarge:
+                    large_lines = ilarge.readlines()
+
+                if "Opt" in "".join(large_lines):
+
+                    calculation_line = [line for line in large_lines if "#" in line][0]
+                    replace_index = large_lines.index(calculation_line)
+
+                    split_parts = calculation_line.split("Opt", 1)
+                    level_of_theory = split_parts[0]
+                    pop_analysis = split_parts[1]
+                    large_optimisation_line = level_of_theory + "Opt\n"
+                    population_analysis_line = level_of_theory + "guess=read geom=checkpoint" + pop_analysis
+
+                    clear_line = [i for i, line in enumerate(large_lines) if "CLR" in line][0]
+                    header_end = clear_line + 3
+
+                    large_opt_lines = large_lines.copy()
+                    large_opt_lines[replace_index] = large_optimisation_line
+
+                    large_mk_lines = large_lines[:header_end]
+                    large_mk_lines[replace_index] = population_analysis_line
+
+                    large_opt_file = large_file.replace("large_mk", "large_opt")
+                    
+                    large_opt_lines = [line.replace(line, "") if self.metal_element in line and len(line.split()) < 3 else line for line in large_opt_lines]
+
+                    with open(large_opt_file, "w") as olarge_opt:
+                        olarge_opt.writelines(large_opt_lines)
+
+                    with open(large_file, "w") as opop:
+                        opop.writelines(large_mk_lines)
+
+
     def prepare_metals_for_ezaff(self, directory: str) -> List[str]:
 
         metals = []

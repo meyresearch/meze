@@ -147,4 +147,35 @@ def write_tleap_solvation_input(protein_file: str,
     ])
     return lines
 
+def write_gaussian_script(
+        job_name: str,
+        gaussian_version: str,
+        script_name: str,
+        com_file: str,
+        directory: str,
+        sbatch_options: dict[str] = None,
+        additional_lines: list[str] = None
+    ) -> str:
+    
+    gaussian_script_file = os.path.join(directory, script_name)
 
+    with open(gaussian_script_file, "w") as gscript:
+        gscript.write("#!/bin/bash\n")
+        
+        gscript.write("\n")
+        gscript.write(f"#SBATCH --job-name={job_name}\n")
+        if sbatch_options:
+            for key, value in sbatch_options.items():
+                gscript.write(f"#SBATCH {key}={value}\n")
+            gscript.write("\n")
+        
+        if additional_lines:
+            for line in additional_lines:
+                gscript.write(f"{line}\n")
+            gscript.write("\n")
+        
+        gscript.write(
+            f"{gaussian_version} {com_file}"
+        )
+    
+    return gaussian_script_file

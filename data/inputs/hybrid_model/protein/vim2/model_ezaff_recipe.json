@@ -11,6 +11,8 @@
     "dt": 0.001,
     "model": 2,
     "gaussian_version": "g16",
+    "memory": 12000,
+    "processors": 8,
     "coordination_cut_off": 2.8,
     "only_optimise_hydrogens": true,
     "protein_forcefield": "ff14SB",
