@@ -56,11 +56,11 @@ class Ligand():
         self.system = bss.IO.readMolecules(self.file)
 
     def parameterise(self, 
-                     path: str | None = None,
+                     directory: str | None = None,
                      atom_type: str = "gaff2",
                      charge_method: str = "bcc", 
                      residue_name: str = "MOL", 
-                     filename: Optional[str] = None):
+                     filename: Optional[str] = None) -> "Ligand":
         
         if len(self.file) > 1:
             raise UserWarning(f"Expected one ligand file but got {self.file}")
@@ -74,16 +74,16 @@ class Ligand():
         old_resname = [line.split()[3] for line in lines][0]
         new_lines = [line.replace(old_resname, residue_name) for line in lines]
         
-        with open(f"{path}/{residue_name}.pdb", "w") as ofile:
+        with open(f"{directory}/{residue_name}.pdb", "w") as ofile:
             ofile.writelines(new_lines)
 
-        file = f"{path}/{residue_name}.pdb"
+        file = f"{directory}/{residue_name}.pdb"
 
         ext = Path(file).suffix[1:]
 
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(directory, exist_ok=True)
 
-        mol2_path = os.path.join(path, f"{output_filename}.mol2")
+        mol2_path = os.path.join(directory, f"{output_filename}.mol2")
         workdir = os.getcwd()
         antechamber_cmd = (
             f"antechamber -fi {ext} -fo mol2 "
@@ -93,7 +93,7 @@ class Ligand():
         )
         print("Running antechamber with command:")
         print(antechamber_cmd)
-        os.chdir(path)
+        os.chdir(directory)
         os.system(antechamber_cmd)
         if not os.path.isfile(mol2_path): 
             warnings.warn(
@@ -116,7 +116,7 @@ class Ligand():
         with open(mol2_path, "w") as ofile:
             ofile.writelines(new_lines)
         
-        frcmod_path = os.path.join(path, f"{output_filename}.frcmod")
+        frcmod_path = os.path.join(directory, f"{output_filename}.frcmod")
         parmcheck_cmd = (
             f"parmchk2 -i {mol2_path} -o {frcmod_path} "
             f"-f mol2 -s {atom_type}"

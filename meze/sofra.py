@@ -137,7 +137,7 @@ class Meze:
     recipe: MezeRecipe 
     disulfide_bridges: Optional[List[dict[str, int]]] = None
     ligand: Optional[Ligand] = None 
-    non_standard_residues: dict[dict] = field(default_factory=dict)   
+    non_standard_residues: dict[dict] | List[Ligand] = field(default_factory=dict)   
 
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
@@ -393,7 +393,9 @@ class Meze:
             [self.topology, self.coordinates]
         )
 
-    def _validate_disulfide_bridges(self):    
+    def _validate_disulfide_bridges(self):   
+        if not self.disulfide_bridges:
+            return 
         with open(self.coordinates, "r") as pdb:
             pdb_lines = pdb.readlines()
         
@@ -456,9 +458,6 @@ class Meze:
                         f"No explicit bond will be added in tleap."
                     )
                     self.disulfide_bridges = None
-                    
-
-
 
     def _run(
             self,
@@ -570,15 +569,8 @@ class Meze:
                 raise ValueError(
                     f"Non-standard residue '{residue}' has unsupported 'atom_type': {properties['atom_type']}"
                 )
-            
-    def add_water(self, directory: str | None = None) -> Self:
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-        
-        self._validate_disulfide_bridges()
 
-        parameterised_ligand = self.ligand.parameterise(directory)
-
+    def parameterise_non_standard_residues(self, directory: str) -> Optional[list[Ligand]]:
         if self.non_standard_residues:
             
             for residue in self.non_standard_residues.keys():
@@ -596,7 +588,7 @@ class Meze:
             ]
             parameterised_non_standard_residues = [
                 non_standard_residue.parameterise(
-                    path=directory,
+                    directory=directory,
                     atom_type=non_standard_residue.atom_type,
                     residue_name=non_standard_residue.name
                 )
@@ -604,6 +596,18 @@ class Meze:
             ]
         else:
             parameterised_non_standard_residues = None
+        
+        return parameterised_non_standard_residues
+
+    def add_water(self, directory: str | None = None) -> Self:
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        self._validate_disulfide_bridges()
+
+        parameterised_ligand = self.ligand.parameterise(directory)
+
+        parameterised_non_standard_residues = self.parameterise_non_standard_residues(directory)
 
         tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
         tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
@@ -649,38 +653,64 @@ class Meze:
         os.chdir(workdir)
         return solvated_meze
 
-    def prepare_metals_for_ezaff(self, path: str) -> None:
 
+    def prepare_mcpb_system(self, directory: str | None = None) -> Self:
+        
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
+        self._validate_disulfide_bridges()
+
+        parameterised_ligand = self.ligand.parameterise(directory, filename="MOL")
+
+        return_value = self.prepare_metals_for_ezaff(directory)
+        if return_value != 0:
+            raise RuntimeError("Failed to prepare metals for ezaff.")
+        
+        parameterised_non_standard_residues = self.parameterise_non_standard_residues(directory) 
+
+        return dataclasses.replace(
+            self,
+            ligand=parameterised_ligand,
+            non_standard_residues=parameterised_non_standard_residues
+        )
+
+
+    def prepare_metals_for_ezaff(self, directory: str) -> int:
+
+        return_values = []
         for i, metal in enumerate(self.metals):
             metal_atomgroup = self.universe.select_atoms(f"resid {metal.resid}")
             metal_mcpb_resname = f"{metal.name.upper()}{i+1}"
 
-            metal_atomgroup.write(f"{path}/{metal_mcpb_resname}.pdb")
+            metal_atomgroup.write(f"{directory}/{metal_mcpb_resname}.pdb")
 
-            metal_to_pdb_command = f"metalpdb2mol2.py -i {path}/{metal_mcpb_resname}.pdb -o {path}/{metal_mcpb_resname}.mol2 -c {self.recipe.metal_charge}"
+            metal_to_pdb_command = f"metalpdb2mol2.py -i {directory}/{metal_mcpb_resname}.pdb -o {directory}/{metal_mcpb_resname}.mol2 -c {self.recipe.metal_charge}"
 
-            os.system(metal_to_pdb_command)
-    
-    def write_complex(self, path: str, ligand_name: str = "ligand") -> Self:
-        components = [self.coordinates]
-
-        if self.ligand:
-            components.append(f"{path}/{self.ligand.name}.pdb")
-
-        if self.non_standard_residue:
-            components.append(self.non_standard_residue.file[0])
-
-        if self.crystal_waters:
-            components.append(self.crystal_waters.file[0])
-
-        components_str = " ".join(components)
-        if self.ligand:
-            cat_command = "cat " + components_str + f" > {path}/{ligand_name}_complex.pdb"
-            pdb4amber_command = f"pdb4amber -i {path}/{ligand_name}_complex.pdb -o {path}/vim2_{ligand_name}.amber.pdb"
-        else: 
-            cat_command = "cat " + components_str + f" > {path}/complex.pdb"
-            pdb4amber_command = f"pdb4amber -i complex.pdb -o vim2_complex.amber.pdb"
+            return_values.append(os.system(metal_to_pdb_command))
         
+        if any(rv != 0 for rv in return_values):
+            success = 1
+        else:
+            success = 0
+
+        return success
+
+    
+
+    def write_complex(self, 
+                      directory: str,
+                      ligand_name: str = "ligand") -> Self:
+        
+        # check prepare mcpb files exist
+        ligand_file = os.path.join(directory, f"{self.ligand.name}.pdb")
+
+        components = [self.coordinates, ligand_file]
+        components_str = " ".join(components)
+
+        cat_command = "cat " + components_str + f" > {directory}/{ligand_name}_complex.pdb"
+        pdb4amber_command = f"pdb4amber -i {directory}/{ligand_name}_complex.pdb -o {directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
+
         print(f"Combining complex files with command:\n{cat_command}")
         os.system(cat_command)
 
@@ -689,8 +719,8 @@ class Meze:
 
         return dataclasses.replace(
             self,
-            coordinates=f"{path}/vim2_{ligand_name}.amber.pdb",
-            topology=f"{path}/vim2_{ligand_name}.amber.pdb"
+            coordinates=f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
+            topology=f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
         )
         
 
@@ -724,6 +754,7 @@ class ColdMeze(Meze):
         Build a ColdMeze object from topology and coordinates.
         Passes extra kwargs into ColdMezeRecipe.
         """
+
         if pdb_file:
             topology = pdb_file
             coordinates = pdb_file

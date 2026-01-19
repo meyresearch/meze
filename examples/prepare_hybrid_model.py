@@ -18,43 +18,29 @@ with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_
 
 cold_meze = ColdMeze.from_files(
     recipe=ColdMezeRecipe(**json_recipe),
-    pdb_file=f"{project_dir}/inputs/hybrid_model/protein/vim2.pdb"
+    pdb_file=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/vim2.fixed.pdb",
+    non_standard_residues={"MOH": {"charge": -1, "atom_type": "amber"}},
 )
 
-cold_meze_with_lig = cold_meze.add_ligand(
-    ligand_file=f"{project_dir}/inputs/hybrid_model/ligands/{system_name}/{ligand_name}.pdb",
+
+ligand_file = f"{project_dir}/inputs/hybrid_model/ligands/{system_name}/{ligand_name}/{ligand_name}.pdb"
+cold_complex = cold_meze.add_ligand(
+    ligand_file=ligand_file,
     ligand_charge=-1,
     name="MOL"
 )
-#TODO make non standard res a union of Ligand and List[Ligand]
-cold_system = cold_meze_with_lig.add_non_standard_residue(
-    file=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/MOH.pdb",
-    charge=-1,
-    atom_type="amber"
+
+parameterisation_dir = f"{project_dir}/inputs/hybrid_model/protein/{system_name}/{ligand_name}/"
+
+prepared_complex = cold_complex.prepare_mcpb_system(directory=parameterisation_dir)
+
+prepared_complex.write_complex(
+    directory=parameterisation_dir,
+    ligand_name=ligand_name,
 )
 
-cold_complex = cold_system.add_xtal_water( 
-    file=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/wat_h.pdb",
-)
+# 5 prepare mcpb input files
 
-parameterised_ligand = cold_complex.ligand.parameterise(
-    path=f"{project_dir}/inputs/hybrid_model/ligands/{system_name}/{ligand_name}/",
-)
-
-parameterised_hydroxide = cold_complex.non_standard_residue.parameterise(
-    path=f"{project_dir}/inputs/hybrid_model/ligands/{system_name}/{ligand_name}",
-    atom_type="amber",
-    residue_name="MOH"
-)
-
-cold_complex.prepare_metals_for_ezaff(
-    path=f"{project_dir}/inputs/hybrid_model/ligands/{system_name}/{ligand_name}/"
-)
-
-prepared_complex = cold_complex.write_complex(
-    path=f"{project_dir}/inputs/hybrid_model/ligands/{system_name}/{ligand_name}/",
-    ligand_name=ligand_name
-)
 
 # write MCPB.py input file with json input options
 
