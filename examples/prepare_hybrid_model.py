@@ -11,9 +11,9 @@ ligand_name = sys.argv[3]
 with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
-json_recipe["path_to_engine"] = os.path.join(
-    os.environ["PMEMDHOME"], "bin", "pmemd.cuda"        
-)
+# json_recipe["path_to_engine"] = os.path.join(
+#     os.environ["PMEMDHOME"], "bin", "pmemd.cuda"        
+# )
 
 cold_meze = ColdMeze.from_files(
     recipe=ColdMezeRecipe(**json_recipe),
@@ -29,9 +29,9 @@ cold_complex = cold_meze.add_ligand(
     name="MOL"
 )
 
-input_directory = f"{project_dir}/inputs/hybrid_model/protein/{system_name}/{ligand_name}/"
+output = f"{project_dir}/outputs/hybrid_model/{system_name}/{ligand_name}/"
 
-prepared_complex = cold_complex.prepare_mcpb_system(directory=input_directory,
+prepared_complex = cold_complex.prepare_mcpb_system(directory=output,
                                                     ligand_name=ligand_name)
 
 scratch_dir = os.path.join(prepared_complex.parameterisation_directory, "scratch")
