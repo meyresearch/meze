@@ -56,6 +56,30 @@ class MezeRecipe(BaseModel):
     model: Optional[int] = Field(
         None, description="Metal modelling option"
     )
+    gaussian_version: str = Field(
+        "g16", description="Gaussian version"
+    )
+    only_optimise_hydrogens: bool = Field(
+        True, description="Only optimise hydrogen atoms"
+    )
+    protein_forcefield: str = Field(
+        "ff14SB", description="Protein forcefield"
+    )
+    ligand_forcefield: str = Field(
+        "gaff2", description="Ligand forcefield"
+    )
+    water_model: str = Field(
+        "tip3p", description="Water model"
+    )
+    box_shape: str = Field(
+        "octahedral", description="Box shape"
+    )
+    box_edges: float = Field(
+        10.0, ge=0, description="Box edges in Å"
+    )
+    solvent_closeness: float = Field(
+        0.75, ge=0, le=1, description="Solvent closeness"
+    )
 
     @field_validator("model", mode="before")
     @classmethod
@@ -616,9 +640,14 @@ class Meze:
             protein_file=self.topology,
             ligand=parameterised_ligand,
             non_standard_residues=parameterised_non_standard_residues,
-            disulfide_bridges=self.disulfide_bridges
-        ) #TODO: put solvation options into MezeRecipe
-
+            disulfide_bridges=self.disulfide_bridges,
+            protein_ff=self.recipe.protein_forcefield,
+            ligand_ff=self.recipe.ligand_forcefield,
+            water_model=self.recipe.water_model,
+            box_shape=self.recipe.box_shape,
+            box_edges=self.recipe.box_edges,
+            solvent_closeness=self.recipe.solvent_closeness
+        ) 
         with open(tleap_input_file, "w") as ifile:
             ifile.writelines(tleap_lines)
         
@@ -696,8 +725,6 @@ class Meze:
 
         return success
 
-    
-
     def write_complex(self, 
                       directory: str,
                       ligand_name: str = "ligand") -> Self:
@@ -722,7 +749,8 @@ class Meze:
             coordinates=f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
             topology=f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
         )
-        
+
+
 
 
 
