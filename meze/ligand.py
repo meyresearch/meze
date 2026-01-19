@@ -35,6 +35,10 @@ class Ligand():
         else:
             raise TypeError(f"Expected str or list[str], got {type(self.file)}")
 
+        for file in self.file:
+            if not os.path.isfile(file):
+                raise FileNotFoundError(f"Ligand file not found: {file}")
+
         if not isinstance(self.charge, int):
             try:
                 self.charge = int(self.charge)
@@ -55,13 +59,16 @@ class Ligand():
                      path: str | None = None,
                      atom_type: str = "gaff2",
                      charge_method: str = "bcc", 
-                     residue_name: str = "MOL"):
+                     residue_name: str = "MOL", 
+                     filename: Optional[str] = None):
         
         if len(self.file) > 1:
             raise UserWarning(f"Expected one ligand file but got {self.file}")
         else:
             file = self.file[0]
         
+        output_filename = filename or f"{self.name}"
+
         with open(file, "r") as ifile:
             lines = ifile.readlines()
         old_resname = [line.split()[3] for line in lines][0]
@@ -76,7 +83,7 @@ class Ligand():
 
         os.makedirs(path, exist_ok=True)
 
-        mol2_path = os.path.join(path, f"{self.name}.mol2")
+        mol2_path = os.path.join(path, f"{output_filename}.mol2")
         workdir = os.getcwd()
         antechamber_cmd = (
             f"antechamber -fi {ext} -fo mol2 "
@@ -90,7 +97,7 @@ class Ligand():
         os.system(antechamber_cmd)
         if not os.path.isfile(mol2_path): 
             warnings.warn(
-                f"antechamber failed: missing output files for {self.name}.mol2",
+                f"antechamber failed: missing output files for {output_filename}.mol2",
                 UserWarning
             )
         
@@ -109,7 +116,7 @@ class Ligand():
         with open(mol2_path, "w") as ofile:
             ofile.writelines(new_lines)
         
-        frcmod_path = os.path.join(path, f"{self.name}.frcmod")
+        frcmod_path = os.path.join(path, f"{output_filename}.frcmod")
         parmcheck_cmd = (
             f"parmchk2 -i {mol2_path} -o {frcmod_path} "
             f"-f mol2 -s {atom_type}"
@@ -121,7 +128,7 @@ class Ligand():
 
         if not os.path.isfile(frcmod_path):
             warnings.warn(
-                f"parmchk2 failed: missing output files for {self.name}.frcmod",
+                f"parmchk2 failed: missing output files for {output_filename}.frcmod",
                 UserWarning
             )
         os.chdir(workdir)
