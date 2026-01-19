@@ -2,11 +2,10 @@ from meze import ColdMeze, ColdMezeRecipe
 import os
 import sys
 import json
-import pathlib
 
 project_dir = sys.argv[1] 
-system_name = "vim2" 
-ligand_name = sys.argv[2]
+system_name = sys.argv[2]
+ligand_name = sys.argv[3]
 
 # set ColdMezeRecipe including model (i.e. metal params), ligand(?)
 with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_recipe.json", "r") as file:
