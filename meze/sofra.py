@@ -801,6 +801,7 @@ class Meze:
         
         if split_large_files:
             self.update_gaussian_inputs(directory=self.parameterisation_directory)
+            com_files = sorted(glob.glob(f"{self.parameterisation_directory}/*.com"))
             large_opt = [f for f in com_files if "large_opt" in f][0]
             geo_opt = write_gaussian_script(
                 job_name=f"{ligand_name}-g-opt",
