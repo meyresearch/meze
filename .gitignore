@@ -11,6 +11,9 @@ __pycache__/
 *.res
 *.txt
 data/equilibration/
+*.amber_sslink
+*.txt
+*.res 
 *.crd
 *.nrg
 *.nc
