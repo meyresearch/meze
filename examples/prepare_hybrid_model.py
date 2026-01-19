@@ -30,21 +30,13 @@ cold_complex = cold_meze.add_ligand(
     name="MOL"
 )
 
-parameterisation_dir = f"{project_dir}/inputs/hybrid_model/protein/{system_name}/{ligand_name}/"
+input_directory = f"{project_dir}/inputs/hybrid_model/protein/{system_name}/{ligand_name}/"
 
-prepared_complex = cold_complex.prepare_mcpb_system(directory=parameterisation_dir)
-
-prepared_complex.write_complex(
-    directory=parameterisation_dir,
-    ligand_name=ligand_name,
-)
-
-# 5 prepare mcpb input files
-
-
-# write MCPB.py input file with json input options
+prepared_complex = cold_complex.prepare_mcpb_system(directory=input_directory,
+                                                    ligand_name=ligand_name)
 
 # run step 1 of MCPB.py
+prepared_complex.run_mcpb_step_1(ligand_name=ligand_name)
 
 # write out Gaussian input scripts for RESP calculation (fix scripts)
 

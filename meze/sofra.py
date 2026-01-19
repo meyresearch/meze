@@ -162,6 +162,7 @@ class Meze:
     disulfide_bridges: Optional[List[dict[str, int]]] = None
     ligand: Optional[Ligand] = None 
     non_standard_residues: dict[dict] | List[Ligand] = field(default_factory=dict)   
+    parameterisation_directory: Optional[str] = None
 
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
@@ -683,31 +684,112 @@ class Meze:
         return solvated_meze
 
 
-    def prepare_mcpb_system(self, directory: str | None = None) -> Self:
+    def prepare_mcpb_system(self,
+                            directory: str | None = None, 
+                            ligand_name: str = "ligand") -> Self:
         
         if directory:
             os.makedirs(directory, exist_ok=True)
 
+        parameterisation_directory = os.path.join(directory, "01_mcpb_parameterisation")
+        os.makedirs(parameterisation_directory, exist_ok=True)
+
         self._validate_disulfide_bridges()
 
-        parameterised_ligand = self.ligand.parameterise(directory, filename="MOL")
-
-        return_value = self.prepare_metals_for_ezaff(directory)
-        if return_value != 0:
-            raise RuntimeError("Failed to prepare metals for ezaff.")
-        
-        parameterised_non_standard_residues = self.parameterise_non_standard_residues(directory) 
-
-        return dataclasses.replace(
-            self,
-            ligand=parameterised_ligand,
-            non_standard_residues=parameterised_non_standard_residues
+        parameterised_ligand = self.ligand.parameterise(
+            directory=parameterisation_directory, 
+            filename="MOL"
         )
 
+        self.prepare_metals_for_ezaff(directory=parameterisation_directory)
 
-    def prepare_metals_for_ezaff(self, directory: str) -> int:
+        parameterised_non_standard_residues = self.parameterise_non_standard_residues(
+            directory=parameterisation_directory
+        )
 
-        return_values = []
+        complex = self.write_complex(
+            directory=parameterisation_directory,
+            ligand_name=ligand_name,
+        )
+        
+        return dataclasses.replace(
+            self,
+            topology=complex["topology"],
+            coordinates=complex["coordinates"],
+            ligand=parameterised_ligand,
+            non_standard_residues=parameterised_non_standard_residues,
+            parameterisation_directory=parameterisation_directory
+        )
+
+    def write_mcpb_input_file(self,
+                              directory: str,
+                              original_pdb: str,
+                              parameterised_ligand: Ligand,
+                              parameterised_non_standard_residues: Optional[list[Ligand]],
+                              metals: list[str],
+                              ligand_name: str = "ligand") -> str:
+        
+        mcpb_input_file = os.path.join(directory, "mcpbpy.in")
+
+        mcpb_input_options = {
+            "original_pdb": original_pdb,
+            "group_name": self.recipe.group_name + f"_{ligand_name}",
+            "cut_off": self.recipe.coordination_cut_off,
+            "ion_mol2files": " ".join(metals),
+            "naa_mol2files": f"{parameterised_ligand.name}.mol2" if not parameterised_non_standard_residues else " ".join(
+                [parameterised_ligand.name + ".mol2"] +
+                [residue.name + ".mol2" for residue in parameterised_non_standard_residues]
+            ),
+            "frcmod_files": f"{parameterised_ligand.name}.frcmod" if not parameterised_non_standard_residues else " ".join(
+                [parameterised_ligand.name + ".frcmod"] +
+                [residue.name + ".frcmod" for residue in parameterised_non_standard_residues]
+            ),
+            "software_version": self.recipe.gaussian_version,
+            "ion_ids": " ".join(str(atomid) for atomid in self.metal_atomids),
+            "large_opt": int(not self.recipe.only_optimise_hydrogens),
+            "force_field": self.recipe.protein_forcefield,
+            "water_model": self.recipe.water_model,
+            "gaff": self.recipe.ligand_forcefield.replace("gaff", "")
+        }
+
+        with open(mcpb_input_file, "w") as mcpb_file:
+            for key, value in mcpb_input_options.items():
+                mcpb_file.write(f"{key} {value}\n") 
+
+        return mcpb_input_file
+    
+    def run_mcpb_step_1(self,
+                        ligand_name: str = "ligand"):
+        # check prepare mcpb files exist
+        if not self.parameterisation_directory:
+            raise ValueError("MCPB parameterisation directory not set.")
+        
+        metals = []
+        for i, metal in enumerate(self.metals):
+            metal_mcpb_resname = f"{metal.name.upper()}{i+1}"
+            metals.append(f"{metal_mcpb_resname}.mol2")
+
+        mcpb_input_file = self.write_mcpb_input_file(
+            directory=self.parameterisation_directory,
+            original_pdb=self.topology,
+            parameterised_ligand=self.ligand,
+            parameterised_non_standard_residues=self.non_standard_residues if isinstance(self.non_standard_residues, list) else None,
+            metals=metals,
+            ligand_name=ligand_name
+        )
+        workdir = os.getcwd()
+        os.chdir(self.parameterisation_directory)
+
+        mcpb_output_file = os.path.join(self.parameterisation_directory, "mcpb_step1.out")
+        mcpb_command = f"MCPB.py -i {mcpb_input_file} -s 1 > {mcpb_output_file}"
+        print(f"Running MCPB.py step 1 with command:\n{mcpb_command}")
+        os.system(mcpb_command)
+
+        os.chdir(workdir)
+    
+    def prepare_metals_for_ezaff(self, directory: str) -> List[str]:
+
+        metals = []
         for i, metal in enumerate(self.metals):
             metal_atomgroup = self.universe.select_atoms(f"resid {metal.resid}")
             metal_mcpb_resname = f"{metal.name.upper()}{i+1}"
@@ -716,20 +798,16 @@ class Meze:
 
             metal_to_pdb_command = f"metalpdb2mol2.py -i {directory}/{metal_mcpb_resname}.pdb -o {directory}/{metal_mcpb_resname}.mol2 -c {self.recipe.metal_charge}"
 
-            return_values.append(os.system(metal_to_pdb_command))
-        
-        if any(rv != 0 for rv in return_values):
-            success = 1
-        else:
-            success = 0
+            os.system(metal_to_pdb_command)
+            metals.append(f"{metal_mcpb_resname}.mol2")
 
-        return success
+        return metals
+
 
     def write_complex(self, 
                       directory: str,
-                      ligand_name: str = "ligand") -> Self:
+                      ligand_name: str = "ligand") -> dict[str, str]:
         
-        # check prepare mcpb files exist
         ligand_file = os.path.join(directory, f"{self.ligand.name}.pdb")
 
         components = [self.coordinates, ligand_file]
@@ -744,16 +822,9 @@ class Meze:
         print(f"Running pdb4amber with command:\n{pdb4amber_command}")
         os.system(pdb4amber_command)
 
-        return dataclasses.replace(
-            self,
-            coordinates=f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
-            topology=f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
-        )
-
-
-
-
-
+        return {"coordinates": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
+                "topology": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"}
+    
 @dataclass
 class ColdMeze(Meze):
     recipe: ColdMezeRecipe
