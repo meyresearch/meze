@@ -1,7 +1,7 @@
 {
     "workdir": "",
     "metal": "ZN",
-    "group_name": "vim2_ezaff",
+    "group_name": "vim2",
     "max_cycles": 5000,
     "n_sd_cycles": 1000,
     "min_method": 1,
