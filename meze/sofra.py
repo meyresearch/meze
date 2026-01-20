@@ -806,7 +806,7 @@ class Meze:
             geo_opt = write_gaussian_script(
                 job_name=f"{ligand_name}-g-opt",
                 gaussian_version=self.recipe.gaussian_version,
-                script_name="slurm_g_opt.sh",
+                script_name=f"{ligand_name}_slurm_g_opt.sh",
                 directory=self.parameterisation_directory,
                 com_file=large_opt,
                 sbatch_options=sbatch_options,
@@ -818,7 +818,7 @@ class Meze:
         mk = write_gaussian_script(
             job_name=f"{ligand_name}-mk",
             gaussian_version=self.recipe.gaussian_version,
-            script_name="slurm_mk.sh",
+            script_name=f"{ligand_name}_slurm_mk.sh",
             directory=self.parameterisation_directory,
             com_file=large_mk,
             sbatch_options=sbatch_options,
