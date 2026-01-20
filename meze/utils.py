@@ -6,6 +6,28 @@ from typing import (
 )
 import os
 
+
+
+def list_rindex(list_to_search: list[str], word: str) -> int:
+    """
+     Source - https://stackoverflow.com/a
+     Posted by wim, modified by community. 
+     See post 'Timeline' for change history
+     Retrieved 2026-01-20, License - CC BY-SA 4.0
+     """
+    rindex = None
+
+    for i, item in enumerate(reversed(list_to_search)):
+        if word in item:
+            rindex = i
+            break
+    if not rindex:
+        raise ValueError(f"{word} is not in list")
+     
+    rlist = [line for line in reversed(list_to_search)]
+    return [i for i, line in enumerate(list_to_search) if line == rlist[rindex]][-1]
+ 
+
 def residue_restraint_mask(residue_ids: list[int]) -> str:
     """Generate an Amber-style restraint mask.
 
