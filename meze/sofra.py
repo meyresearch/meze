@@ -86,6 +86,9 @@ class MezeRecipe(BaseModel):
     solvent_closeness: float = Field(
         0.75, ge=0, le=1, description="Solvent closeness"
     )
+    parameterisation_directory: Optional[str] = Field(
+        None, description="Hybrid model parameterisation directory"
+    )
 
     @field_validator("model", mode="before")
     @classmethod
@@ -101,6 +104,11 @@ class MezeRecipe(BaseModel):
         """Print recipe information as JSON
         """
         return self.model_dump_json(indent=4, fallback=str, warnings="none")
+
+    def to_json(self, file: str):
+        with open(file, "w") as ofile:
+            ofile.write(self.model_dump_json(indent=2))
+
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
@@ -166,7 +174,6 @@ class Meze:
     disulfide_bridges: Optional[List[dict[str, int]]] = None
     ligand: Optional[Ligand] = None 
     non_standard_residues: dict[dict] | List[Ligand] = field(default_factory=dict)   
-    parameterisation_directory: Optional[str] = None
 
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
@@ -629,6 +636,7 @@ class Meze:
         
         return parameterised_non_standard_residues
 
+
     def add_water(self, directory: str | None = None) -> Self:
         if directory:
             os.makedirs(directory, exist_ok=True)
@@ -717,13 +725,16 @@ class Meze:
             ligand_name=ligand_name,
         )
         
+        updated_recipe = self.recipe.model_copy()
+        updated_recipe.parameterisation_directory = parameterisation_directory
+        
         return dataclasses.replace(
             self,
+            recipe=updated_recipe,
             topology=complex["topology"],
             coordinates=complex["coordinates"],
             ligand=parameterised_ligand,
             non_standard_residues=parameterised_non_standard_residues,
-            parameterisation_directory=parameterisation_directory
         )
 
     def write_mcpb_input_file(self,
@@ -770,7 +781,7 @@ class Meze:
                                  additional_lines: Optional[list[str]] = None):
         
         #TODO check prepare mcpb files exist
-        if not self.parameterisation_directory:
+        if not self.recipe.parameterisation_directory:
             raise ValueError("MCPB parameterisation directory not set.")
         
         metals = []
@@ -779,7 +790,7 @@ class Meze:
             metals.append(f"{metal_mcpb_resname}.mol2")
 
         mcpb_input_file = self.write_mcpb_input_file(
-            directory=self.parameterisation_directory,
+            directory=self.recipe.parameterisation_directory,
             original_pdb=self.topology,
             parameterised_ligand=self.ligand,
             parameterised_non_standard_residues=self.non_standard_residues if isinstance(self.non_standard_residues, list) else None,
@@ -787,27 +798,27 @@ class Meze:
             ligand_name=ligand_name
         )
         workdir = os.getcwd()
-        os.chdir(self.parameterisation_directory)
+        os.chdir(self.recipe.parameterisation_directory)
 
-        mcpb_output_file = os.path.join(self.parameterisation_directory, "mcpb_step1.out")
+        mcpb_output_file = os.path.join(self.recipe.parameterisation_directory, "mcpb_step1.out")
         mcpb_command = f"MCPB.py -i {mcpb_input_file} -s 1 > {mcpb_output_file}"
         print(f"Running MCPB.py step 1 with command:\n{mcpb_command}")
         os.system(mcpb_command)
 
-        com_files = sorted(glob.glob(f"{self.parameterisation_directory}/*.com"))
+        com_files = sorted(glob.glob(f"{self.recipe.parameterisation_directory}/*.com"))
 
         if not com_files:
-            raise ValueError(f"No Gaussian .com files found in {self.parameterisation_directory}.")
+            raise ValueError(f"No Gaussian .com files found in {self.recipe.parameterisation_directory}.")
         
         if split_large_files:
-            self.update_gaussian_inputs(directory=self.parameterisation_directory)
-            com_files = sorted(glob.glob(f"{self.parameterisation_directory}/*.com"))
+            self.update_gaussian_inputs(directory=self.recipe.parameterisation_directory)
+            com_files = sorted(glob.glob(f"{self.recipe.parameterisation_directory}/*.com"))
             large_opt = [f for f in com_files if "large_opt" in f][0]
             geo_opt = write_gaussian_script(
                 job_name=f"{ligand_name}-g-opt",
                 gaussian_version=self.recipe.gaussian_version,
                 script_name=f"{ligand_name}_slurm_g_opt.sh",
-                directory=self.parameterisation_directory,
+                directory=self.recipe.parameterisation_directory,
                 com_file=large_opt,
                 sbatch_options=sbatch_options,
                 additional_lines=additional_lines
@@ -819,7 +830,7 @@ class Meze:
             job_name=f"{ligand_name}-mk",
             gaussian_version=self.recipe.gaussian_version,
             script_name=f"{ligand_name}_slurm_mk.sh",
-            directory=self.parameterisation_directory,
+            directory=self.recipe.parameterisation_directory,
             com_file=large_mk,
             sbatch_options=sbatch_options,
             additional_lines=additional_lines
@@ -945,7 +956,6 @@ class ColdMeze(Meze):
         ligand: Optional[Ligand] = None,
         disulfide_bridges: Optional[List[dict[str, int]]] = None,
         non_standard_residues: Optional[dict[dict]] = None,
-        parameterisation_directory: Optional[str] = None,
         **kwargs
     ) -> "ColdMeze":
         """
@@ -969,12 +979,6 @@ class ColdMeze(Meze):
             raise TypeError(
                 f"Expected 'recipe' to be a ColdMezeRecipe, dict, or None, but got {type(recipe).__name__}"
             )
-        
-        if parameterisation_directory:
-            if not os.path.isdir(parameterisation_directory):
-                raise FileNotFoundError(
-                    f"Cannot find parameterisation directory {parameterisation_directory}"
-                )
 
         return cls(
             topology=topology, 
@@ -984,9 +988,8 @@ class ColdMeze(Meze):
             ligand=ligand,
             disulfide_bridges=disulfide_bridges,
             non_standard_residues=non_standard_residues,
-            parameterisation_directory=parameterisation_directory
         )
-    
+
     def _build_restraint_mask(
             self, 
             position_restraints: str, 

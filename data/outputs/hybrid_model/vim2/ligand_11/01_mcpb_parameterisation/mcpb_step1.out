@@ -17,7 +17,7 @@ The following is the input variable you have:
 The variable ion_ids is :  [3450, 3451]
 The variable ion_info is :  []
 The variable ion_mol2files is :  ['ZN1.mol2', 'ZN2.mol2']
-The variable original_pdb is :  /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/vim2_ezaff_ligand_11.amber.pdb
+The variable original_pdb is :  /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/vim2_ligand_11.amber.pdb
 The variable add_bonded_pairs is :  []
 The variable add_redcrd is :  0
 The variable additional_resids is :  []
@@ -28,7 +28,7 @@ The variable cut_off is :  2.8
 The variable force_field is :  ff14SB
 The variable frcmod_files is :  ['MOL.frcmod', 'MOH.frcmod']
 The variable gaff is :  2
-The variable group_name is :  vim2_ezaff_ligand_11
+The variable group_name is :  vim2_ligand_11
 The variable ion_paraset is :  12_6 (Only for the ions using the nonbonded model).
 The variable large_opt is :  1
 The variable lgmodel_chg is :  -99
