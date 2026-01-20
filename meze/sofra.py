@@ -945,6 +945,7 @@ class ColdMeze(Meze):
         ligand: Optional[Ligand] = None,
         disulfide_bridges: Optional[List[dict[str, int]]] = None,
         non_standard_residues: Optional[dict[dict]] = None,
+        parameterisation_directory: Optional[str] = None,
         **kwargs
     ) -> "ColdMeze":
         """
@@ -969,6 +970,12 @@ class ColdMeze(Meze):
                 f"Expected 'recipe' to be a ColdMezeRecipe, dict, or None, but got {type(recipe).__name__}"
             )
         
+        if parameterisation_directory:
+            if not os.path.isdir(parameterisation_directory):
+                raise FileNotFoundError(
+                    f"Cannot find parameterisation directory {parameterisation_directory}"
+                )
+
         return cls(
             topology=topology, 
             coordinates=coordinates, 
@@ -976,7 +983,8 @@ class ColdMeze(Meze):
             recipe=recipe,
             ligand=ligand,
             disulfide_bridges=disulfide_bridges,
-            non_standard_residues=non_standard_residues
+            non_standard_residues=non_standard_residues,
+            parameterisation_directory=parameterisation_directory
         )
     
     def _build_restraint_mask(
