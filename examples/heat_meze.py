@@ -13,7 +13,7 @@ with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.js
     json_recipe = json.load(file)
 
 json_recipe["path_to_engine"] = os.path.join(
-        os.environ["AMBERHOME"], "bin", "sander"
+        os.environ["AMBERHOME"], "bin", "pmemd.cuda"
     )
 
 input_dir = f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{ligand_name}_bound/"
