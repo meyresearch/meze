@@ -31,13 +31,13 @@ cold_complex = cold_meze.add_ligand(
 
 output = f"{project_dir}/outputs/hybrid_model/{system_name}/{ligand_name}/"
 
-prepared_complex = cold_complex.prepare_mcpb_system(directory=output,
+mcpb_system = cold_complex.prepare_mcpb_system(directory=output,
                                                     ligand_name=ligand_name)
 
-scratch_dir = os.path.join(prepared_complex.recipe.parameterisation_directory, "scratch")
+scratch_dir = os.path.join(mcpb_system.recipe.parameterisation_directory, "scratch")
 os.makedirs(scratch_dir, exist_ok=True)
 
-prepared_complex.prepare_resp_calculation(
+prepared_complex = mcpb_system.prepare_resp_calculation(
     ligand_name=ligand_name,
     sbatch_options={
         "nodes": 1,

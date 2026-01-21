@@ -17,6 +17,7 @@
   "box_edges": 10.0,
   "solvent_closeness": 0.75,
   "parameterisation_directory": "/Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation",
+  "mcpbpy_input_file": "/Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/mcpbpy.in",
   "max_cycles": 5000,
   "n_sd_cycles": 1000,
   "min_method": 1,

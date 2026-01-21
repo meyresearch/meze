@@ -93,6 +93,10 @@ class MezeRecipe(BaseModel):
         None, description="Hybrid model parameterisation directory"
     )
 
+    mcpbpy_input_file: Optional[str] = Field(
+        None, description="MCPB.py input file"
+    )
+
     @field_validator("model", mode="before")
     @classmethod
     def validate_model(cls, v):
@@ -820,6 +824,10 @@ class Meze:
             metals=metals,
             ligand_name=ligand_name
         )
+
+        updated_recipe = self.recipe.model_copy()
+        updated_recipe.mcpbpy_input_file = mcpb_input_file
+
         workdir = os.getcwd()
         os.chdir(self.recipe.parameterisation_directory)
 
@@ -859,8 +867,13 @@ class Meze:
             additional_lines=additional_lines
         )
         os.system(f"chmod +x {mk}")
-
         os.chdir(workdir)
+
+        return dataclasses.replace(
+            self,
+            recipe=updated_recipe
+        )
+
 
     def update_gaussian_inputs(self,
                                directory: str):
@@ -956,7 +969,28 @@ class Meze:
         return {"coordinates": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
                 "topology": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"}
 
+    def build_resp_charges(self):
+
+        # copy ZN1.mol2 etc into zn1_input.mol2 
+        mcpbpy_input = os.path.join(
+            self.recipe.parameterisation_directory,
+
+        )
+        if not os.path.isfile():
+            pass
+
+        # do step 2e 
         
+        workdir = os.getcwd()
+        os.chdir(self.recipe.parameterisation_directory)
+
+        # check directory for log files 
+
+        # check log files are ok
+
+        # do step 3
+
+        # might not need step 4?
 
 @dataclass
 class ColdMeze(Meze):
