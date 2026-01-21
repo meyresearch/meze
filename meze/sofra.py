@@ -971,13 +971,41 @@ class Meze:
 
     def build_resp_charges(self):
 
-        # copy ZN1.mol2 etc into zn1_input.mol2 
-        mcpbpy_input = os.path.join(
-            self.recipe.parameterisation_directory,
+        if not self.recipe.mcpbpy_input_file:
+            raise RuntimeError(f"mcpbpy.in file is not set")
+        elif not os.path.isfile(self.recipe.mcpbpy_input_file):
+            raise FileNotFoundError(
+                f"mcpbpy.in file does not exist: "
+                f"{self.recipe.mcpbpy_input_file}"
+            )
 
-        )
-        if not os.path.isfile():
-            pass
+        # def parse mcpbpy.in:
+        mcpb_input_options = {}
+        with open(self.recipe.mcpbpy_input_file, "r") as file:
+            for line in file:
+                parts = line.split()
+                if len(parts) == 2:
+                    (key, value) = parts[0], parts[1]
+                else:
+                    (key, value) = parts[0], parts[1:]
+                mcpb_input_options[key] = value
+        
+        if {"cut_off"} <= mcpb_input_options.keys():
+            mcpb_input_options["cut_off"] = float(mcpb_input_options["cut_off"])
+        if {"ion_ids"} <= mcpb_input_options.keys():
+            value = mcpb_input_options["ion_ids"]
+            if isinstance(value, str):
+                mcpb_input_options["ion_ids"] = int(value)
+            else:
+                mcpb_input_options["ion_ids"] = [int(v) for v in value]
+        if {"gaff"} <= mcpb_input_options.keys():
+            mcpb_input_options["gaff"] = int(mcpb_input_options["gaff"])
+        if {"large_opt"} <= mcpb_input_options.keys():
+            mcpb_input_options["large_opt"] = int(mcpb_input_options["large_opt"])
+        
+        
+        
+        # copy ZN1.mol2 etc into zn1_input.mol2 
 
         # do step 2e 
         

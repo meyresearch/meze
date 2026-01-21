@@ -238,3 +238,28 @@ def _pretty(obj, indent=0, step=2):
             return "[" + ", ".join(parts) + "]"
 
     return repr(obj)
+
+def parse_mcpbpy_input(mcpb_input_file: str) -> dict:
+    mcpb_input_options = {}
+    with open(mcpb_input_file, "r") as file:
+        for line in file:
+            parts = line.split()
+            if len(parts) == 2:
+                (key, value) = parts[0], parts[1]
+            else:
+                (key, value) = parts[0], parts[1:]
+            mcpb_input_options[key] = value
+    
+    if {"cut_off"} <= mcpb_input_options.keys():
+        mcpb_input_options["cut_off"] = float(mcpb_input_options["cut_off"])
+    if {"ion_ids"} <= mcpb_input_options.keys():
+        value = mcpb_input_options["ion_ids"]
+        if isinstance(value, str):
+            mcpb_input_options["ion_ids"] = int(value)
+        else:
+            mcpb_input_options["ion_ids"] = [int(v) for v in value]
+    if {"gaff"} <= mcpb_input_options.keys():
+        mcpb_input_options["gaff"] = int(mcpb_input_options["gaff"])
+    if {"large_opt"} <= mcpb_input_options.keys():
+        mcpb_input_options["large_opt"] = int(mcpb_input_options["large_opt"])
+    return mcpb_input_options
