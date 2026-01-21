@@ -980,8 +980,8 @@ class Meze:
             mcpbpy_input_file=mcpbpy_input_file
         )
         
-        self.remove_ligand_bond()
-        self.remove_double_oxygen_bond()        
+        self._remove_ligand_bond()
+        self._remove_double_oxygen_bond()        
         
         workdir = os.getcwd()
         os.chdir(self.recipe.parameterisation_directory)
@@ -994,7 +994,7 @@ class Meze:
         os.chdir(workdir)
 
 
-    def remove_double_oxygen_bond(self):
+    def _remove_double_oxygen_bond(self):
 
         standard_fingerprint_file = glob.glob(
             f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
@@ -1060,7 +1060,7 @@ class Meze:
 
 
 
-    def remove_ligand_bond(self):
+    def _remove_ligand_bond(self):
 
         standard_fingerprint_file = glob.glob(
             f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
@@ -1120,13 +1120,6 @@ class Meze:
 
     def build_resp_charges(self):
         mcpbpy_input_file = self.recipe.mcpbpy_input_file
-        if not mcpbpy_input_file:
-            raise RuntimeError(f"mcpbpy.in file is not set")
-        elif not os.path.isfile(mcpbpy_input_file):
-            raise FileNotFoundError(
-                f"mcpbpy.in file does not exist: "
-                f"{mcpbpy_input_file}"
-            )
 
         mcpb_input_options = parse_mcpbpy_input(
             mcpbpy_input_file=mcpbpy_input_file
