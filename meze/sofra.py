@@ -727,7 +727,7 @@ class Meze:
         
         updated_recipe = self.recipe.model_copy()
         updated_recipe.parameterisation_directory = parameterisation_directory
-        
+
         return dataclasses.replace(
             self,
             recipe=updated_recipe,
@@ -839,7 +839,6 @@ class Meze:
 
         os.chdir(workdir)
 
-
     def update_gaussian_inputs(self,
                                directory: str):
         
@@ -933,7 +932,9 @@ class Meze:
 
         return {"coordinates": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
                 "topology": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"}
-    
+
+        
+
 @dataclass
 class ColdMeze(Meze):
     recipe: ColdMezeRecipe

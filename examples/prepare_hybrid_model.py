@@ -34,6 +34,8 @@ output = f"{project_dir}/outputs/hybrid_model/{system_name}/{ligand_name}/"
 prepared_complex = cold_complex.prepare_mcpb_system(directory=output,
                                                     ligand_name=ligand_name)
 
+
+
 scratch_dir = os.path.join(prepared_complex.recipe.parameterisation_directory, "scratch")
 os.makedirs(scratch_dir, exist_ok=True)
 

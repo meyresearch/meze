@@ -11,11 +11,11 @@ ligand_name = sys.argv[3]
 with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
-parm_dir = f"{project_dir}/outputs/{system_name}/{ligand_name}/01_mcpb_parameterisation/"
+parm_dir = json_recipe["parameterisation_directory"]
 
 cold_meze = ColdMeze.from_files(
     recipe=ColdMezeRecipe(**json_recipe),
-    pdb_file=f"{parm_dir}/{system_name}.amber.pdb",
-    parameterisation_directory=parm_dir
+    pdb_file=f"{parm_dir}/{system_name}_{ligand_name}.pdb"
 )
 
+print(cold_meze.__str__())
