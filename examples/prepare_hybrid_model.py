@@ -53,8 +53,15 @@ prepared_complex.prepare_resp_calculation(
     ]
 )
 
+prepared_complex.save(
+    filename=f"{prepared_complex.recipe.parameterisation_directory}/{ligand_name}_meze"
+)
+
+# Save updated recipe
 prepared_complex.recipe.to_json(
     f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_recipe.json"
 )
 
+# Show pretty print
 print(prepared_complex)
+

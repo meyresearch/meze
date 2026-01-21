@@ -23,6 +23,8 @@ from typing import (
     Self,
     List
 )
+import pickle
+import pathlib
 from .ligand import Ligand
 import os
 
@@ -214,6 +216,13 @@ class Meze:
 
     def __str__(self) -> str:
         return _pretty(self)
+
+    def save(self, filename: str):
+        suffix = pathlib.Path(filename).suffix
+        if not suffix:
+            filename = filename + ".pkl"
+        with open(filename, "wb") as file:
+            pickle.dump(self, file)
 
     @classmethod
     def from_files(
