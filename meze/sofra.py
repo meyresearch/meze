@@ -220,9 +220,19 @@ class Meze:
     def save(self, filename: str):
         suffix = pathlib.Path(filename).suffix
         if not suffix:
-            filename = filename + ".pkl"
+            filename += ".pkl"
         with open(filename, "wb") as file:
             pickle.dump(self, file)
+
+    @classmethod
+    def load(cls, filename: str):
+        if not os.path.isfile(filename):
+            raise FileNotFoundError(
+                f"Pickle meze file not found: {filename}"
+            )
+        with open(filename, "rb") as file:
+            return pickle.load(file)
+
 
     @classmethod
     def from_files(
