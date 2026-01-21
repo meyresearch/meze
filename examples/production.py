@@ -13,7 +13,7 @@ with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.js
     json_recipe = json.load(file)
 
 json_recipe["path_to_engine"] = os.path.join(
-    os.environ["AMBERHOME"], "bin", "sander"        
+    os.environ["AMBERHOME"], "bin", "pmemd.cuda"        
 )
 
 #TODO make a separate coldmezerecipe.json and a hotmezerecipe.json
@@ -29,7 +29,7 @@ hot_meze = HotMeze.from_files(
     restraint_file=f"{equil_dir}/restraints.RST"
 ) 
 
-production_dir = os.path.join(project_dir, "outputs", "model_0",system_name, f"{ligand_name}", f"repeat_{repeat}")
+production_dir = os.path.join(project_dir, "outputs", "model_0", system_name, f"{ligand_name}", f"repeat_{repeat}")
 os.makedirs(production_dir, exist_ok=True)
 
 hot_meze.run(
