@@ -34,8 +34,6 @@ output = f"{project_dir}/outputs/hybrid_model/{system_name}/{ligand_name}/"
 prepared_complex = cold_complex.prepare_mcpb_system(directory=output,
                                                     ligand_name=ligand_name)
 
-
-
 scratch_dir = os.path.join(prepared_complex.recipe.parameterisation_directory, "scratch")
 os.makedirs(scratch_dir, exist_ok=True)
 
@@ -58,3 +56,5 @@ prepared_complex.prepare_resp_calculation(
 prepared_complex.recipe.to_json(
     f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_recipe.json"
 )
+
+print(prepared_complex)

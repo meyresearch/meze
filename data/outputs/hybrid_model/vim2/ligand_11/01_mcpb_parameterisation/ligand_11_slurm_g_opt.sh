@@ -14,4 +14,4 @@ LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
 export GAUSS_SCRDIR=/Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/scratch
 
 
-g16 /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/vim2_ezaff_ligand_11_large_opt.com
+g16 /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/vim2_ligand_11_large_opt.com

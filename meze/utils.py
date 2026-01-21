@@ -5,6 +5,8 @@ from typing import (
     Optional
 )
 import os
+from dataclasses import fields, is_dataclass
+from collections.abc import Mapping, Iterable
 
 
 
@@ -201,3 +203,38 @@ def write_gaussian_script(
         )
     
     return gaussian_script_file
+
+def _pretty(obj, indent=0, step=2):
+    pad = " " * indent
+
+    if is_dataclass(obj):
+        cls = type(obj).__name__
+        parts = []
+        for f in fields(obj):
+            value = getattr(obj, f.name)
+            parts.append(
+                f"{pad}{' ' * step}{f.name}="
+                f"{_pretty(value, indent + step, step)}"
+            )
+        inner = ",\n".join(parts)
+        return f"{cls}(\n{inner}\n{pad})"
+
+    if isinstance(obj, Mapping):
+        parts = [
+            f"{pad}{' ' * step}{repr(k)}: {_pretty(v, indent + step, step)}"
+            for k, v in obj.items()
+        ]
+        inner = ",\n".join(parts)
+        return "{\n" + inner + "\n" + pad + "}"
+
+    if isinstance(obj, Iterable) and not isinstance(obj, (str, bytes)):
+        parts = [
+            _pretty(v, indent + step, step) for v in obj
+        ]
+        if len(parts) > 1:
+            inner = ",\n".join(f"{pad}{' ' * step}{p}" for p in parts)
+            return "[\n" + inner + "\n" + pad + "]"
+        else:
+            return "[" + ", ".join(parts) + "]"
+
+    return repr(obj)

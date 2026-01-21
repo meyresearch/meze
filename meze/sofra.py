@@ -38,7 +38,8 @@ from .utils import (
     residue_restraint_mask,
     write_distance_restraints,
     write_tleap_solvation_input,
-    write_gaussian_script
+    write_gaussian_script,
+    _pretty
 )
 import shutil
 
@@ -210,6 +211,9 @@ class Meze:
 
         if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
             self._validate_non_standard_residues()
+
+    def __str__(self) -> str:
+        return _pretty(self)
 
     @classmethod
     def from_files(

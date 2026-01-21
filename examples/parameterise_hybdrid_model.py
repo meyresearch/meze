@@ -15,7 +15,6 @@ parm_dir = json_recipe["parameterisation_directory"]
 
 cold_meze = ColdMeze.from_files(
     recipe=ColdMezeRecipe(**json_recipe),
-    pdb_file=f"{parm_dir}/{system_name}_{ligand_name}.pdb"
+    pdb_file=f"{parm_dir}/{system_name}_{ligand_name}.amber.pdb"
 )
 
-print(cold_meze.__str__())
