@@ -17,4 +17,9 @@ prepared_meze = ColdMeze.load(
 )
 print(prepared_meze)
 
-resp = prepared_meze.build_resp_charges()
+
+prepared_meze.build_empirical_bonds()
+
+# run once without chgfix_resids
+# then fix ligand charge
+resp = prepared_meze.build_resp_charges() 

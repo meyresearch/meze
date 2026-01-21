@@ -239,9 +239,17 @@ def _pretty(obj, indent=0, step=2):
 
     return repr(obj)
 
-def parse_mcpbpy_input(mcpb_input_file: str) -> dict:
+def parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
+    
+    if not mcpbpy_input_file:
+        raise RuntimeError(f"mcpbpy.in file is not set")
+    elif not os.path.isfile(mcpbpy_input_file):
+        raise FileNotFoundError(
+            f"mcpbpy.in file does not exist: "
+            f"{mcpbpy_input_file}"
+        )
     mcpb_input_options = {}
-    with open(mcpb_input_file, "r") as file:
+    with open(mcpbpy_input_file, "r") as file:
         for line in file:
             parts = line.split()
             if len(parts) == 2:

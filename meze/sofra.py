@@ -41,7 +41,8 @@ from .utils import (
     write_distance_restraints,
     write_tleap_solvation_input,
     write_gaussian_script,
-    _pretty
+    _pretty,
+    parse_mcpbpy_input
 )
 import shutil
 
@@ -831,7 +832,9 @@ class Meze:
         workdir = os.getcwd()
         os.chdir(self.recipe.parameterisation_directory)
 
-        mcpb_output_file = os.path.join(self.recipe.parameterisation_directory, "mcpb_step1.out")
+        mcpb_output_file = os.path.join(
+            self.recipe.parameterisation_directory, "mcpb_step1.out"
+        )
         mcpb_command = f"MCPB.py -i {mcpb_input_file} -s 1 > {mcpb_output_file}"
         print(f"Running MCPB.py step 1 with command:\n{mcpb_command}")
         os.system(mcpb_command)
@@ -969,56 +972,119 @@ class Meze:
         return {"coordinates": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
                 "topology": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"}
 
-    def build_resp_charges(self):
 
-        if not self.recipe.mcpbpy_input_file:
-            raise RuntimeError(f"mcpbpy.in file is not set")
-        elif not os.path.isfile(self.recipe.mcpbpy_input_file):
-            raise FileNotFoundError(
-                f"mcpbpy.in file does not exist: "
-                f"{self.recipe.mcpbpy_input_file}"
-            )
+    def build_empirical_bonds(self):
 
-        # def parse mcpbpy.in:
-        mcpb_input_options = {}
-        with open(self.recipe.mcpbpy_input_file, "r") as file:
-            for line in file:
-                parts = line.split()
-                if len(parts) == 2:
-                    (key, value) = parts[0], parts[1]
-                else:
-                    (key, value) = parts[0], parts[1:]
-                mcpb_input_options[key] = value
+        mcpbpy_input_file = self.recipe.mcpbpy_input_file
+        mcpb_input_options = parse_mcpbpy_input(
+            mcpbpy_input_file=mcpbpy_input_file
+        )
         
-        if {"cut_off"} <= mcpb_input_options.keys():
-            mcpb_input_options["cut_off"] = float(mcpb_input_options["cut_off"])
-        if {"ion_ids"} <= mcpb_input_options.keys():
-            value = mcpb_input_options["ion_ids"]
-            if isinstance(value, str):
-                mcpb_input_options["ion_ids"] = int(value)
-            else:
-                mcpb_input_options["ion_ids"] = [int(v) for v in value]
-        if {"gaff"} <= mcpb_input_options.keys():
-            mcpb_input_options["gaff"] = int(mcpb_input_options["gaff"])
-        if {"large_opt"} <= mcpb_input_options.keys():
-            mcpb_input_options["large_opt"] = int(mcpb_input_options["large_opt"])
+        fingerprint_no_ligand = self.remove_ligand_bond()
         
         
-        
-        # copy ZN1.mol2 etc into zn1_input.mol2 
-
         # do step 2e 
-        
         workdir = os.getcwd()
         os.chdir(self.recipe.parameterisation_directory)
+        step_2e_output_file = os.path.join(
+            self.recipe.parameterisation_directory, "mcpb_step2e.out"
+        )
+        step_2e_command = f"MCPB.py -i {mcpbpy_input_file} -s 2e"
+        print(f"Running MCPB.py step 2e with command:\n{step_2e_command}")
+        os.system(step_2e_command)
 
-        # check directory for log files 
 
-        # check log files are ok
+    def remove_ligand_bond(self) -> str:
+
+        standard_fingerprint_file = glob.glob(
+            f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+        )
+        if len(standard_fingerprint_file) == 0:
+            raise FileNotFoundError(
+                "Cannot find standard fingerprint file: "
+                f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+            )
+
+        standard_fingerprint = standard_fingerprint_file[0]
+        shutil.copy(
+            standard_fingerprint,
+            standard_fingerprint + "_unedited"
+        )
+
+        with open(standard_fingerprint, "r") as ifile:
+            all_lines = ifile.readlines()
+        
+        metal_linked_atoms = [line.split()[-1].split("-") for line in all_lines if "LINK" in line]
+
+        ligand_linked_atoms = []
+        for line in all_lines:
+            if "LINK" not in line:
+                atom_name = line.split()[0].split("-")[2]
+                atom_number = line.split()[1]
+                for link in metal_linked_atoms:
+                    if atom_name in link and atom_number in link and self.ligand.residue_name in line:
+                        ligand_linked_atoms.append(
+                            f"{atom_number}-{atom_name}"
+                        )
+        
+        if not ligand_linked_atoms:
+            print(f"Did not find a bond between the ligand {self.ligand.residue_name} and the metal")
+        else:
+            ligand_links = []
+            for line in all_lines:
+                if "LINK" in line:
+                    link = line.split()[-1]
+                    if link in ligand_linked_atoms:
+                        ligand_links.append(line)
+
+            new_lines = [line for line in all_lines if line not in ligand_links]
+
+            with open(standard_fingerprint, "w") as ofile:
+                ofile.writelines(new_lines)
+
+        return standard_fingerprint
+
+    def build_resp_charges(self):
+        mcpbpy_input_file = self.recipe.mcpbpy_input_file
+        if not mcpbpy_input_file:
+            raise RuntimeError(f"mcpbpy.in file is not set")
+        elif not os.path.isfile(mcpbpy_input_file):
+            raise FileNotFoundError(
+                f"mcpbpy.in file does not exist: "
+                f"{mcpbpy_input_file}"
+            )
+
+        mcpb_input_options = parse_mcpbpy_input(
+            mcpbpy_input_file=mcpbpy_input_file
+        )
+        
+        ion_mol2files = mcpb_input_options["ion_mol2files"]
+        if isinstance(ion_mol2files, str):
+            ion_mol2files = [ion_mol2files]
+        
+        for mol2file in ion_mol2files:
+            filepath = str(pathlib.Path(mol2file).parent)
+            if filepath == "" or filepath == ".":
+                mol2file = os.path.join(
+                    self.recipe.parameterisation_directory,
+                    mol2file
+                )
+            if not os.path.isfile(mol2file):
+                raise FileNotFoundError(
+                    "mol2 file for the metal does not exist: "
+                    f"{mol2file}"
+                )
+            filename = pathlib.Path(mol2file).stem
+            new_mol2file = mol2file.replace(filename, f"{filename}_input")
+            shutil.copy(mol2file, new_mol2file)
+
+        #TODO check directory for log files 
+
+        #TODO check log files are ok
 
         # do step 3
 
-        # might not need step 4?
+
 
 @dataclass
 class ColdMeze(Meze):
