@@ -696,8 +696,8 @@ class Meze:
         workdir = os.getcwd()
         os.chdir(directory)
         tleap_command = f"tleap -s -f {tleap_input_file} > {tleap_output_file}"
-        print(f"Running tleap with command:")
-        print(tleap_command)
+        logging.info(f"Running tleap with command:")
+        logging.info(tleap_command)
         os.system(tleap_command)
 
         try:
@@ -836,7 +836,7 @@ class Meze:
             self.recipe.parameterisation_directory, "mcpb_step1.out"
         )
         mcpb_command = f"MCPB.py -i {mcpb_input_file} -s 1 > {mcpb_output_file}"
-        print(f"Running MCPB.py step 1 with command:\n{mcpb_command}")
+        logging.info(f"Running MCPB.py step 1 with command:\n{mcpb_command}")
         os.system(mcpb_command)
 
         com_files = sorted(glob.glob(f"{self.recipe.parameterisation_directory}/*.com"))
@@ -963,10 +963,10 @@ class Meze:
         cat_command = "cat " + components_str + f" > {directory}/{ligand_name}_complex.pdb"
         pdb4amber_command = f"pdb4amber -i {directory}/{ligand_name}_complex.pdb -o {directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
 
-        print(f"Combining complex files with command:\n{cat_command}")
+        logging.info(f"Combining complex files with command:\n{cat_command}")
         os.system(cat_command)
 
-        print(f"Running pdb4amber with command:\n{pdb4amber_command}")
+        logging.info(f"Running pdb4amber with command:\n{pdb4amber_command}")
         os.system(pdb4amber_command)
 
         return {"coordinates": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
@@ -980,8 +980,10 @@ class Meze:
             mcpbpy_input_file=mcpbpy_input_file
         )
         
-        fingerprint_no_ligand = self.remove_ligand_bond()
-        
+        self.remove_ligand_bond()
+        self.remove_double_oxygen_bond()
+        # remove double oxygen bond
+
         
         # do step 2e 
         workdir = os.getcwd()
@@ -990,11 +992,11 @@ class Meze:
             self.recipe.parameterisation_directory, "mcpb_step2e.out"
         )
         step_2e_command = f"MCPB.py -i {mcpbpy_input_file} -s 2e"
-        print(f"Running MCPB.py step 2e with command:\n{step_2e_command}")
+        logging.info(f"Running MCPB.py step 2e with command:\n{step_2e_command}")
         os.system(step_2e_command)
 
 
-    def remove_ligand_bond(self) -> str:
+    def remove_double_oxygen_bond(self):
 
         standard_fingerprint_file = glob.glob(
             f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
@@ -1006,10 +1008,77 @@ class Meze:
             )
 
         standard_fingerprint = standard_fingerprint_file[0]
-        shutil.copy(
-            standard_fingerprint,
-            standard_fingerprint + "_unedited"
+
+        if not os.path.isfile(standard_fingerprint + "_unedited"):
+            shutil.copy(
+                standard_fingerprint,
+                standard_fingerprint + "_unedited"
+            )
+
+        with open(standard_fingerprint, "r") as ifile:
+            all_lines = ifile.readlines()
+        
+        oxygen_ligands = {}
+        for metal, ligands in self.coordinating_residues.items():
+            oxygen_ligands[metal] = []
+            for atom in ligands:
+                if atom.element == "O":
+                    oxygen_ligands[metal].append(atom)
+
+        water_ids = []
+        zincs_with_multiple_oxygens = []
+        for metal, oxygens in oxygen_ligands.items():
+            n_oxygens = len(oxygens)
+            if n_oxygens > 1:
+                for oxygen in oxygens:
+                    if oxygen.resname in ["HOH", "WAT", "MOH", "DOH"]:
+                        water_ids.append(oxygen.id)
+                        zincs_with_multiple_oxygens.append(metal)
+        
+        atom_numbers = []
+        atoms = []
+        for line in all_lines:
+            words = line.split()
+            if "->" in words and int(words[1]) in water_ids:
+                atom = words[0].split("-")[-1]
+                atoms.append(atom)
+                atom_number = words[1]
+                atom_numbers.append(atom_number)
+
+        new_lines = all_lines.copy()
+        if atoms and atom_numbers:
+            for line in all_lines:
+                words = line.split()
+                if "LINK" in words:
+                    zinc = int(words[1].split("-")[0])
+                    ligand = words[-1].split("-")
+                    for atom, atom_number in zip(atoms, atom_numbers):
+                        if atom in ligand and atom_number in ligand and zinc in zincs_with_multiple_oxygens:
+                            ligand_line = line
+                            new_lines.remove(ligand_line)
+
+        with open(standard_fingerprint, "w") as ofile:
+            ofile.writelines(new_lines)
+
+
+
+    def remove_ligand_bond(self):
+
+        standard_fingerprint_file = glob.glob(
+            f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
         )
+        if len(standard_fingerprint_file) == 0:
+            raise FileNotFoundError(
+                "Cannot find standard fingerprint file: "
+                f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+            )
+
+        standard_fingerprint = standard_fingerprint_file[0]
+        if not os.path.isfile(standard_fingerprint + "_unedited"):
+            shutil.copy(
+                standard_fingerprint,
+                standard_fingerprint + "_unedited"
+            )
 
         with open(standard_fingerprint, "r") as ifile:
             all_lines = ifile.readlines()
@@ -1028,7 +1097,9 @@ class Meze:
                         )
         
         if not ligand_linked_atoms:
-            print(f"Did not find a bond between the ligand {self.ligand.residue_name} and the metal")
+            logging.info(
+                f"Did not find a bond between the ligand {self.ligand.residue_name} and the metal"
+            )
         else:
             ligand_links = []
             for line in all_lines:
@@ -1041,8 +1112,13 @@ class Meze:
 
             with open(standard_fingerprint, "w") as ofile:
                 ofile.writelines(new_lines)
+            
+            for line in ligand_links:
+                logging.info(
+                    "Succesfully removed bond: "
+                    f"{line}"
+                )
 
-        return standard_fingerprint
 
     def build_resp_charges(self):
         mcpbpy_input_file = self.recipe.mcpbpy_input_file
