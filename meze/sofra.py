@@ -981,19 +981,17 @@ class Meze:
         )
         
         self.remove_ligand_bond()
-        self.remove_double_oxygen_bond()
-        # remove double oxygen bond
-
+        self.remove_double_oxygen_bond()        
         
-        # do step 2e 
         workdir = os.getcwd()
         os.chdir(self.recipe.parameterisation_directory)
         step_2e_output_file = os.path.join(
             self.recipe.parameterisation_directory, "mcpb_step2e.out"
         )
-        step_2e_command = f"MCPB.py -i {mcpbpy_input_file} -s 2e"
+        step_2e_command = f"MCPB.py -i {mcpbpy_input_file} -s 2e > {step_2e_output_file}"
         logging.info(f"Running MCPB.py step 2e with command:\n{step_2e_command}")
         os.system(step_2e_command)
+        os.chdir(workdir)
 
 
     def remove_double_oxygen_bond(self):
