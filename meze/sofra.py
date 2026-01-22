@@ -888,10 +888,10 @@ class Meze:
             
             new_lines = []
             for line in lines:
-                if "%mem" in line:
-                    new_lines.append(f"%mem={self.recipe.memory}MB\n")
-                elif "%nprocshared" in line:
-                    new_lines.append(f"%nprocshared={self.recipe.nprocshared}\n")
+                if "%Mem" in line:
+                    new_lines.append(f"%Mem={self.recipe.memory}MB\n")
+                elif "%Nprocshared" in line:
+                    new_lines.append(f"%Nprocshared={self.recipe.nprocshared}\n")
                 else:
                     new_lines.append(line)
             
