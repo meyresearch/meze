@@ -8,6 +8,7 @@ __pycache__/
 
 # Data -> add these manually as needed
 *.amber_sslink*
+*.chk
 *.res
 *.txt
 data/equilibration/
