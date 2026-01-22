@@ -883,21 +883,6 @@ class Meze:
         
         com_files = sorted(glob.glob(f"{directory}/*.com"))
         for com_file in com_files:
-            with open(com_file, "r") as file:
-                lines = file.readlines()
-            
-            new_lines = []
-            for line in lines:
-                if "%Mem" in line:
-                    new_lines.append(f"%Mem={self.recipe.memory}MB\n")
-                elif "%Nprocshared" in line:
-                    new_lines.append(f"%Nprocshared={self.recipe.nprocshared}\n")
-                else:
-                    new_lines.append(line)
-            
-            with open(com_file, "w") as file:
-                file.writelines(new_lines)
-        
             if "large_mk" in com_file:
                 large_file = com_file
                 with open(large_file, "r") as ilarge:
@@ -932,7 +917,23 @@ class Meze:
 
                     with open(large_file, "w") as opop:
                         opop.writelines(large_mk_lines)
-
+                        
+        com_files = sorted(glob.glob(f"{directory}/*.com"))
+        for com_file in com_files:
+            with open(com_file, "r") as file:
+                lines = file.readlines()
+            
+            new_lines = []
+            for line in lines:
+                if "%Mem" in line:
+                    new_lines.append(f"%Mem={int(self.recipe.memory)}MB\n")
+                elif "%NProcShared" in line:
+                    new_lines.append(f"%NProcShared={self.recipe.nprocshared}\n")
+                else:
+                    new_lines.append(line)
+            
+            with open(com_file, "w") as file:
+                file.writelines(new_lines)
 
     def prepare_metals_for_ezaff(self, directory: str) -> List[str]:
 
