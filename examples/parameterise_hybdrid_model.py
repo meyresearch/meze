@@ -21,11 +21,19 @@ print(prepared_meze)
 prepared_meze.build_empirical_bonds()
 
 # run once without chgfix_resids
-
 prepared_meze.build_resp_charges(fix_ligand_charge=False) 
+
+# run step 4 with above
+    # edit tleap to solvate with octahedral box
 
 # then fix ligand charge, making a new directory
 prepared_meze.build_resp_charges(fix_ligand_charge=True) 
 
+# run step 4 with above
+    # edit tleap to solvate with octahedral box
+
 # then average active site charges for fixed ligand charge
 # apply to all, making a new directory again
+
+# prepared_meze.build_averaged_charges()
+
