@@ -10,7 +10,7 @@ from collections.abc import Mapping, Iterable
 
 
 
-def list_rindex(list_to_search: list[str], word: str) -> int:
+def _list_rindex(list_to_search: list[str], word: str) -> int:
     """
      Source - https://stackoverflow.com/a
      Posted by wim, modified by community. 
@@ -30,7 +30,7 @@ def list_rindex(list_to_search: list[str], word: str) -> int:
     return [i for i, line in enumerate(list_to_search) if line == rlist[rindex]][-1]
  
 
-def residue_restraint_mask(residue_ids: list[int]) -> str:
+def _residue_restraint_mask(residue_ids: list[int]) -> str:
     """Generate an Amber-style restraint mask.
 
     Adapted from: 
@@ -71,7 +71,7 @@ def residue_restraint_mask(residue_ids: list[int]) -> str:
 
     return restraint_mask
 
-def write_distance_restraints(
+def _write_distance_restraints(
         restraints: dict[tuple[int, int], tuple[float, float, float]]
 ) -> list[str]:
     lines = []
@@ -91,7 +91,7 @@ def write_distance_restraints(
         lines.append(line)
     return lines
 
-def write_tleap_solvation_input(protein_file: str,
+def _write_tleap_solvation_input(protein_file: str,
                                 ligand: Ligand,
                                 non_standard_residues: Optional[List[Ligand]] = None,
                                 disulfide_bridges: Optional[List[dict[str, int]]] = None,
@@ -171,7 +171,7 @@ def write_tleap_solvation_input(protein_file: str,
     ])
     return lines
 
-def write_gaussian_script(
+def _write_gaussian_script(
         job_name: str,
         gaussian_version: str,
         script_name: str,
@@ -239,7 +239,7 @@ def _pretty(obj, indent=0, step=2):
 
     return repr(obj)
 
-def parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
+def _parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
     
     if not mcpbpy_input_file:
         raise RuntimeError(f"mcpbpy.in file is not set")
