@@ -1,4 +1,4 @@
-original_pdb /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/vim2_ligand_11.amber.pdb
+original_pdb /Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/vim2_ligand_11.amber.pdb
 group_name vim2_ligand_11
 cut_off 2.8
 ion_mol2files ZN1.mol2 ZN2.mol2
@@ -10,3 +10,4 @@ large_opt 1
 force_field ff14SB
 water_model tip3p
 gaff 2
+chgfix_resids 418

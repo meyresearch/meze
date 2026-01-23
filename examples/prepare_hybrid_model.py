@@ -32,7 +32,7 @@ cold_complex = cold_meze.add_ligand(
 output = f"{project_dir}/outputs/hybrid_model/{system_name}/{ligand_name}/"
 
 mcpb_system = cold_complex.prepare_mcpb_system(directory=output,
-                                                    ligand_name=ligand_name)
+                                               ligand_name=ligand_name)
 
 scratch_dir = os.path.join(mcpb_system.recipe.parameterisation_directory, "scratch")
 os.makedirs(scratch_dir, exist_ok=True)

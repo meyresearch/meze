@@ -182,6 +182,7 @@ class Meze:
     recipe: MezeRecipe 
     disulfide_bridges: Optional[List[dict[str, int]]] = None
     ligand: Optional[Ligand] = None 
+    ligand_resid: Optional[int] = None
     non_standard_residues: dict[dict] | List[Ligand] = field(default_factory=dict)   
 
     def __post_init__(self):
@@ -211,12 +212,7 @@ class Meze:
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
-
-        if self.ligand: #TODO ADD
-            self.ligand_resname = self.ligand.system.getResidue(0).name
-        else:        
-            self.ligand_resname = self.get_small_molecule_resname()
-
+        
         if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
             self._validate_non_standard_residues()
 
@@ -270,7 +266,7 @@ class Meze:
             "not protein and not water"
         )
         non_standard_residues = [
-            "MOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ"
+            "MOH", "DOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ"
         ]
 
         resname = None
@@ -299,7 +295,7 @@ class Meze:
                 atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
 
                 for ligating_atom in ligating_atoms:
-                    if ligating_atom.resname.upper() != self.ligand_resname:
+                    if ligating_atom.resname.upper() != self.ligand.residue_name:
                         key = (metal_id, ligating_atom.id)
                         atom_group_2 = self.universe.select_atoms(
                             f"resid {ligating_atom.resid} and name {ligating_atom.name}"
@@ -351,7 +347,7 @@ class Meze:
             if metal_id in metal_atom_ids:
                 vertices = []
                 for ligating_atom in ligating_atoms:
-                    if ligating_atom.resname.upper() == self.ligand_resname:
+                    if ligating_atom.resname.upper() == self.ligand.residue_name:
                         continue
                     if ligating_atom.id == metal_id:
                         continue
@@ -502,7 +498,7 @@ class Meze:
                     f"Disulfide bonds require CYX residues. "
                     f"Got {cyx1.resname} and {cyx2.resname} for {r1} and {r2}."
                 )
-
+      
             sg1 = cyx1.atoms.select_atoms("name SG")
             sg2 = cyx2.atoms.select_atoms("name SG")
 
@@ -597,6 +593,9 @@ class Meze:
             coordinates=new_coordinates,
             recipe=recipe
         )
+    
+    def get_ligand_resid(self):
+        return self.universe.select_atoms(f"resname {self.ligand.residue_name}").resids[0]
 
     def get_active_site_atom_group(self) -> mda.AtomGroup:
         """Get active site based on metal and coordination cutoff
@@ -616,9 +615,11 @@ class Meze:
             ligand_charge: Optional[int] = 0
     ) -> Self:
         ligand = Ligand(ligand_file, name=name, charge=ligand_charge)
+        
         return dataclasses.replace(
             self,
             ligand=ligand,
+            ligand_resid=self.get_ligand_resid()
         )
 
     def _validate_non_standard_residues(self):
@@ -1117,46 +1118,145 @@ class Meze:
                 )
 
 
-    def build_resp_charges(self, fix_ligand_charge: bool = True):
+    def build_resp_charges(self, fix_ligand_charge: bool = True, directory: Optional[str] = None):
         mcpbpy_input_file = self.recipe.mcpbpy_input_file
 
         mcpb_input_options = _parse_mcpbpy_input(
             mcpbpy_input_file=mcpbpy_input_file
         )
-        
-        ion_mol2files = mcpb_input_options["ion_mol2files"]
-        if isinstance(ion_mol2files, str):
-            ion_mol2files = [ion_mol2files]
-        
-        for mol2file in ion_mol2files:
-            filepath = str(pathlib.Path(mol2file).parent)
-            if filepath == "" or filepath == ".":
-                mol2file = os.path.join(
-                    self.recipe.parameterisation_directory,
-                    mol2file
-                )
-            if not os.path.isfile(mol2file):
-                raise FileNotFoundError(
-                    "mol2 file for the metal does not exist: "
-                    f"{mol2file}"
-                )
-            filename = pathlib.Path(mol2file).stem
-            new_mol2file = mol2file.replace(filename, f"{filename}_input")
-            shutil.copy(mol2file, new_mol2file)
-
-        _check_log_files(directory=self.recipe.parameterisation_directory)
+    
+        log_files = _check_log_files(directory=self.recipe.parameterisation_directory)
 
         if fix_ligand_charge:
-            pass
-        step_3_output_file = os.path.join(
-            self.recipe.parameterisation_directory, "mcpb_step3.out"
-        )
+            if not directory:
+                warnings.warn(f"parent directory not set, inferring from {self.recipe.parameterisation_directory}")
+                directory = str(pathlib.Path(self.recipe.parameterisation_directory).parent)
+    
+
+            fixed_ligand_charge_directory = os.path.join(
+                directory, "02_fixed_ligand_charge"
+            )
+            step_directory = fixed_ligand_charge_directory
+            logging.info(f"Creating directory: {fixed_ligand_charge_directory}")
+            os.makedirs(fixed_ligand_charge_directory, exist_ok=True)
+
+            ligand_files = glob.glob(
+                f"{self.recipe.parameterisation_directory}/{self.ligand.residue_name}.*"
+            )
+            original_pdb_file = mcpb_input_options["original_pdb"]
+
+            large_pdb_file = glob.glob(
+                f"{self.recipe.parameterisation_directory}/*_large.pdb"
+            )
+            large_fingerprint = glob.glob(
+                f"{self.recipe.parameterisation_directory}/*_large.fingerprint"
+            )
+            standard_pdb = glob.glob(
+                f"{self.recipe.parameterisation_directory}/*_standard.pdb"
+            )
+
+            non_standard_residue_files = [res.file[0] for res in self.non_standard_residues]
+            frcmod_files = glob.glob(
+                f"{self.recipe.parameterisation_directory}/*.frcmod"
+            )
+            standard_fingerprint_file = glob.glob(
+                f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+            )
+            if len(standard_fingerprint_file) == 0:
+                raise FileNotFoundError(
+                    "Cannot find standard fingerprint file: "
+                    f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+                )
+            
+            standard_fingerprint = standard_fingerprint_file[0]
+            
+            original_zn_files = glob.glob(
+                f"{self.recipe.parameterisation_directory}/ZN*_input.mol2"
+            )
+
+            checkpoint_files = glob.glob(f"{self.recipe.parameterisation_directory}/*.chk")
+
+            param_files = ligand_files + non_standard_residue_files + original_zn_files + \
+                          log_files + frcmod_files + checkpoint_files + large_pdb_file + \
+                          large_fingerprint + standard_pdb + \
+                          [original_pdb_file, standard_fingerprint, mcpbpy_input_file]
+            
+            new_zn_files = []
+            for old_file in param_files: 
+                file = os.path.basename(old_file)
+                new_file = os.path.join(fixed_ligand_charge_directory, file)
+                shutil.copy(old_file, new_file)
+                if "ZN" in file:
+                    new_zn_files.append(new_file)
+
+            for file in new_zn_files:
+
+                new_filename = file.replace("_input", "")
+                os.rename(file, new_filename)
+
+            with open(mcpbpy_input_file, "r") as ifile:
+                inputs = ifile.read()
+            
+            new_input_file = mcpbpy_input_file.replace(
+                self.recipe.parameterisation_directory, fixed_ligand_charge_directory
+            )
+            inputs = inputs.replace(self.recipe.parameterisation_directory, fixed_ligand_charge_directory)
+            with open(new_input_file, "w") as ofile:
+                ofile.write(inputs)
+                ofile.write("\n")
+                ofile.write(f"chgfix_resids {self.get_ligand_resid()}")
+
+            mcpbpy_input_file = new_input_file
+            step_3_output_file = os.path.join(
+                fixed_ligand_charge_directory, "mcpb_step3.out"
+            )
+        else:            
+            step_directory = self.recipe.parameterisation_directory
+            ion_mol2files = mcpb_input_options["ion_mol2files"]
+            if isinstance(ion_mol2files, str):
+                ion_mol2files = [ion_mol2files]
+            
+            for mol2file in ion_mol2files:
+                filepath = str(pathlib.Path(mol2file).parent)
+                if filepath == "" or filepath == ".":
+                    mol2file = os.path.join(
+                        self.recipe.parameterisation_directory,
+                        mol2file
+                    )
+                if not os.path.isfile(mol2file):
+                    raise FileNotFoundError(
+                        "mol2 file for the metal does not exist: "
+                        f"{mol2file}"
+                    )
+                filename = pathlib.Path(mol2file).stem
+                new_mol2file = mol2file.replace(filename, f"{filename}_input")
+                if not os.path.isfile(new_mol2file):
+                    shutil.copy(mol2file, new_mol2file)
+
+            step_3_output_file = os.path.join(
+                self.recipe.parameterisation_directory, "mcpb_step3.out"
+            )
+
         step_3_command = f"MCPB.py -i {mcpbpy_input_file} -s 3 > {step_3_output_file}"
         logging.info(f"Running MCPB.py step 3 with command:\n{step_3_command}")
         workdir = os.getcwd()
-        os.chdir(self.recipe.parameterisation_directory)
+        os.chdir(step_directory)
         os.system(step_3_command)
         os.chdir(workdir)
+
+        if fix_ligand_charge:
+
+            updated_recipe = self.recipe.model_copy()
+            updated_recipe.parameterisation_directory = fixed_ligand_charge_directory
+
+            return dataclasses.replace(
+                self,
+                recipe=updated_recipe,
+                ligand_resid=self.get_ligand_resid()
+            )
+        else: 
+            return self
+
 
 
 @dataclass

@@ -272,7 +272,7 @@ def _parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
         mcpb_input_options["large_opt"] = int(mcpb_input_options["large_opt"])
     return mcpb_input_options
 
-def _check_log_files(directory: str):
+def _check_log_files(directory: str) -> List[str]:
     log_files = glob.glob(
     f"{directory}/*.log"
     )
@@ -315,3 +315,4 @@ def _check_log_files(directory: str):
                     f"Log file {log_file} did not converge:"
                     f"{convergence_lines}"
                 )
+    return log_files

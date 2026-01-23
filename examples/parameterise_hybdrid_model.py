@@ -21,5 +21,11 @@ print(prepared_meze)
 prepared_meze.build_empirical_bonds()
 
 # run once without chgfix_resids
-# then fix ligand charge
-resp = prepared_meze.build_resp_charges(fix_ligand_charge=False) 
+
+prepared_meze.build_resp_charges(fix_ligand_charge=False) 
+
+# then fix ligand charge, making a new directory
+prepared_meze.build_resp_charges(fix_ligand_charge=True) 
+
+# then average active site charges for fixed ligand charge
+# apply to all, making a new directory again
