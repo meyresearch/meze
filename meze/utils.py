@@ -7,7 +7,7 @@ from typing import (
 import os
 from dataclasses import fields, is_dataclass
 from collections.abc import Mapping, Iterable
-
+import glob
 
 
 def _list_rindex(list_to_search: list[str], word: str) -> int:
@@ -271,3 +271,47 @@ def _parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
     if {"large_opt"} <= mcpb_input_options.keys():
         mcpb_input_options["large_opt"] = int(mcpb_input_options["large_opt"])
     return mcpb_input_options
+
+def _check_log_files(directory: str):
+    log_files = glob.glob(
+    f"{directory}/*.log"
+    )
+    if len(log_files) == 0: 
+        raise FileNotFoundError(
+            "Could not find any log files in: "
+            f"{directory}"
+        )
+    elif len(log_files) == 1:
+        raise RuntimeError(
+            "Only one log file found in the parameterisation directory: "
+            f"{log_files[0]}"
+        )
+    for log_file in log_files:
+        with open(log_file, "r") as ifile:
+            contents = ifile.read()
+        with open(log_file, "r") as ifile:
+            lines = ifile.readlines()
+        if not lines:
+            raise IOError(
+                f"Log file {log_file} is empty."
+        )
+        if "Normal termination of Gaussian" not in contents:
+            raise RuntimeError(
+                f"Log file {log_file} did not terminate normally"
+            )
+        if "large_opt" in log_file:
+            i = _list_rindex(lines, "Converged")
+            convergence_lines = " ".join(lines[i+1:i+5])
+            max_force_line = lines[i+1]
+            rms_force_line = lines[i+2]
+            max_displacement_line = lines[i+3]
+            rms_displacement_line = lines[i+4]
+
+            if ("YES" not in max_force_line and 
+                "YES" not in rms_force_line and 
+                "YES" not in max_displacement_line and 
+                "YES" not in rms_displacement_line):
+                raise RuntimeError(
+                    f"Log file {log_file} did not converge:"
+                    f"{convergence_lines}"
+                )

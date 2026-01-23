@@ -37,12 +37,13 @@ from BioSimSpace.Types._time import Time as bssTime
 from BioSimSpace.Types._temperature import Temperature as bssTemperature
 from BioSimSpace.Types._pressure import Pressure as bssPressure
 from .utils import (
-    residue_restraint_mask,
-    write_distance_restraints,
-    write_tleap_solvation_input,
-    write_gaussian_script,
+    _residue_restraint_mask,
+    _write_distance_restraints,
+    _write_tleap_solvation_input,
+    _write_gaussian_script,
     _pretty,
-    parse_mcpbpy_input
+    _parse_mcpbpy_input,
+    _check_log_files,
 )
 import shutil
 
@@ -322,7 +323,7 @@ class Meze:
             for resid in self.metal_resids
         ]
         distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
-        return write_distance_restraints(distance_restraints_dict)
+        return _write_distance_restraints(distance_restraints_dict)
 
     def _prepare_angle_restraints(
         self
@@ -333,7 +334,7 @@ class Meze:
             for resid in self.metal_resids
         ]
         angle_restraints_dict = self.build_angle_restraints(metal_atom_ids)
-        return write_distance_restraints(angle_restraints_dict)
+        return _write_distance_restraints(angle_restraints_dict)
     
     def build_angle_restraints(
             self,
@@ -678,7 +679,7 @@ class Meze:
         tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
         tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
 
-        tleap_lines = write_tleap_solvation_input(
+        tleap_lines = _write_tleap_solvation_input(
             protein_file=self.topology,
             ligand=parameterised_ligand,
             non_standard_residues=parameterised_non_standard_residues,
@@ -848,7 +849,7 @@ class Meze:
             self.update_gaussian_inputs(directory=self.recipe.parameterisation_directory)
             com_files = sorted(glob.glob(f"{self.recipe.parameterisation_directory}/*.com"))
             large_opt = [f for f in com_files if "large_opt" in f][0]
-            geo_opt = write_gaussian_script(
+            geo_opt = _write_gaussian_script(
                 job_name=f"{ligand_name}-g-opt",
                 gaussian_version=self.recipe.gaussian_version,
                 script_name=f"{ligand_name}_slurm_g_opt.sh",
@@ -860,7 +861,7 @@ class Meze:
             os.system(f"chmod +x {geo_opt}")
 
         large_mk = [f for f in com_files if "large_mk" in f][0]
-        mk = write_gaussian_script(
+        mk = _write_gaussian_script(
             job_name=f"{ligand_name}-mk",
             gaussian_version=self.recipe.gaussian_version,
             script_name=f"{ligand_name}_slurm_mk.sh",
@@ -917,7 +918,7 @@ class Meze:
 
                     with open(large_file, "w") as opop:
                         opop.writelines(large_mk_lines)
-                        
+
         com_files = sorted(glob.glob(f"{directory}/*.com"))
         for com_file in com_files:
             with open(com_file, "r") as file:
@@ -977,10 +978,7 @@ class Meze:
     def build_empirical_bonds(self):
 
         mcpbpy_input_file = self.recipe.mcpbpy_input_file
-        mcpb_input_options = parse_mcpbpy_input(
-            mcpbpy_input_file=mcpbpy_input_file
-        )
-        
+
         self._remove_ligand_bond()
         self._remove_double_oxygen_bond()        
         
@@ -1122,7 +1120,7 @@ class Meze:
     def build_resp_charges(self):
         mcpbpy_input_file = self.recipe.mcpbpy_input_file
 
-        mcpb_input_options = parse_mcpbpy_input(
+        mcpb_input_options = _parse_mcpbpy_input(
             mcpbpy_input_file=mcpbpy_input_file
         )
         
@@ -1146,9 +1144,7 @@ class Meze:
             new_mol2file = mol2file.replace(filename, f"{filename}_input")
             shutil.copy(mol2file, new_mol2file)
 
-        #TODO check directory for log files 
-
-        #TODO check log files are ok
+        _check_log_files(directory=self.recipe.parameterisation_directory)
 
         # do step 3
 
@@ -1250,13 +1246,13 @@ class ColdMeze(Meze):
         if position_restraints == "solute":
             protein_resids = [atom.resnum for atom in self.universe.select_atoms("protein")]
             constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist()
-            return f"':{residue_restraint_mask(constraint_resids)}'"
+            return f"':{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "backbone":
             constraint_resids = coordinating_resids + self.metal_resids.tolist()
-            return f"'(@N,CA,C,O & !:WAT)|:{residue_restraint_mask(constraint_resids)}'"
+            return f"'(@N,CA,C,O & !:WAT)|:{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "metal-coordination":
             constraint_resids = coordinating_resids + self.metal_resids.tolist()
-            return f"':{residue_restraint_mask(constraint_resids)}'"
+            return f"':{_residue_restraint_mask(constraint_resids)}'"
         else: 
             return None
         
@@ -1707,7 +1703,7 @@ class QuantumMeze(Meze):
     
     def _write_qm_namelist(self, qm_theory: str = "DFTB3"):
 
-        parsed_whole_residues = residue_restraint_mask(self.qm_region["whole_residues"])
+        parsed_whole_residues = _residue_restraint_mask(self.qm_region["whole_residues"])
         atom_ids = ",".join(list(map(str, self.qm_region["atom_ids"])))
         
         qm_config_options = {
@@ -1739,7 +1735,7 @@ class QuantumMeze(Meze):
             for resid in metal_resids_for_distance_restraints
         ]
         distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
-        return write_distance_restraints(distance_restraints_dict)
+        return _write_distance_restraints(distance_restraints_dict)
     
     def run_qm(
         self,
