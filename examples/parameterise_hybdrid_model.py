@@ -1,4 +1,4 @@
-from meze import ColdMeze, ColdMezeRecipe
+from meze import ColdMeze
 import sys
 import json
 
@@ -22,4 +22,4 @@ prepared_meze.build_empirical_bonds()
 
 # run once without chgfix_resids
 # then fix ligand charge
-resp = prepared_meze.build_resp_charges() 
+resp = prepared_meze.build_resp_charges(fix_ligand_charge=False) 

@@ -1117,7 +1117,7 @@ class Meze:
                 )
 
 
-    def build_resp_charges(self):
+    def build_resp_charges(self, fix_ligand_charge: bool = True):
         mcpbpy_input_file = self.recipe.mcpbpy_input_file
 
         mcpb_input_options = _parse_mcpbpy_input(
@@ -1146,8 +1146,17 @@ class Meze:
 
         _check_log_files(directory=self.recipe.parameterisation_directory)
 
-        # do step 3
-
+        if fix_ligand_charge:
+            pass
+        step_3_output_file = os.path.join(
+            self.recipe.parameterisation_directory, "mcpb_step3.out"
+        )
+        step_3_command = f"MCPB.py -i {mcpbpy_input_file} -s 3 > {step_3_output_file}"
+        logging.info(f"Running MCPB.py step 3 with command:\n{step_3_command}")
+        workdir = os.getcwd()
+        os.chdir(self.recipe.parameterisation_directory)
+        os.system(step_3_command)
+        os.chdir(workdir)
 
 
 @dataclass

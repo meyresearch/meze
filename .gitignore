@@ -7,6 +7,8 @@ __pycache__/
 *.so
 
 # Data -> add these manually as needed
+*.esp
+*resp*
 *.amber_sslink*
 *.chk
 *.res
