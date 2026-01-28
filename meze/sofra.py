@@ -30,6 +30,7 @@ import os
 
 import MDAnalysis as mda
 import MDAnalysis.analysis.distances
+from MDAnalysis.topology.guessers import guess_types
 from MDAnalysis.core.groups import Residue as mdaResidue
 import BioSimSpace as bss
 from BioSimSpace._SireWrappers import System as bssSystem
@@ -408,7 +409,9 @@ class Meze:
                     "Consider fixing your PDB file with e.g. pdb4amber.\n",
                     UserWarning
                 )
-                self.metals = self.universe.select_atoms(f"name {metal.upper()}")
+                guessed_elements = guess_types(self.universe.atoms.names)
+                self.universe.add_TopologyAttr("elements", guessed_elements)
+                self.metals = self.universe.select_atoms(f"element {metal.upper()}")
             else:
                 raise e
 
@@ -444,7 +447,9 @@ class Meze:
                     "Consider fixing your PDB file with e.g. pdb4amber.\n",
                     UserWarning
                 )    
-                selection = f"name O or name N or name S" + \
+                guessed_elements = guess_types(self.universe.atoms.names)
+                self.universe.add_TopologyAttr("elements", guessed_elements)
+                selection = f"element O or element N or element S" + \
                 f" and sphzone {cutoff} (resid {self.metal_resids[i]})"
                 ligands = self.universe.select_atoms(selection)
                 key = self.metal_atomids[i] 
@@ -1138,6 +1143,11 @@ class Meze:
     
         log_files = _check_log_files(directory=self.recipe.parameterisation_directory)
 
+        if not hasattr(self, "ligand_resid"):
+            ligand_residue_id = self.get_ligand_resid()
+        else:
+            ligand_residue_id = self.ligand_resid
+        
         if fix_ligand_charge:
             if not directory:
                 warnings.warn(
@@ -1146,12 +1156,12 @@ class Meze:
                 directory = str(pathlib.Path(self.recipe.parameterisation_directory).parent)
     
 
-            fixed_ligand_charge_directory = os.path.join(
+            parameterisation_directory = os.path.join(
                 directory, "02_fixed_ligand_charge"
             )
-            step_directory = fixed_ligand_charge_directory
-            logging.info(f"Creating directory: {fixed_ligand_charge_directory}")
-            os.makedirs(fixed_ligand_charge_directory, exist_ok=True)
+            parameterisation_directory = parameterisation_directory
+            logging.info(f"Creating directory: {parameterisation_directory}")
+            os.makedirs(parameterisation_directory, exist_ok=True)
 
             ligand_files = glob.glob(
                 f"{self.recipe.parameterisation_directory}/{self.ligand.residue_name}.*"
@@ -1197,7 +1207,7 @@ class Meze:
             new_zn_files = []
             for old_file in param_files: 
                 file = os.path.basename(old_file)
-                new_file = os.path.join(fixed_ligand_charge_directory, file)
+                new_file = os.path.join(parameterisation_directory, file)
                 shutil.copy(old_file, new_file)
                 if "ZN" in file:
                     new_zn_files.append(new_file)
@@ -1211,22 +1221,25 @@ class Meze:
                 inputs = ifile.read()
             
             new_input_file = mcpbpy_input_file.replace(
-                self.recipe.parameterisation_directory, fixed_ligand_charge_directory
+                self.recipe.parameterisation_directory, parameterisation_directory
             )
             inputs = inputs.replace(
-                self.recipe.parameterisation_directory, fixed_ligand_charge_directory
+                self.recipe.parameterisation_directory, parameterisation_directory
             )
             with open(new_input_file, "w") as ofile:
                 ofile.write(inputs)
                 ofile.write("\n")
-                ofile.write(f"chgfix_resids {self.get_ligand_resid()}")
+                ofile.write(f"chgfix_resids {ligand_residue_id}")
 
             mcpbpy_input_file = new_input_file
             step_3_output_file = os.path.join(
-                fixed_ligand_charge_directory, "mcpb_step3.out"
+                parameterisation_directory, "mcpb_step3.out"
+            )
+            step_4_output_file = os.path.join(
+                parameterisation_directory, "mcpb_step4.out"
             )
         else:            
-            step_directory = self.recipe.parameterisation_directory
+            parameterisation_directory = self.recipe.parameterisation_directory
             ion_mol2files = mcpb_input_options["ion_mol2files"]
             if isinstance(ion_mol2files, str):
                 ion_mol2files = [ion_mol2files]
@@ -1251,34 +1264,51 @@ class Meze:
             step_3_output_file = os.path.join(
                 self.recipe.parameterisation_directory, "mcpb_step3.out"
             )
+            step_4_output_file = os.path.join(
+                self.recipe.parameterisation_directory, "mcpb_step4.out"
+            )
+            
 
         step_3_command = f"MCPB.py -i {mcpbpy_input_file} -s 3 > {step_3_output_file}"
         logging.info(f"Running MCPB.py step 3 with command:\n{step_3_command}")
         workdir = os.getcwd()
-        os.chdir(step_directory)
+        os.chdir(parameterisation_directory)
         os.system(step_3_command)
+
+        step_4_command = f"MCPB.py -i {mcpbpy_input_file} -s 4 > {step_4_output_file}"
+        logging.info(f"Running MCPB.py step 4 with command:\n{step_4_command}")
+        os.system(step_4_command)
         os.chdir(workdir)
 
-        #TODO uptade ligand object
-        #TODO update nonstandard residues 
-        ligand_residue_id = self.get_ligand_resid()
-
-        if fix_ligand_charge:
-
-            updated_recipe = self.recipe.model_copy()
-            updated_recipe.parameterisation_directory = fixed_ligand_charge_directory
-
-            ligand = ""
-
-            return dataclasses.replace(
-                self,
-                recipe=updated_recipe,
-                ligand_resid=ligand_residue_id
+        # new residue names for ligand, 
+        # hydroxide
+        new_coordinates = glob.glob(f"{parameterisation_directory}/*_mcpbpy.pdb")
+        if not new_coordinates:
+            raise RuntimeError(
+                "No MCPB.py output pdb file found."
+                "Check step 3 or 4 log files: "
+                f"Step 3: {step_3_output_file}"
+                f"Step 4: {step_4_output_file}"
             )
-        else: 
+        else:
+            new_coordinates = new_coordinates[0]
+        
+        new_meze = dataclasses.replace(
+            self,
+            coordinates=new_coordinates,
+            topology=new_coordinates,
 
-            return self
+        )
+        
+        print(new_meze)
 
+        # here also get tleap input file that we need to fix
+
+
+        #TODO update ligand object
+  
+
+        #TODO update hydroxide nonstandard residue
 
 
 @dataclass
