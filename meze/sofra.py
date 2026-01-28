@@ -215,6 +215,9 @@ class Meze:
         
         if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
             self._validate_non_standard_residues()
+        
+        if self.ligand and self.ligand.parameterised:
+            self.ligand_resid = self.get_ligand_resid()
 
     def __str__(self) -> str:
         return _pretty(self)
@@ -618,8 +621,7 @@ class Meze:
         
         return dataclasses.replace(
             self,
-            ligand=ligand,
-            ligand_resid=self.get_ligand_resid()
+            ligand=ligand
         )
 
     def _validate_non_standard_residues(self):
@@ -673,10 +675,16 @@ class Meze:
         
         self._validate_disulfide_bridges()
 
-        parameterised_ligand = self.ligand.parameterise(directory)
-
-        parameterised_non_standard_residues = self.parameterise_non_standard_residues(directory)
-
+        if self.recipe.model == 0: 
+            parameterised_ligand = self.ligand.parameterise(directory)
+            parameterised_non_standard_residues = self.parameterise_non_standard_residues(directory)
+        
+        elif self.recipe.model == 2:
+            parameterised_ligand = ""
+        else: 
+            raise NotImplementedError(
+                f"Model option {self.recipe.model} is not implemented"
+            )
         tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
         tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
 
@@ -1118,7 +1126,10 @@ class Meze:
                 )
 
 
-    def build_resp_charges(self, fix_ligand_charge: bool = True, directory: Optional[str] = None):
+    def build_resp_charges(self, 
+                           fix_ligand_charge: bool = True, 
+                           directory: Optional[str] = None):
+        
         mcpbpy_input_file = self.recipe.mcpbpy_input_file
 
         mcpb_input_options = _parse_mcpbpy_input(
@@ -1129,7 +1140,9 @@ class Meze:
 
         if fix_ligand_charge:
             if not directory:
-                warnings.warn(f"parent directory not set, inferring from {self.recipe.parameterisation_directory}")
+                warnings.warn(
+                    f"parent directory not set, inferring from {self.recipe.parameterisation_directory}"
+                )
                 directory = str(pathlib.Path(self.recipe.parameterisation_directory).parent)
     
 
@@ -1200,7 +1213,9 @@ class Meze:
             new_input_file = mcpbpy_input_file.replace(
                 self.recipe.parameterisation_directory, fixed_ligand_charge_directory
             )
-            inputs = inputs.replace(self.recipe.parameterisation_directory, fixed_ligand_charge_directory)
+            inputs = inputs.replace(
+                self.recipe.parameterisation_directory, fixed_ligand_charge_directory
+            )
             with open(new_input_file, "w") as ofile:
                 ofile.write(inputs)
                 ofile.write("\n")
@@ -1244,17 +1259,24 @@ class Meze:
         os.system(step_3_command)
         os.chdir(workdir)
 
+        #TODO uptade ligand object
+        #TODO update nonstandard residues 
+        ligand_residue_id = self.get_ligand_resid()
+
         if fix_ligand_charge:
 
             updated_recipe = self.recipe.model_copy()
             updated_recipe.parameterisation_directory = fixed_ligand_charge_directory
 
+            ligand = ""
+
             return dataclasses.replace(
                 self,
                 recipe=updated_recipe,
-                ligand_resid=self.get_ligand_resid()
+                ligand_resid=ligand_residue_id
             )
         else: 
+
             return self
 
 

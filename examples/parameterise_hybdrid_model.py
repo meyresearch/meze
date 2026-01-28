@@ -25,6 +25,8 @@ prepared_meze.build_resp_charges(fix_ligand_charge=False)
 
 # run step 4 with above
     # edit tleap to solvate with octahedral box
+prepared_meze.add_water(directory=parameterisation_directory)
+
 
 # then fix ligand charge, making a new directory
 prepared_meze.build_resp_charges(fix_ligand_charge=True) 
