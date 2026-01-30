@@ -39,12 +39,12 @@ class Ligand():
             if not os.path.isfile(file):
                 raise FileNotFoundError(f"Ligand file not found: {file}")
 
-        if not isinstance(self.charge, int):
+        if not isinstance(self.charge, float):
             try:
-                self.charge = int(self.charge)
+                self.charge = float(self.charge)
             except (TypeError, ValueError):
                 raise TypeError(
-                    f"Ligand charge must be an integer (got {self.charge} of type {type(self.charge)})."
+                    f"Ligand charge must be an integer or float (got {self.charge} of type {type(self.charge)})."
                 )
         if not self.name:
             self.name = Path(self.file[0]).stem
@@ -83,12 +83,14 @@ class Ligand():
 
         os.makedirs(directory, exist_ok=True)
 
+        charge = int(self.charge)
+
         mol2_path = os.path.join(directory, f"{output_filename}.mol2")
         workdir = os.getcwd()
         antechamber_cmd = (
             f"antechamber -fi {ext} -fo mol2 "
             f"-i {file} -o {mol2_path} "
-            f"-c {charge_method} -nc {self.charge} -at {atom_type} "
+            f"-c {charge_method} -nc {charge} -at {atom_type} "
             f"-pf y -rn {residue_name}"
         )
         print("Running antechamber with command:")

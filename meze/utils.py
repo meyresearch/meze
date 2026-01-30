@@ -316,3 +316,23 @@ def _check_log_files(directory: str) -> List[str]:
                     f"{convergence_lines}"
                 )
     return log_files
+
+def _get_mol2_charge(file: str) -> int | float:
+    with open(file, "r") as ifile:
+        lines = ifile.readlines()
+    
+    for i, line in enumerate(lines):
+        if "ATOM" in line:
+            start = i + 1
+        if "BOND" in line: 
+            end = i
+    
+    if not start and not end:
+        raise RuntimeError(
+            "Could not read mol2 file: "
+            f"{file}"
+        )
+
+    atom_lines = lines[start:end]
+    charges = [float(line.split()[-1].strip()) for line in atom_lines]
+    return sum(charges)

@@ -21,7 +21,7 @@ cold_meze = ColdMeze.from_files(
     non_standard_residues={"MOH": {"charge": -1, "atom_type": "amber"}},
 )
 
-
+ 
 ligand_file = f"{project_dir}/inputs/hybrid_model/ligands/{system_name}/{ligand_name}/{ligand_name}.pdb"
 cold_complex = cold_meze.add_ligand(
     ligand_file=ligand_file,

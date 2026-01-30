@@ -45,6 +45,8 @@ from .utils import (
     _pretty,
     _parse_mcpbpy_input,
     _check_log_files,
+    _get_mol2_charge
+    
 )
 import shutil
 
@@ -217,7 +219,7 @@ class Meze:
         if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
             self._validate_non_standard_residues()
         
-        if self.ligand and self.ligand.parameterised:
+        if self.ligand and self.ligand.parameterised and not self.ligand_resid:
             self.ligand_resid = self.get_ligand_resid()
 
     def __str__(self) -> str:
@@ -1293,22 +1295,49 @@ class Meze:
         else:
             new_coordinates = new_coordinates[0]
         
-        new_meze = dataclasses.replace(
+        # ----------------
+        # parse new mol2 files: 
+        new_ligand_file = glob.glob(
+            f"{parameterisation_directory}/{self.ligand.residue_name[0] + self.ligand.residue_name[-1]}*.mol2"
+        )[0]
+
+
+        new_ligand_resname = pathlib.Path(new_ligand_file).stem
+        new_ligand = Ligand(new_ligand_file, 
+                            charge=_get_mol2_charge(new_ligand_file),
+                            parameterised=True,
+                            residue_name=new_ligand_resname,
+                            frcmod_file=self.ligand.frcmod_file)
+
+        new_non_standard_files = [glob.glob(
+            f"{parameterisation_directory}/{residue.residue_name[0] + residue.residue_name[-1]}*.mol2"
+        )[0] for residue in self.non_standard_residues]
+        non_standard_frcmod_files = [glob.glob(
+            f"{parameterisation_directory}/{residue.residue_name}.frcmod"
+        )[0] for residue in self.non_standard_residues]
+
+        new_non_standard_resnames = [pathlib.Path(file).stem for file in new_non_standard_files]
+        new_non_standard_charges = [_get_mol2_charge(file) for file in new_non_standard_files]
+        new_non_standard_residues = [Ligand(
+            mol2, 
+            charge, 
+            parameterised=True,
+            residue_name=name,
+            frcmod_file=frcmod
+        ) for mol2, charge, name, frcmod in zip(
+            new_non_standard_files, new_non_standard_charges, new_non_standard_resnames, non_standard_frcmod_files
+        )]
+        
+
+        #TODO here also get tleap input file that we need to fix
+        return dataclasses.replace(
             self,
             coordinates=new_coordinates,
             topology=new_coordinates,
-
+            ligand=new_ligand,
+            non_standard_residues=new_non_standard_residues
         )
-        
-        print(new_meze)
 
-        # here also get tleap input file that we need to fix
-
-
-        #TODO update ligand object
-  
-
-        #TODO update hydroxide nonstandard residue
 
 
 @dataclass
