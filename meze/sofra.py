@@ -1,4 +1,5 @@
 import glob 
+import json
 import warnings
 import logging
 warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
@@ -229,13 +230,32 @@ class Meze:
             pickle.dump(self, file)
     
     def add_to_sofra(self, filename: str, key: str):
-        dictionary = {key: {
-            "parameterisation_directory": self.parameterisation_directory,
-            }
+        new_entry = {
+            key: {}
         }
-        
-        pass
 
+        if self.parameterisation_directory is not None:
+            new_entry[key]["parameterisation_directory"] = self.parameterisation_directory
+        if self.mcpbpy_input_file is not None:
+            new_entry[key]["mcpbpy_input_file"] = self.mcpbpy_input_file
+        if self.tleap_input_file is not None:
+            new_entry[key]["tleap_input_file"] = self.tleap_input_file
+
+        if os.path.exists(filename):
+            with open(filename, "r") as f:
+                try:
+                    data = json.load(f)
+                except json.JSONDecodeError as e:
+                    logging.warning(f"Could not decode JSON from {filename}:"
+                                    f"{e}")
+                    data = {}
+        else:
+            data = {}
+
+        data.update(new_entry)
+
+        with open(filename, "w") as f:
+            json.dump(data, f, indent=4)
 
     @classmethod
     def load(cls, filename: str):
@@ -909,7 +929,7 @@ class Meze:
 
         return dataclasses.replace(
             self,
-            mcpb_input_file=mcpb_input_file
+            mcpbpy_input_file=mcpb_input_file
         )
 
 

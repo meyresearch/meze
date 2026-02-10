@@ -62,13 +62,7 @@ prepared_complex.recipe.to_json(
     f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_recipe.json"
 )
 
-# output ligand-specific "recipe" information into a separate JSON, where we append to it:
-"""
-"ligand_11" = {parameterisation_directory: "/Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation",
-               mcpbpy_input_file: "/Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/mcpbpy.in"    
-} 
-"""
-prepared_complex.recipe.add_to_sofra(
+prepared_complex.add_to_sofra(
     key=ligand_name,
     filename=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json"
 )
