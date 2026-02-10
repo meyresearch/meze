@@ -39,5 +39,5 @@ solvated_fixed_charges.save(
      filename=f"{solvated_fixed_charges.recipe.parameterisation_directory}/{ligand_name}_fixed_charges_solvated"
 )
 
-# prepared_meze.build_averaged_charges()
+
 
