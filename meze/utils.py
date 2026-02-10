@@ -177,6 +177,7 @@ def _edit_mcpbpy_tleap_input(
         workdir: Optional[str] = "", #TODO move the below to model recipe: 
         box_shape: Optional[str] = "octahedral",
         box_edges: Optional[float] = 10.0,
+        water_model: Optional[str] = "tip3p",
         solvent_closeness: Optional[float] = 0.75,
         ligand_ff: Optional[str] = "gaff2"
 ):
@@ -189,14 +190,20 @@ def _edit_mcpbpy_tleap_input(
     with open(tleap_input_file, "r") as ifile:
         tleap_lines = ifile.readlines()
 
-    tleap_lines.insert(0, f"source leaprc.gaff2\n")
-    tleap_lines = [
-        line.replace(
-            "solvatebox mol TIP3PBOX 10.0",
-            "solvateoct complex TIP3PBOX 10.0 iso 0.75"
-        )
-        for line in tleap_lines
-    ]    
+    if not f"source leaprc.{ligand_ff}\n" in tleap_lines:
+        tleap_lines.insert(0, f"source leaprc.{ligand_ff}\n")
+
+    old_solvate_line = [line for line in tleap_lines if "solvatebox" in line.lower()][0]
+    pdb_line = [line for line in tleap_lines if "loadpdb" in line.lower()][0]
+    variable_name = pdb_line.split("=")[0].strip()
+    if "oct" in box_shape.lower():
+        new_solvate_line = f"solvate{box_shape[:3]} {variable_name} {water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
+        
+    else:
+        new_solvate_line = f"solvate{box_shape[:3]} {variable_name} {water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
+    
+    tleap_lines = [line.replace(old_solvate_line, new_solvate_line) for line in tleap_lines]
+        
     return tleap_lines
 
 
@@ -316,34 +323,35 @@ def _check_log_files(directory: str) -> List[str]:
             f"{log_files[0]}"
         )
     for log_file in log_files:
-        with open(log_file, "r") as ifile:
-            contents = ifile.read()
-        with open(log_file, "r") as ifile:
-            lines = ifile.readlines()
-        if not lines:
-            raise IOError(
-                f"Log file {log_file} is empty."
-        )
-        if "Normal termination of Gaussian" not in contents:
-            raise RuntimeError(
-                f"Log file {log_file} did not terminate normally"
+        if "leap.log" not in log_file:
+            with open(log_file, "r") as ifile:
+                contents = ifile.read()
+            with open(log_file, "r") as ifile:
+                lines = ifile.readlines()
+            if not lines:
+                raise IOError(
+                    f"Log file {log_file} is empty."
             )
-        if "large_opt" in log_file:
-            i = _list_rindex(lines, "Converged")
-            convergence_lines = " ".join(lines[i+1:i+5])
-            max_force_line = lines[i+1]
-            rms_force_line = lines[i+2]
-            max_displacement_line = lines[i+3]
-            rms_displacement_line = lines[i+4]
-
-            if ("YES" not in max_force_line and 
-                "YES" not in rms_force_line and 
-                "YES" not in max_displacement_line and 
-                "YES" not in rms_displacement_line):
+            if "Normal termination of Gaussian" not in contents:
                 raise RuntimeError(
-                    f"Log file {log_file} did not converge:"
-                    f"{convergence_lines}"
+                    f"Log file {log_file} did not terminate normally"
                 )
+            if "large_opt" in log_file:
+                i = _list_rindex(lines, "Converged")
+                convergence_lines = " ".join(lines[i+1:i+5])
+                max_force_line = lines[i+1]
+                rms_force_line = lines[i+2]
+                max_displacement_line = lines[i+3]
+                rms_displacement_line = lines[i+4]
+
+                if ("YES" not in max_force_line and 
+                    "YES" not in rms_force_line and 
+                    "YES" not in max_displacement_line and 
+                    "YES" not in rms_displacement_line):
+                    raise RuntimeError(
+                        f"Log file {log_file} did not converge:"
+                        f"{convergence_lines}"
+                    )
     return log_files
 
 def _get_mol2_charge(file: str) -> int | float:

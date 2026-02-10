@@ -689,9 +689,10 @@ class Meze:
         if self.recipe.model == 0: 
             parameterised_ligand = self.ligand.parameterise(directory)
             parameterised_non_standard_residues = self.parameterise_non_standard_residues(directory)
-        
+            ligand_name = parameterised_ligand.name 
         elif self.recipe.model == 2:
-            parameterised_ligand = ""
+            parameterised_ligand = self.ligand 
+            parameterised_non_standard_residues = self.non_standard_residues
         else: 
             raise NotImplementedError(
                 f"Model option {self.recipe.model} is not implemented"
@@ -715,10 +716,19 @@ class Meze:
             ) 
             with open(tleap_input_file, "w") as ifile:
                 ifile.writelines(tleap_lines)
+
+            solvated_complex_topology = f"{parameterised_ligand.name}_complex_solv.prmtop"
+            solvated_complex_coordinates = f"{parameterised_ligand.name}_complex_solv.inpcrd"
+            
         else:
             tleap_input_file = mcpbpy_tleap_file
             tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
             tleap_lines = _edit_mcpbpy_tleap_input(tleap_input_file) #TODO disulfide bridges?
+
+            saveline = [line for line in tleap_lines if "saveamberparm" in line and "solv" in line][0]
+            components = saveline.split()
+            solvated_complex_topology = components[2]
+            solvated_complex_coordinates = components[3]
 
             with open(tleap_input_file, "w") as ifile:
                 ifile.writelines(tleap_lines)
@@ -733,11 +743,11 @@ class Meze:
         try:
             solvated_topology = os.path.join(
                 directory, 
-                f"{parameterised_ligand.name}_complex_solv.prmtop"
+                solvated_complex_topology
             )
             solvated_coordinates = os.path.join(
                 directory, 
-                f"{parameterised_ligand.name}_complex_solv.inpcrd"
+                solvated_complex_coordinates
             )
             solvated_meze = dataclasses.replace(
                 self, 
@@ -1304,6 +1314,7 @@ class Meze:
 
         updated_recipe = self.recipe.model_copy()
         updated_recipe.tleap_input_file = tleap_file
+        updated_recipe.parameterisation_directory = parameterisation_directory
         
         new_coordinates = glob.glob(f"{parameterisation_directory}/*_mcpbpy.pdb")
         if not new_coordinates:
