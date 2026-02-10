@@ -10,4 +10,5 @@ large_opt 1
 force_field ff14SB
 water_model tip3p
 gaff 2
+
 chgfix_resids 418

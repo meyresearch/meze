@@ -45,8 +45,8 @@ from .utils import (
     _pretty,
     _parse_mcpbpy_input,
     _check_log_files,
-    _get_mol2_charge
-    
+    _get_mol2_charge,
+    _edit_mcpbpy_tleap_input
 )
 import shutil
 
@@ -676,7 +676,7 @@ class Meze:
         return parameterised_non_standard_residues
 
 
-    def add_water(self, directory: str | None = None) -> Self:
+    def add_water(self, directory: str | None = None, mcpbpy_tleap_file: str | None = None) -> Self:
         if directory:
             os.makedirs(directory, exist_ok=True)
         
@@ -692,23 +692,32 @@ class Meze:
             raise NotImplementedError(
                 f"Model option {self.recipe.model} is not implemented"
             )
-        tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
-        tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
 
-        tleap_lines = _write_tleap_solvation_input(
-            protein_file=self.topology,
-            ligand=parameterised_ligand,
-            non_standard_residues=parameterised_non_standard_residues,
-            disulfide_bridges=self.disulfide_bridges,
-            protein_ff=self.recipe.protein_forcefield,
-            ligand_ff=self.recipe.ligand_forcefield,
-            water_model=self.recipe.water_model,
-            box_shape=self.recipe.box_shape,
-            box_edges=self.recipe.box_edges,
-            solvent_closeness=self.recipe.solvent_closeness
-        ) 
-        with open(tleap_input_file, "w") as ifile:
-            ifile.writelines(tleap_lines)
+        if not mcpbpy_tleap_file:
+            tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
+            tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
+
+            tleap_lines = _write_tleap_solvation_input(
+                protein_file=self.topology,
+                ligand=parameterised_ligand,
+                non_standard_residues=parameterised_non_standard_residues,
+                disulfide_bridges=self.disulfide_bridges,
+                protein_ff=self.recipe.protein_forcefield,
+                ligand_ff=self.recipe.ligand_forcefield,
+                water_model=self.recipe.water_model,
+                box_shape=self.recipe.box_shape,
+                box_edges=self.recipe.box_edges,
+                solvent_closeness=self.recipe.solvent_closeness
+            ) 
+            with open(tleap_input_file, "w") as ifile:
+                ifile.writelines(tleap_lines)
+        else:
+            tleap_input_file = mcpbpy_tleap_file
+            tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
+            tleap_lines = _edit_mcpbpy_tleap_input(tleap_input_file) #TODO disulfide bridges?
+
+            with open(tleap_input_file, "w") as ifile:
+                ifile.writelines(tleap_lines)
         
         workdir = os.getcwd()
         os.chdir(directory)
@@ -1282,8 +1291,6 @@ class Meze:
         os.system(step_4_command)
         os.chdir(workdir)
 
-        # new residue names for ligand, 
-        # hydroxide
         new_coordinates = glob.glob(f"{parameterisation_directory}/*_mcpbpy.pdb")
         if not new_coordinates:
             raise RuntimeError(
@@ -1295,8 +1302,6 @@ class Meze:
         else:
             new_coordinates = new_coordinates[0]
         
-        # ----------------
-        # parse new mol2 files: 
         new_ligand_file = glob.glob(
             f"{parameterisation_directory}/{self.ligand.residue_name[0] + self.ligand.residue_name[-1]}*.mol2"
         )[0]
@@ -1319,8 +1324,8 @@ class Meze:
         new_non_standard_resnames = [pathlib.Path(file).stem for file in new_non_standard_files]
         new_non_standard_charges = [_get_mol2_charge(file) for file in new_non_standard_files]
         new_non_standard_residues = [Ligand(
-            mol2, 
-            charge, 
+            file=mol2, 
+            charge=charge, 
             parameterised=True,
             residue_name=name,
             frcmod_file=frcmod
@@ -1328,7 +1333,6 @@ class Meze:
             new_non_standard_files, new_non_standard_charges, new_non_standard_resnames, non_standard_frcmod_files
         )]
         
-
         #TODO here also get tleap input file that we need to fix
         return dataclasses.replace(
             self,

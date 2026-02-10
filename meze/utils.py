@@ -91,18 +91,19 @@ def _write_distance_restraints(
         lines.append(line)
     return lines
 
-def _write_tleap_solvation_input(protein_file: str,
-                                ligand: Ligand,
-                                non_standard_residues: Optional[List[Ligand]] = None,
-                                disulfide_bridges: Optional[List[dict[str, int]]] = None,
-                                workdir: Optional[str] = "", #TODO move the below to model recipe: 
-                                protein_ff: Optional[str] = "ff14SB",
-                                water_model: Optional[str] = "tip3p",
-                                box_shape: Optional[str] = "octahedral",
-                                box_edges: Optional[float] = 10.0,
-                                solvent_closeness: Optional[float] = 0.75,
-                                ligand_ff: Optional[str] = "gaff2",
-                                ):
+def _write_tleap_solvation_input(
+        protein_file: str,
+        ligand: Ligand,
+        non_standard_residues: Optional[List[Ligand]] = None,
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
+        workdir: Optional[str] = "", #TODO move the below to model recipe: 
+        protein_ff: Optional[str] = "ff14SB",
+        water_model: Optional[str] = "tip3p",
+        box_shape: Optional[str] = "octahedral",
+        box_edges: Optional[float] = 10.0,
+        solvent_closeness: Optional[float] = 0.75,
+        ligand_ff: Optional[str] = "gaff2"
+):
     if workdir:
         os.chdir(workdir)
     lines = [
@@ -170,6 +171,34 @@ def _write_tleap_solvation_input(protein_file: str,
         "quit"
     ])
     return lines
+
+def _edit_mcpbpy_tleap_input(
+        tleap_input_file: str,
+        workdir: Optional[str] = "", #TODO move the below to model recipe: 
+        box_shape: Optional[str] = "octahedral",
+        box_edges: Optional[float] = 10.0,
+        solvent_closeness: Optional[float] = 0.75,
+        ligand_ff: Optional[str] = "gaff2"
+):
+    if not os.path.isfile(tleap_input_file):
+        raise FileNotFoundError(
+            f"Could not find tleap input file: "
+            f"{tleap_input_file}"
+        )
+    
+    with open(tleap_input_file, "r") as ifile:
+        tleap_lines = ifile.readlines()
+
+    tleap_lines.insert(0, f"source leaprc.gaff2\n")
+    tleap_lines = [
+        line.replace(
+            "solvatebox mol TIP3PBOX 10.0",
+            "solvateoct complex TIP3PBOX 10.0 iso 0.75"
+        )
+        for line in tleap_lines
+    ]    
+    return tleap_lines
+
 
 def _write_gaussian_script(
         job_name: str,
