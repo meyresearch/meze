@@ -1387,6 +1387,9 @@ class ColdMeze(Meze):
         ligand: Optional[Ligand] = None,
         disulfide_bridges: Optional[List[dict[str, int]]] = None,
         non_standard_residues: Optional[dict[dict]] = None,
+        parameterisation_directory: Optional[str] = None,
+        mcpbpy_input_file: Optional[str] = None,
+        tleap_input_file: Optional[str] = None,
         **kwargs
     ) -> "ColdMeze":
         """
@@ -1419,6 +1422,9 @@ class ColdMeze(Meze):
             ligand=ligand,
             disulfide_bridges=disulfide_bridges,
             non_standard_residues=non_standard_residues,
+            parameterisation_directory=parameterisation_directory,
+            mcpbpy_input_file=mcpbpy_input_file,
+            tleap_input_file=tleap_input_file
         )
 
     def _build_restraint_mask(
@@ -1704,16 +1710,32 @@ class HotMeze(Meze):
     @classmethod
     def from_files(
         cls, 
-        topology: str, 
-        coordinates: str, 
         restraint_file: Optional[str] = "",
         recipe: Optional[Union[dict, "HotMezeRecipe"]] = None,
+        pdb_file: Optional[str] = None,
+        topology: Optional[str] = None, 
+        coordinates: Optional[str] = None, 
+        exclude_resids: Optional[Union[int, list[int]]] = [],
+        ligand: Optional[Ligand] = None,
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
+        non_standard_residues: Optional[dict[dict]] = None,
+        parameterisation_directory: Optional[str] = None,
+        mcpbpy_input_file: Optional[str] = None,
+        tleap_input_file: Optional[str] = None,
         **kwargs
     ) -> "HotMeze":
         """
         Build a HotMeze object from topology and coordinates.
         Passes extra kwargs into HotMezeRecipe.
         """
+        if pdb_file:
+            topology = pdb_file
+            coordinates = pdb_file
+        if not topology or not coordinates:
+            raise ValueError(
+                "You must supply either a pdb file or both a topology and coordinate file."
+            )
+        
         if recipe is None:
             recipe = HotMezeRecipe(**kwargs)
         elif isinstance(recipe, dict):
@@ -1727,7 +1749,14 @@ class HotMeze(Meze):
             topology=topology, 
             coordinates=coordinates, 
             recipe=recipe,
-            restraint_file=restraint_file
+            restraint_file=restraint_file,
+            ligand=ligand,
+            disulfide_bridges=disulfide_bridges,
+            non_standard_residues=non_standard_residues,
+            parameterisation_directory=parameterisation_directory,
+            mcpbpy_input_file=mcpbpy_input_file,
+            tleap_input_file=tleap_input_file,
+            exclude_resids=exclude_resids
         )
 
     def run(
