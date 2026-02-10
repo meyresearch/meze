@@ -94,17 +94,6 @@ class MezeRecipe(BaseModel):
     solvent_closeness: float = Field(
         0.75, ge=0, le=1, description="Solvent closeness"
     )
-    parameterisation_directory: Optional[str] = Field(
-        None, description="Hybrid model parameterisation directory"
-    )
-
-    mcpbpy_input_file: Optional[str] = Field(
-        None, description="MCPB.py input file"
-    )
-
-    tleap_input_file: Optional[str] = Field(
-        None, description="Path to tleap input file for solvation step with hybrid model"
-    )
 
     @field_validator("model", mode="before")
     @classmethod
@@ -191,6 +180,9 @@ class Meze:
     ligand: Optional[Ligand] = None 
     ligand_resid: Optional[int] = None
     non_standard_residues: dict[dict] | List[Ligand] = field(default_factory=dict)   
+    parameterisation_directory: Optional[str] = None
+    mcpbpy_input_file: Optional[str] = None
+    tleap_input_file: Optional[str] = None
 
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
@@ -235,6 +227,15 @@ class Meze:
             filename += ".pkl"
         with open(filename, "wb") as file:
             pickle.dump(self, file)
+    
+    def add_to_sofra(self, filename: str, key: str):
+        dictionary = {key: {
+            "parameterisation_directory": self.parameterisation_directory,
+            }
+        }
+        
+        pass
+
 
     @classmethod
     def load(cls, filename: str):
@@ -793,12 +794,9 @@ class Meze:
             ligand_name=ligand_name,
         )
         
-        updated_recipe = self.recipe.model_copy()
-        updated_recipe.parameterisation_directory = parameterisation_directory
-
         return dataclasses.replace(
             self,
-            recipe=updated_recipe,
+            parameterisation_directory=parameterisation_directory,
             topology=complex["topology"],
             coordinates=complex["coordinates"],
             ligand=parameterised_ligand,
@@ -849,7 +847,7 @@ class Meze:
                                  additional_lines: Optional[list[str]] = None):
         
         #TODO check prepare mcpb files exist
-        if not self.recipe.parameterisation_directory:
+        if not self.parameterisation_directory:
             raise ValueError("MCPB parameterisation directory not set.")
         
         metals = []
@@ -858,7 +856,7 @@ class Meze:
             metals.append(f"{metal_mcpb_resname}.mol2")
 
         mcpb_input_file = self.write_mcpb_input_file(
-            directory=self.recipe.parameterisation_directory,
+            directory=self.parameterisation_directory,
             original_pdb=self.topology,
             parameterised_ligand=self.ligand,
             parameterised_non_standard_residues=self.non_standard_residues if isinstance(self.non_standard_residues, list) else None,
@@ -866,33 +864,30 @@ class Meze:
             ligand_name=ligand_name
         )
 
-        updated_recipe = self.recipe.model_copy()
-        updated_recipe.mcpbpy_input_file = mcpb_input_file
-
         workdir = os.getcwd()
-        os.chdir(self.recipe.parameterisation_directory)
+        os.chdir(self.parameterisation_directory)
 
         mcpb_output_file = os.path.join(
-            self.recipe.parameterisation_directory, "mcpb_step1.out"
+            self.parameterisation_directory, "mcpb_step1.out"
         )
         mcpb_command = f"MCPB.py -i {mcpb_input_file} -s 1 > {mcpb_output_file}"
         logging.info(f"Running MCPB.py step 1 with command:\n{mcpb_command}")
         os.system(mcpb_command)
 
-        com_files = sorted(glob.glob(f"{self.recipe.parameterisation_directory}/*.com"))
+        com_files = sorted(glob.glob(f"{self.parameterisation_directory}/*.com"))
 
         if not com_files:
-            raise ValueError(f"No Gaussian .com files found in {self.recipe.parameterisation_directory}.")
+            raise ValueError(f"No Gaussian .com files found in {self.parameterisation_directory}.")
         
         if split_large_files:
-            self.update_gaussian_inputs(directory=self.recipe.parameterisation_directory)
-            com_files = sorted(glob.glob(f"{self.recipe.parameterisation_directory}/*.com"))
+            self.update_gaussian_inputs(directory=self.parameterisation_directory)
+            com_files = sorted(glob.glob(f"{self.parameterisation_directory}/*.com"))
             large_opt = [f for f in com_files if "large_opt" in f][0]
             geo_opt = _write_gaussian_script(
                 job_name=f"{ligand_name}-g-opt",
                 gaussian_version=self.recipe.gaussian_version,
                 script_name=f"{ligand_name}_slurm_g_opt.sh",
-                directory=self.recipe.parameterisation_directory,
+                directory=self.parameterisation_directory,
                 com_file=large_opt,
                 sbatch_options=sbatch_options,
                 additional_lines=additional_lines
@@ -904,7 +899,7 @@ class Meze:
             job_name=f"{ligand_name}-mk",
             gaussian_version=self.recipe.gaussian_version,
             script_name=f"{ligand_name}_slurm_mk.sh",
-            directory=self.recipe.parameterisation_directory,
+            directory=self.parameterisation_directory,
             com_file=large_mk,
             sbatch_options=sbatch_options,
             additional_lines=additional_lines
@@ -914,7 +909,7 @@ class Meze:
 
         return dataclasses.replace(
             self,
-            recipe=updated_recipe
+            mcpb_input_file=mcpb_input_file
         )
 
 
@@ -1016,15 +1011,15 @@ class Meze:
 
     def build_empirical_bonds(self):
 
-        mcpbpy_input_file = self.recipe.mcpbpy_input_file
+        mcpbpy_input_file = self.mcpbpy_input_file
 
         self._remove_ligand_bond()
         self._remove_double_oxygen_bond()        
         
         workdir = os.getcwd()
-        os.chdir(self.recipe.parameterisation_directory)
+        os.chdir(self.parameterisation_directory)
         step_2e_output_file = os.path.join(
-            self.recipe.parameterisation_directory, "mcpb_step2e.out"
+            self.parameterisation_directory, "mcpb_step2e.out"
         )
         step_2e_command = f"MCPB.py -i {mcpbpy_input_file} -s 2e > {step_2e_output_file}"
         logging.info(f"Running MCPB.py step 2e with command:\n{step_2e_command}")
@@ -1035,12 +1030,12 @@ class Meze:
     def _remove_double_oxygen_bond(self):
 
         standard_fingerprint_file = glob.glob(
-            f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+            f"{self.parameterisation_directory}/*standard.fingerprint"
         )
         if len(standard_fingerprint_file) == 0:
             raise FileNotFoundError(
                 "Cannot find standard fingerprint file: "
-                f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+                f"{self.parameterisation_directory}/*standard.fingerprint"
             )
 
         standard_fingerprint = standard_fingerprint_file[0]
@@ -1101,12 +1096,12 @@ class Meze:
     def _remove_ligand_bond(self):
 
         standard_fingerprint_file = glob.glob(
-            f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+            f"{self.parameterisation_directory}/*standard.fingerprint"
         )
         if len(standard_fingerprint_file) == 0:
             raise FileNotFoundError(
                 "Cannot find standard fingerprint file: "
-                f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+                f"{self.parameterisation_directory}/*standard.fingerprint"
             )
 
         standard_fingerprint = standard_fingerprint_file[0]
@@ -1160,13 +1155,13 @@ class Meze:
                            fix_ligand_charge: bool = True, 
                            directory: Optional[str] = None):
         
-        mcpbpy_input_file = self.recipe.mcpbpy_input_file
+        mcpbpy_input_file = self.mcpbpy_input_file
 
         mcpb_input_options = _parse_mcpbpy_input(
             mcpbpy_input_file=mcpbpy_input_file
         )
     
-        log_files = _check_log_files(directory=self.recipe.parameterisation_directory)
+        log_files = _check_log_files(directory=self.parameterisation_directory)
 
         if not hasattr(self, "ligand_resid"):
             ligand_residue_id = self.get_ligand_resid()
@@ -1176,9 +1171,9 @@ class Meze:
         if fix_ligand_charge:
             if not directory:
                 warnings.warn(
-                    f"parent directory not set, inferring from {self.recipe.parameterisation_directory}"
+                    f"parent directory not set, inferring from {self.parameterisation_directory}"
                 )
-                directory = str(pathlib.Path(self.recipe.parameterisation_directory).parent)
+                directory = str(pathlib.Path(self.parameterisation_directory).parent)
     
 
             parameterisation_directory = os.path.join(
@@ -1189,40 +1184,40 @@ class Meze:
             os.makedirs(parameterisation_directory, exist_ok=True)
 
             ligand_files = glob.glob(
-                f"{self.recipe.parameterisation_directory}/{self.ligand.residue_name}.*"
+                f"{self.parameterisation_directory}/{self.ligand.residue_name}.*"
             )
             original_pdb_file = mcpb_input_options["original_pdb"]
 
             large_pdb_file = glob.glob(
-                f"{self.recipe.parameterisation_directory}/*_large.pdb"
+                f"{self.parameterisation_directory}/*_large.pdb"
             )
             large_fingerprint = glob.glob(
-                f"{self.recipe.parameterisation_directory}/*_large.fingerprint"
+                f"{self.parameterisation_directory}/*_large.fingerprint"
             )
             standard_pdb = glob.glob(
-                f"{self.recipe.parameterisation_directory}/*_standard.pdb"
+                f"{self.parameterisation_directory}/*_standard.pdb"
             )
 
             non_standard_residue_files = [res.file[0] for res in self.non_standard_residues]
             frcmod_files = glob.glob(
-                f"{self.recipe.parameterisation_directory}/*.frcmod"
+                f"{self.parameterisation_directory}/*.frcmod"
             )
             standard_fingerprint_file = glob.glob(
-                f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+                f"{self.parameterisation_directory}/*standard.fingerprint"
             )
             if len(standard_fingerprint_file) == 0:
                 raise FileNotFoundError(
                     "Cannot find standard fingerprint file: "
-                    f"{self.recipe.parameterisation_directory}/*standard.fingerprint"
+                    f"{self.parameterisation_directory}/*standard.fingerprint"
                 )
             
             standard_fingerprint = standard_fingerprint_file[0]
             
             original_zn_files = glob.glob(
-                f"{self.recipe.parameterisation_directory}/ZN*_input.mol2"
+                f"{self.parameterisation_directory}/ZN*_input.mol2"
             )
 
-            checkpoint_files = glob.glob(f"{self.recipe.parameterisation_directory}/*.chk")
+            checkpoint_files = glob.glob(f"{self.parameterisation_directory}/*.chk")
 
             param_files = ligand_files + non_standard_residue_files + original_zn_files + \
                           log_files + frcmod_files + checkpoint_files + large_pdb_file + \
@@ -1246,10 +1241,10 @@ class Meze:
                 inputs = ifile.read()
             
             new_input_file = mcpbpy_input_file.replace(
-                self.recipe.parameterisation_directory, parameterisation_directory
+                self.parameterisation_directory, parameterisation_directory
             )
             inputs = inputs.replace(
-                self.recipe.parameterisation_directory, parameterisation_directory
+                self.parameterisation_directory, parameterisation_directory
             )
             with open(new_input_file, "w") as ofile:
                 ofile.write(inputs)
@@ -1264,7 +1259,7 @@ class Meze:
                 parameterisation_directory, "mcpb_step4.out"
             )
         else:            
-            parameterisation_directory = self.recipe.parameterisation_directory
+            parameterisation_directory = self.parameterisation_directory
             ion_mol2files = mcpb_input_options["ion_mol2files"]
             if isinstance(ion_mol2files, str):
                 ion_mol2files = [ion_mol2files]
@@ -1273,7 +1268,7 @@ class Meze:
                 filepath = str(pathlib.Path(mol2file).parent)
                 if filepath == "" or filepath == ".":
                     mol2file = os.path.join(
-                        self.recipe.parameterisation_directory,
+                        self.parameterisation_directory,
                         mol2file
                     )
                 if not os.path.isfile(mol2file):
@@ -1287,10 +1282,10 @@ class Meze:
                     shutil.copy(mol2file, new_mol2file)
 
             step_3_output_file = os.path.join(
-                self.recipe.parameterisation_directory, "mcpb_step3.out"
+                self.parameterisation_directory, "mcpb_step3.out"
             )
             step_4_output_file = os.path.join(
-                self.recipe.parameterisation_directory, "mcpb_step4.out"
+                self.parameterisation_directory, "mcpb_step4.out"
             )
             
 
@@ -1311,10 +1306,6 @@ class Meze:
                 "No tleap input file found after MCPB.py step 4. "
                 f"Check log file: {step_4_output_file}"
             )
-
-        updated_recipe = self.recipe.model_copy()
-        updated_recipe.tleap_input_file = tleap_file
-        updated_recipe.parameterisation_directory = parameterisation_directory
         
         new_coordinates = glob.glob(f"{parameterisation_directory}/*_mcpbpy.pdb")
         if not new_coordinates:
@@ -1359,13 +1350,19 @@ class Meze:
 
         return dataclasses.replace(
             self,
-            recipe=updated_recipe,
+            tleap_input_file=tleap_file,
+            parameterisation_directory=parameterisation_directory,
             coordinates=new_coordinates,
             topology=new_coordinates,
             ligand=new_ligand,
             non_standard_residues=new_non_standard_residues
         )
 
+    def build_averaged_charges(self):
+
+
+
+        pass
 
 
 @dataclass

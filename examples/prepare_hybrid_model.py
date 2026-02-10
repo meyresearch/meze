@@ -34,7 +34,7 @@ output = f"{project_dir}/outputs/hybrid_model/{system_name}/{ligand_name}/"
 mcpb_system = cold_complex.prepare_mcpb_system(directory=output,
                                                ligand_name=ligand_name)
 
-scratch_dir = os.path.join(mcpb_system.recipe.parameterisation_directory, "scratch")
+scratch_dir = os.path.join(mcpb_system.parameterisation_directory, "scratch")
 os.makedirs(scratch_dir, exist_ok=True)
 
 prepared_complex = mcpb_system.prepare_resp_calculation(
@@ -54,13 +54,25 @@ prepared_complex = mcpb_system.prepare_resp_calculation(
 )
 
 prepared_complex.save(
-    filename=f"{prepared_complex.recipe.parameterisation_directory}/{ligand_name}_meze"
+    filename=f"{prepared_complex.parameterisation_directory}/{ligand_name}_meze"
 )
 
-# Save updated recipe
+# Save updated recipe -> separate into ligand recipe? 
 prepared_complex.recipe.to_json(
     f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_recipe.json"
 )
+
+# output ligand-specific "recipe" information into a separate JSON, where we append to it:
+"""
+"ligand_11" = {parameterisation_directory: "/Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation",
+               mcpbpy_input_file: "/Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/mcpbpy.in"    
+} 
+"""
+prepared_complex.recipe.add_to_sofra(
+    key=ligand_name,
+    filename=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json"
+)
+
 
 # Show pretty print
 print(prepared_complex)
