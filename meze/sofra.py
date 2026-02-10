@@ -102,6 +102,10 @@ class MezeRecipe(BaseModel):
         None, description="MCPB.py input file"
     )
 
+    tleap_input_file: Optional[str] = Field(
+        None, description="Path to tleap input file for solvation step with hybrid model"
+    )
+
     @field_validator("model", mode="before")
     @classmethod
     def validate_model(cls, v):
@@ -1291,6 +1295,16 @@ class Meze:
         os.system(step_4_command)
         os.chdir(workdir)
 
+        tleap_file = glob.glob(f"{parameterisation_directory}/*tleap.in")[0]
+        if not tleap_file:
+            raise RuntimeError(
+                "No tleap input file found after MCPB.py step 4. "
+                f"Check log file: {step_4_output_file}"
+            )
+
+        updated_recipe = self.recipe.model_copy()
+        updated_recipe.tleap_input_file = tleap_file
+        
         new_coordinates = glob.glob(f"{parameterisation_directory}/*_mcpbpy.pdb")
         if not new_coordinates:
             raise RuntimeError(
@@ -1305,7 +1319,6 @@ class Meze:
         new_ligand_file = glob.glob(
             f"{parameterisation_directory}/{self.ligand.residue_name[0] + self.ligand.residue_name[-1]}*.mol2"
         )[0]
-
 
         new_ligand_resname = pathlib.Path(new_ligand_file).stem
         new_ligand = Ligand(new_ligand_file, 
@@ -1332,10 +1345,10 @@ class Meze:
         ) for mol2, charge, name, frcmod in zip(
             new_non_standard_files, new_non_standard_charges, new_non_standard_resnames, non_standard_frcmod_files
         )]
-        
-        #TODO here also get tleap input file that we need to fix
+
         return dataclasses.replace(
             self,
+            recipe=updated_recipe,
             coordinates=new_coordinates,
             topology=new_coordinates,
             ligand=new_ligand,

@@ -31,9 +31,9 @@ fixed_ligand_charges_meze.save(
      filename=f"{fixed_ligand_charges_meze.recipe.parameterisation_directory}/{ligand_name}_meze_fixed_ligand_charges"
 )
 
-
 fixed_ligand_charges_meze.add_water(
-     directory=fixed_ligand_charges_meze.recipe.parameterisation_directory
+     directory=fixed_ligand_charges_meze.recipe.parameterisation_directory,
+     mcpbpy_tleap_file=fixed_ligand_charges_meze.recipe.tleap_input_file
 )
 
 # prepared_meze.build_averaged_charges()
