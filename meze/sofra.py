@@ -1372,6 +1372,7 @@ class Meze:
             self,
             tleap_input_file=tleap_file,
             parameterisation_directory=parameterisation_directory,
+            mcpbpy_input_file=mcpbpy_input_file,
             coordinates=new_coordinates,
             topology=new_coordinates,
             ligand=new_ligand,
