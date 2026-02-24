@@ -9,11 +9,8 @@ repeat = sys.argv[3]
 system_name = "vim2"
 
 # set ColdMezeRecipe including model (i.e. metal params), ligand(?)
-<<<<<<< HEAD
+
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
-=======
-with open(f"{project_dir}/inputs/model_0/model_0_recipe.json", "r") as file:
->>>>>>> c2563d4 (refactor: add correct path to examples)
     json_recipe = json.load(file)
 
 json_recipe["path_to_engine"] = os.path.join(
