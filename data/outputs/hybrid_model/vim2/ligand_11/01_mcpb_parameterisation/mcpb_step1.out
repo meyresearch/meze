@@ -1,0 +1,140 @@
+******************************************************************
+*               Welcome to use the MCPB.py program               *
+*                          Version 2024                          *
+*                       Author: Pengfei Li                       *
+*                      Merz Research Group                       *
+*                   Michigan State University                    *
+*                              AND                               *
+*                 Hammes-Schiffer Research Group                 *
+*                        Yale University                         *
+*                              AND                               *
+*                       Li Research Group                        *
+*                   Loyola University Chicago                    *
+******************************************************************
+The input file you are using is : /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/mcpbpy.in
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+The following is the input variable you have:
+The variable ion_ids is :  [3450, 3451]
+The variable ion_info is :  []
+The variable ion_mol2files is :  ['ZN1.mol2', 'ZN2.mol2']
+The variable original_pdb is :  /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/vim2_ligand_11.amber.pdb
+The variable add_bonded_pairs is :  []
+The variable add_redcrd is :  0
+The variable additional_resids is :  []
+The variable anglefc_avg is :  0
+The variable bondfc_avg is :  0
+The variable chgfix_resids is :  []
+The variable cut_off is :  2.8
+The variable force_field is :  ff14SB
+The variable frcmod_files is :  ['MOL.frcmod', 'MOH.frcmod']
+The variable gaff is :  2
+The variable group_name is :  vim2_ligand_11
+The variable ion_paraset is :  12_6 (Only for the ions using the nonbonded model).
+The variable large_opt is :  1
+The variable lgmodel_chg is :  -99
+The variable lgmodel_spin is :  -99
+             -99 means program will assign a charge automatically.
+The variable naa_mol2files is :  ['MOL.mol2', 'MOH.mol2']
+The variable scale_factor is :  1.0
+             ATTENTION: This is the scale factor of frequency. The 
+             force constants will be scaled by multiplying the square
+             of scale_factor.
+The variable smmodel_chg is :  -99
+The variable smmodel_spin is :  -99
+             -99 means program will assign a charge automatically.
+The variable software_version is :  g16
+The variable sqm_opt is :  0
+The variable water_model is :  TIP3P
+The variable xstru is :  0
+******************************************************************
+*                                                                *
+*=======================Metal Site Information===================*
+*                                                                *
+******************************************************************
+***Selected Metal ion ZN is atom 3450 in residue 233-ZN
+***Selected Metal ion ZN is atom 3451 in residue 234-ZN
+83-HID@NE2 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
+85-HIE@ND1 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
+148-HID@NE2 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
+235-MOH@OH is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
+87-ASP@OD2 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
+167-CYM@SG is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
+209-HID@NE2 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
+418-MOL@O20 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
+***The following residues are in the Metal Site:
+Residue 83-HID
+Residue 85-HIE
+Residue 87-ASP
+Residue 148-HID
+Residue 167-CYM
+Residue 209-HID
+Residue 233-ZN
+Residue 234-ZN
+Residue 235-MOH
+Residue 418-MOL
+***The small model contains the following residues: 
+[83, 85, 87, 148, 167, 209, 233, 234, 235, 418]
+***The large model contains the following residues: 
+[82, 83, 84, 85, 86, 87, 88, 147, 148, 149, 166, 167, 168, 208, 209, 210, 233, 234, 235, 418]
+******************************************************************
+*                                                                *
+*=======================Building models==========================*
+*                                                                *
+******************************************************************
+***Creating the small model...
+It contains the residue 83-HID as sidechain coordinated.
+It contains the residue 85-HIE as sidechain coordinated.
+It contains the residue 87-ASP as sidechain coordinated.
+It contains the residue 148-HID as sidechain coordinated.
+It contains the residue 167-CYM as sidechain coordinated.
+It contains the residue 209-HID as sidechain coordinated.
+It contains the residue 233-ZN as normal.
+It contains the residue 234-ZN as normal.
+It contains the residue 235-MOH as normal.
+It contains the residue 418-MOL as normal.
+Totally there are 113 atoms in the small model.
+Totally there are 496 electrons in the small model.
+***Creating the standard model...
+It contains the residue 83-HID as normal.
+It contains the residue 85-HIE as normal.
+It contains the residue 87-ASP as normal.
+It contains the residue 148-HID as normal.
+It contains the residue 167-CYM as normal.
+It contains the residue 209-HID as normal.
+It contains the residue 233-ZN as normal.
+It contains the residue 234-ZN as normal.
+It contains the residue 235-MOH as normal.
+It contains the residue 418-MOL as normal.
+Totally there are 125 atoms in the standard model.
+***Creating the large model...
+Creating the residue 82-THR into ACE...
+It contains the residue 83-HID as normal.
+Creating the residue 84-PHE into GLY...
+It contains the residue 85-HIE as normal.
+Creating the residue 86-ASP into GLY...
+It contains the residue 87-ASP as normal.
+Creating the residue 88-ARG into NME...
+Creating the residue 147-ALA into ACE...
+It contains the residue 148-HID as normal.
+Creating the residue 149-SER into NME...
+Creating the residue 166-GLY into ACE...
+It contains the residue 167-CYM as normal.
+Creating the residue 168-ALA into NME...
+Creating the residue 208-GLY into ACE...
+It contains the residue 209-HID as normal.
+Creating the residue 210-GLY into NME...
+It contains the residue 233-ZN as normal.
+It contains the residue 234-ZN as normal.
+It contains the residue 235-MOH as normal.
+It contains the residue 418-MOL as normal.
+Totally there are 187 atoms in the large model.
+Totally there are 836 electrons in the large model.
+==================================================================
+To cite MCPB.py please use the following reference:
+  Pengfei Li and Kenneth M. Merz, Jr., "MCPB.py: A Python Based
+  Metal Center Parameter Builder", J. Chem. Inf. Model., 2016,
+  56, 599-604.
+Helpful tips can be found in the following book chapter:
+  Pengfei Li and Kenneth M. Merz, Jr., "Parameterization of a Dioxygen
+  Binding Metal Site Using the MCPB.py Program", Methods Mol. Biol.,
+  2021, 2199, 257-275.

@@ -35,12 +35,16 @@ class Ligand():
         else:
             raise TypeError(f"Expected str or list[str], got {type(self.file)}")
 
-        if not isinstance(self.charge, int):
+        for file in self.file:
+            if not os.path.isfile(file):
+                raise FileNotFoundError(f"Ligand file not found: {file}")
+
+        if not isinstance(self.charge, float):
             try:
-                self.charge = int(self.charge)
+                self.charge = float(self.charge)
             except (TypeError, ValueError):
                 raise TypeError(
-                    f"Ligand charge must be an integer (got {self.charge} of type {type(self.charge)})."
+                    f"Ligand charge must be an integer or float (got {self.charge} of type {type(self.charge)})."
                 )
         if not self.name:
             self.name = Path(self.file[0]).stem
@@ -52,35 +56,50 @@ class Ligand():
         self.system = bss.IO.readMolecules(self.file)
 
     def parameterise(self, 
-                     path: str | None = None,
+                     directory: str | None = None,
                      atom_type: str = "gaff2",
                      charge_method: str = "bcc", 
-                     residue_name: str = "MOL"):
+                     residue_name: str = "MOL", 
+                     filename: Optional[str] = None) -> "Ligand":
         
         if len(self.file) > 1:
             raise UserWarning(f"Expected one ligand file but got {self.file}")
         else:
             file = self.file[0]
         
+        output_filename = filename or f"{self.name}"
+
+        with open(file, "r") as ifile:
+            lines = ifile.readlines()
+        old_resname = [line.split()[3] for line in lines if "HETATM" in line][0]
+        new_lines = [line.replace(old_resname, residue_name) for line in lines]
+        
+        with open(f"{directory}/{residue_name}.pdb", "w") as ofile:
+            ofile.writelines(new_lines)
+
+        file = f"{directory}/{residue_name}.pdb"
+
         ext = Path(file).suffix[1:]
 
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(directory, exist_ok=True)
 
-        mol2_path = os.path.join(path, f"{self.name}.mol2")
+        charge = int(self.charge)
+
+        mol2_path = os.path.join(directory, f"{output_filename}.mol2")
         workdir = os.getcwd()
         antechamber_cmd = (
             f"antechamber -fi {ext} -fo mol2 "
             f"-i {file} -o {mol2_path} "
-            f"-c {charge_method} -nc {self.charge} -at {atom_type} "
+            f"-c {charge_method} -nc {charge} -at {atom_type} "
             f"-pf y -rn {residue_name}"
         )
         print("Running antechamber with command:")
         print(antechamber_cmd)
-        os.chdir(path)
+        os.chdir(directory)
         os.system(antechamber_cmd)
         if not os.path.isfile(mol2_path): 
             warnings.warn(
-                f"antechamber failed: missing output files for {self.name}.mol2",
+                f"antechamber failed: missing output files for {output_filename}.mol2",
                 UserWarning
             )
         
@@ -99,7 +118,7 @@ class Ligand():
         with open(mol2_path, "w") as ofile:
             ofile.writelines(new_lines)
         
-        frcmod_path = os.path.join(path, f"{self.name}.frcmod")
+        frcmod_path = os.path.join(directory, f"{output_filename}.frcmod")
         parmcheck_cmd = (
             f"parmchk2 -i {mol2_path} -o {frcmod_path} "
             f"-f mol2 -s {atom_type}"
@@ -111,7 +130,7 @@ class Ligand():
 
         if not os.path.isfile(frcmod_path):
             warnings.warn(
-                f"parmchk2 failed: missing output files for {self.name}.frcmod",
+                f"parmchk2 failed: missing output files for {output_filename}.frcmod",
                 UserWarning
             )
         os.chdir(workdir)

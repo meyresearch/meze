@@ -10,9 +10,9 @@ ligand_name = sys.argv[3]
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
-json_recipe["path_to_engine"] = os.path.join(
-    os.environ["PMEMDHOME"], "bin", "pmemd.cuda"        
-)
+# json_recipe["path_to_engine"] = os.path.join(
+#     os.environ["PMEMDHOME"], "bin", "pmemd.cuda"        
+# )
 
 cold_meze = ColdMeze.from_files(
     recipe=ColdMezeRecipe(**json_recipe),

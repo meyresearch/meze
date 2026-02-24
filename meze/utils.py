@@ -5,8 +5,32 @@ from typing import (
     Optional
 )
 import os
+from dataclasses import fields, is_dataclass
+from collections.abc import Mapping, Iterable
+import glob
 
-def residue_restraint_mask(residue_ids: list[int]) -> str:
+
+def _list_rindex(list_to_search: list[str], word: str) -> int:
+    """
+     Source - https://stackoverflow.com/a
+     Posted by wim, modified by community. 
+     See post 'Timeline' for change history
+     Retrieved 2026-01-20, License - CC BY-SA 4.0
+     """
+    rindex = None
+
+    for i, item in enumerate(reversed(list_to_search)):
+        if word in item:
+            rindex = i
+            break
+    if not rindex:
+        raise ValueError(f"{word} is not in list")
+     
+    rlist = [line for line in reversed(list_to_search)]
+    return [i for i, line in enumerate(list_to_search) if line == rlist[rindex]][-1]
+ 
+
+def _residue_restraint_mask(residue_ids: list[int]) -> str:
     """Generate an Amber-style restraint mask.
 
     Adapted from: 
@@ -47,7 +71,7 @@ def residue_restraint_mask(residue_ids: list[int]) -> str:
 
     return restraint_mask
 
-def write_distance_restraints(
+def _write_distance_restraints(
         restraints: dict[tuple[int, int], tuple[float, float, float]]
 ) -> list[str]:
     lines = []
@@ -67,18 +91,19 @@ def write_distance_restraints(
         lines.append(line)
     return lines
 
-def write_tleap_solvation_input(protein_file: str,
-                                ligand: Ligand,
-                                non_standard_residues: Optional[List[Ligand]] = None,
-                                disulfide_bridges: Optional[List[dict[str, int]]] = None,
-                                workdir: Optional[str] = "", #TODO move the below to model recipe: 
-                                protein_ff: Optional[str] = "ff14SB",
-                                water_model: Optional[str] = "tip3p",
-                                box_shape: Optional[str] = "octahedral",
-                                box_edges: Optional[float] = 10.0,
-                                solvent_closeness: Optional[float] = 0.75,
-                                ligand_ff: Optional[str] = "gaff2",
-                                ):
+def _write_tleap_solvation_input(
+        protein_file: str,
+        ligand: Ligand,
+        non_standard_residues: Optional[List[Ligand]] = None,
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
+        workdir: Optional[str] = "", #TODO move the below to model recipe: 
+        protein_ff: Optional[str] = "ff14SB",
+        water_model: Optional[str] = "tip3p",
+        box_shape: Optional[str] = "octahedral",
+        box_edges: Optional[float] = 10.0,
+        solvent_closeness: Optional[float] = 0.75,
+        ligand_ff: Optional[str] = "gaff2"
+):
     if workdir:
         os.chdir(workdir)
     lines = [
@@ -147,4 +172,204 @@ def write_tleap_solvation_input(protein_file: str,
     ])
     return lines
 
+def _edit_mcpbpy_tleap_input(
+        tleap_input_file: str,
+        workdir: Optional[str] = "", #TODO move the below to model recipe: 
+        box_shape: Optional[str] = "octahedral",
+        box_edges: Optional[float] = 10.0,
+        water_model: Optional[str] = "tip3p",
+        solvent_closeness: Optional[float] = 0.75,
+        ligand_ff: Optional[str] = "gaff2"
+):
+    if not os.path.isfile(tleap_input_file):
+        raise FileNotFoundError(
+            f"Could not find tleap input file: "
+            f"{tleap_input_file}"
+        )
+    
+    with open(tleap_input_file, "r") as ifile:
+        tleap_lines = ifile.readlines()
 
+    if not f"source leaprc.{ligand_ff}\n" in tleap_lines:
+        tleap_lines.insert(0, f"source leaprc.{ligand_ff}\n")
+
+    old_solvate_line = [line for line in tleap_lines if "solvatebox" in line.lower()][0]
+    pdb_line = [line for line in tleap_lines if "loadpdb" in line.lower()][0]
+    variable_name = pdb_line.split("=")[0].strip()
+    if "oct" in box_shape.lower():
+        new_solvate_line = f"solvate{box_shape[:3]} {variable_name} {water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
+        
+    else:
+        new_solvate_line = f"solvate{box_shape[:3]} {variable_name} {water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
+    
+    tleap_lines = [line.replace(old_solvate_line, new_solvate_line) for line in tleap_lines]
+        
+    return tleap_lines
+
+
+def _write_gaussian_script(
+        job_name: str,
+        gaussian_version: str,
+        script_name: str,
+        com_file: str,
+        directory: str,
+        sbatch_options: dict[str] = None,
+        additional_lines: list[str] = None
+    ) -> str:
+    
+    gaussian_script_file = os.path.join(directory, script_name)
+
+    with open(gaussian_script_file, "w") as gscript:
+        gscript.write("#!/bin/bash\n")
+        
+        gscript.write("\n")
+        gscript.write(f"#SBATCH --job-name={job_name}\n")
+        if sbatch_options:
+            for key, value in sbatch_options.items():
+                gscript.write(f"#SBATCH {key}={value}\n")
+            gscript.write("\n")
+        
+        if additional_lines:
+            for line in additional_lines:
+                gscript.write(f"{line}\n")
+            gscript.write("\n")
+        
+        gscript.write(
+            f"{gaussian_version} {com_file}"
+        )
+    
+    return gaussian_script_file
+
+def _pretty(obj, indent=0, step=2):
+    pad = " " * indent
+
+    if is_dataclass(obj):
+        cls = type(obj).__name__
+        parts = []
+        for f in fields(obj):
+            value = getattr(obj, f.name)
+            parts.append(
+                f"{pad}{' ' * step}{f.name}="
+                f"{_pretty(value, indent + step, step)}"
+            )
+        inner = ",\n".join(parts)
+        return f"{cls}(\n{inner}\n{pad})"
+
+    if isinstance(obj, Mapping):
+        parts = [
+            f"{pad}{' ' * step}{repr(k)}: {_pretty(v, indent + step, step)}"
+            for k, v in obj.items()
+        ]
+        inner = ",\n".join(parts)
+        return "{\n" + inner + "\n" + pad + "}"
+
+    if isinstance(obj, Iterable) and not isinstance(obj, (str, bytes)):
+        parts = [
+            _pretty(v, indent + step, step) for v in obj
+        ]
+        if len(parts) > 1:
+            inner = ",\n".join(f"{pad}{' ' * step}{p}" for p in parts)
+            return "[\n" + inner + "\n" + pad + "]"
+        else:
+            return "[" + ", ".join(parts) + "]"
+
+    return repr(obj)
+
+def _parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
+    
+    if not mcpbpy_input_file:
+        raise RuntimeError(f"mcpbpy.in file is not set")
+    elif not os.path.isfile(mcpbpy_input_file):
+        raise FileNotFoundError(
+            f"mcpbpy.in file does not exist: "
+            f"{mcpbpy_input_file}"
+        )
+    mcpb_input_options = {}
+    with open(mcpbpy_input_file, "r") as file:
+        for line in file:
+            parts = line.split()
+            if len(parts) == 2:
+                (key, value) = parts[0], parts[1]
+            else:
+                (key, value) = parts[0], parts[1:]
+            mcpb_input_options[key] = value
+    
+    if {"cut_off"} <= mcpb_input_options.keys():
+        mcpb_input_options["cut_off"] = float(mcpb_input_options["cut_off"])
+    if {"ion_ids"} <= mcpb_input_options.keys():
+        value = mcpb_input_options["ion_ids"]
+        if isinstance(value, str):
+            mcpb_input_options["ion_ids"] = int(value)
+        else:
+            mcpb_input_options["ion_ids"] = [int(v) for v in value]
+    if {"gaff"} <= mcpb_input_options.keys():
+        mcpb_input_options["gaff"] = int(mcpb_input_options["gaff"])
+    if {"large_opt"} <= mcpb_input_options.keys():
+        mcpb_input_options["large_opt"] = int(mcpb_input_options["large_opt"])
+    return mcpb_input_options
+
+def _check_log_files(directory: str) -> List[str]:
+    log_files = glob.glob(
+    f"{directory}/*.log"
+    )
+    if len(log_files) == 0: 
+        raise FileNotFoundError(
+            "Could not find any log files in: "
+            f"{directory}"
+        )
+    elif len(log_files) == 1:
+        raise RuntimeError(
+            "Only one log file found in the parameterisation directory: "
+            f"{log_files[0]}"
+        )
+    for log_file in log_files:
+        if "leap.log" not in log_file:
+            with open(log_file, "r") as ifile:
+                contents = ifile.read()
+            with open(log_file, "r") as ifile:
+                lines = ifile.readlines()
+            if not lines:
+                raise IOError(
+                    f"Log file {log_file} is empty."
+            )
+            if "Normal termination of Gaussian" not in contents:
+                raise RuntimeError(
+                    f"Log file {log_file} did not terminate normally"
+                )
+            if "large_opt" in log_file:
+                i = _list_rindex(lines, "Converged")
+                convergence_lines = " ".join(lines[i+1:i+5])
+                max_force_line = lines[i+1]
+                rms_force_line = lines[i+2]
+                max_displacement_line = lines[i+3]
+                rms_displacement_line = lines[i+4]
+
+                if ("YES" not in max_force_line and 
+                    "YES" not in rms_force_line and 
+                    "YES" not in max_displacement_line and 
+                    "YES" not in rms_displacement_line):
+                    raise RuntimeError(
+                        f"Log file {log_file} did not converge:"
+                        f"{convergence_lines}"
+                    )
+    return log_files
+
+def _get_mol2_charge(file: str) -> int | float:
+    with open(file, "r") as ifile:
+        lines = ifile.readlines()
+    
+    for i, line in enumerate(lines):
+        if "ATOM" in line:
+            start = i + 1
+        if "BOND" in line: 
+            end = i
+    
+    if not start and not end:
+        raise RuntimeError(
+            "Could not read mol2 file: "
+            f"{file}"
+        )
+
+    atom_lines = lines[start:end]
+    charges = [float(line.split()[-1].strip()) for line in atom_lines]
+    return sum(charges)

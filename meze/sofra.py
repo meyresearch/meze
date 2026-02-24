@@ -1,3 +1,5 @@
+import glob 
+import json
 import warnings
 import logging
 warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
@@ -15,18 +17,21 @@ from pydantic import (
     BaseModel
 )
 from typing import (
-    Iterable,
     List,
     Optional,
     Literal,
     Union,
-    Self
+    Self,
+    List
 )
+import pickle
+import pathlib
 from .ligand import Ligand
 import os
 
 import MDAnalysis as mda
 import MDAnalysis.analysis.distances
+from MDAnalysis.topology.guessers import guess_types
 from MDAnalysis.core.groups import Residue as mdaResidue
 import BioSimSpace as bss
 from BioSimSpace._SireWrappers import System as bssSystem
@@ -34,9 +39,15 @@ from BioSimSpace.Types._time import Time as bssTime
 from BioSimSpace.Types._temperature import Temperature as bssTemperature
 from BioSimSpace.Types._pressure import Pressure as bssPressure
 from .utils import (
-    residue_restraint_mask,
-    write_distance_restraints,
-    write_tleap_solvation_input
+    _residue_restraint_mask,
+    _write_distance_restraints,
+    _write_tleap_solvation_input,
+    _write_gaussian_script,
+    _pretty,
+    _parse_mcpbpy_input,
+    _check_log_files,
+    _get_mol2_charge,
+    _edit_mcpbpy_tleap_input
 )
 import shutil
 
@@ -45,6 +56,7 @@ class MezeRecipe(BaseModel):
     """
     workdir: str = Field(default_factory=os.getcwd, description="Working directory")
     metal: str = Field("ZN", description="Metal element")
+    metal_charge: int = Field(2, description="Metal charge")
     group_name: str = Field("meze", description="Group name for project")
     coordination_cut_off: float = Field(
         2.8, ge=0, description="Metal coordination cutoff in Å"
@@ -54,6 +66,34 @@ class MezeRecipe(BaseModel):
     )
     model: Optional[int] = Field(
         None, description="Metal modelling option"
+    )
+    gaussian_version: str = Field(
+        "g16", description="Gaussian version"
+    )
+    memory: float = Field(12000, description="Memory for Gaussian calculations in MB")
+
+    nprocshared: int = Field(8, description="Number of processors for Gaussian calculations")
+
+    only_optimise_hydrogens: bool = Field(
+        True, description="Only optimise hydrogen atoms"
+    )
+    protein_forcefield: str = Field(
+        "ff14SB", description="Protein forcefield"
+    )
+    ligand_forcefield: str = Field(
+        "gaff2", description="Ligand forcefield"
+    )
+    water_model: str = Field(
+        "tip3p", description="Water model"
+    )
+    box_shape: str = Field(
+        "octahedral", description="Box shape"
+    )
+    box_edges: float = Field(
+        10.0, ge=0, description="Box edges in Å"
+    )
+    solvent_closeness: float = Field(
+        0.75, ge=0, le=1, description="Solvent closeness"
     )
 
     @field_validator("model", mode="before")
@@ -70,6 +110,10 @@ class MezeRecipe(BaseModel):
         """Print recipe information as JSON
         """
         return self.model_dump_json(indent=4, fallback=str, warnings="none")
+
+    def to_json(self, file: str):
+        with open(file, "w") as ofile:
+            ofile.write(self.model_dump_json(indent=2))
 
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
@@ -108,7 +152,6 @@ class ColdMezeRecipe(MezeRecipe):
     restraint_weight: float = Field(
         100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
     )
-
 class HotMezeRecipe(MezeRecipe):
     """Meze workflow recipe for production runs
     """
@@ -136,8 +179,12 @@ class Meze:
     recipe: MezeRecipe 
     disulfide_bridges: Optional[List[dict[str, int]]] = None
     ligand: Optional[Ligand] = None 
-    non_standard_residues: dict[dict] = field(default_factory=dict)   
-    
+    ligand_resid: Optional[int] = None
+    non_standard_residues: dict[dict] | List[Ligand] = field(default_factory=dict)   
+    parameterisation_directory: Optional[str] = None
+    mcpbpy_input_file: Optional[str] = None
+    tleap_input_file: Optional[str] = None
+
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
         if coordinate_extension in [".rst7"]:
@@ -165,14 +212,60 @@ class Meze:
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
-
-        if self.ligand: #TODO ADD
-            self.ligand_resname = self.ligand.system.getResidue(0).name
-        else:        
-            self.ligand_resname = self.get_small_molecule_resname()
-
+        
         if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
             self._validate_non_standard_residues()
+        
+        if self.ligand and self.ligand.parameterised and not self.ligand_resid:
+            self.ligand_resid = self.get_ligand_resid()
+
+    def __str__(self) -> str:
+        return _pretty(self)
+
+    def save(self, filename: str):
+        suffix = pathlib.Path(filename).suffix
+        if not suffix:
+            filename += ".pkl"
+        with open(filename, "wb") as file:
+            pickle.dump(self, file)
+    
+    def add_to_sofra(self, filename: str, key: str):
+        new_entry = {
+            key: {}
+        }
+
+        if self.parameterisation_directory is not None:
+            new_entry[key]["parameterisation_directory"] = self.parameterisation_directory
+        if self.mcpbpy_input_file is not None:
+            new_entry[key]["mcpbpy_input_file"] = self.mcpbpy_input_file
+        if self.tleap_input_file is not None:
+            new_entry[key]["tleap_input_file"] = self.tleap_input_file
+
+        if os.path.exists(filename):
+            with open(filename, "r") as f:
+                try:
+                    data = json.load(f)
+                except json.JSONDecodeError as e:
+                    logging.warning(f"Could not decode JSON from {filename}:"
+                                    f"{e}")
+                    data = {}
+        else:
+            data = {}
+
+        data.update(new_entry)
+
+        with open(filename, "w") as f:
+            json.dump(data, f, indent=4)
+
+    @classmethod
+    def load(cls, filename: str):
+        if not os.path.isfile(filename):
+            raise FileNotFoundError(
+                f"Pickle meze file not found: {filename}"
+            )
+        with open(filename, "rb") as file:
+            return pickle.load(file)
+
 
     @classmethod
     def from_files(
@@ -204,7 +297,7 @@ class Meze:
             "not protein and not water"
         )
         non_standard_residues = [
-            "MOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ"
+            "MOH", "DOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ"
         ]
 
         resname = None
@@ -233,7 +326,7 @@ class Meze:
                 atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
 
                 for ligating_atom in ligating_atoms:
-                    if ligating_atom.resname.upper() != self.ligand_resname:
+                    if ligating_atom.resname.upper() != self.ligand.residue_name:
                         key = (metal_id, ligating_atom.id)
                         atom_group_2 = self.universe.select_atoms(
                             f"resid {ligating_atom.resid} and name {ligating_atom.name}"
@@ -257,7 +350,7 @@ class Meze:
             for resid in self.metal_resids
         ]
         distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
-        return write_distance_restraints(distance_restraints_dict)
+        return _write_distance_restraints(distance_restraints_dict)
 
     def _prepare_angle_restraints(
         self
@@ -268,7 +361,7 @@ class Meze:
             for resid in self.metal_resids
         ]
         angle_restraints_dict = self.build_angle_restraints(metal_atom_ids)
-        return write_distance_restraints(angle_restraints_dict)
+        return _write_distance_restraints(angle_restraints_dict)
     
     def build_angle_restraints(
             self,
@@ -285,7 +378,7 @@ class Meze:
             if metal_id in metal_atom_ids:
                 vertices = []
                 for ligating_atom in ligating_atoms:
-                    if ligating_atom.resname.upper() == self.ligand_resname:
+                    if ligating_atom.resname.upper() == self.ligand.residue_name:
                         continue
                     if ligating_atom.id == metal_id:
                         continue
@@ -343,7 +436,9 @@ class Meze:
                     "Consider fixing your PDB file with e.g. pdb4amber.\n",
                     UserWarning
                 )
-                self.metals = self.universe.select_atoms(f"name {metal.upper()}")
+                guessed_elements = guess_types(self.universe.atoms.names)
+                self.universe.add_TopologyAttr("elements", guessed_elements)
+                self.metals = self.universe.select_atoms(f"element {metal.upper()}")
             else:
                 raise e
 
@@ -353,6 +448,7 @@ class Meze:
         self.metal_resids = self.metals.resids
         self.metal_atomids = self.metals.atoms.ids
         self.metal_resname = metal
+        self.metal_element = metal.capitalize()
 
     def _get_metal_coordinating_residues(self) -> dict[int, mda.AtomGroup]:
         """Get residues coordinating to metal
@@ -378,7 +474,9 @@ class Meze:
                     "Consider fixing your PDB file with e.g. pdb4amber.\n",
                     UserWarning
                 )    
-                selection = f"name O or name N or name S" + \
+                guessed_elements = guess_types(self.universe.atoms.names)
+                self.universe.add_TopologyAttr("elements", guessed_elements)
+                selection = f"element O or element N or element S" + \
                 f" and sphzone {cutoff} (resid {self.metal_resids[i]})"
                 ligands = self.universe.select_atoms(selection)
                 key = self.metal_atomids[i] 
@@ -392,7 +490,9 @@ class Meze:
             [self.topology, self.coordinates]
         )
 
-    def _validate_disulfide_bridges(self):    
+    def _validate_disulfide_bridges(self):   
+        if not self.disulfide_bridges:
+            return 
         with open(self.coordinates, "r") as pdb:
             pdb_lines = pdb.readlines()
         
@@ -433,7 +533,7 @@ class Meze:
                     f"Disulfide bonds require CYX residues. "
                     f"Got {cyx1.resname} and {cyx2.resname} for {r1} and {r2}."
                 )
-
+      
             sg1 = cyx1.atoms.select_atoms("name SG")
             sg2 = cyx2.atoms.select_atoms("name SG")
 
@@ -455,9 +555,6 @@ class Meze:
                         f"No explicit bond will be added in tleap."
                     )
                     self.disulfide_bridges = None
-                    
-
-
 
     def _run(
             self,
@@ -531,6 +628,9 @@ class Meze:
             coordinates=new_coordinates,
             recipe=recipe
         )
+    
+    def get_ligand_resid(self):
+        return self.universe.select_atoms(f"resname {self.ligand.residue_name}").resids[0]
 
     def get_active_site_atom_group(self) -> mda.AtomGroup:
         """Get active site based on metal and coordination cutoff
@@ -550,11 +650,12 @@ class Meze:
             ligand_charge: Optional[int] = 0
     ) -> Self:
         ligand = Ligand(ligand_file, name=name, charge=ligand_charge)
+        
         return dataclasses.replace(
             self,
-            ligand=ligand,
+            ligand=ligand
         )
-    
+
     def _validate_non_standard_residues(self):
         for residue, properties in self.non_standard_residues.items():
             if not {"charge", "atom_type"} <= properties.keys():
@@ -569,16 +670,8 @@ class Meze:
                 raise ValueError(
                     f"Non-standard residue '{residue}' has unsupported 'atom_type': {properties['atom_type']}"
                 )
-            
 
-    def add_water(self, directory: str | None = None) -> Self:
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-        
-        self._validate_disulfide_bridges()
-
-        parameterised_ligand = self.ligand.parameterise(directory)
-
+    def parameterise_non_standard_residues(self, directory: str) -> Optional[list[Ligand]]:
         if self.non_standard_residues:
             
             for residue in self.non_standard_residues.keys():
@@ -596,7 +689,7 @@ class Meze:
             ]
             parameterised_non_standard_residues = [
                 non_standard_residue.parameterise(
-                    path=directory,
+                    directory=directory,
                     atom_type=non_standard_residue.atom_type,
                     residue_name=non_standard_residue.name
                 )
@@ -604,35 +697,78 @@ class Meze:
             ]
         else:
             parameterised_non_standard_residues = None
+        
+        return parameterised_non_standard_residues
 
-        tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
-        tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
 
-        tleap_lines = write_tleap_solvation_input(
-            protein_file=self.topology,
-            ligand=parameterised_ligand,
-            non_standard_residues=parameterised_non_standard_residues,
-            disulfide_bridges=self.disulfide_bridges
-        ) #TODO: put solvation options into MezeRecipe
+    def add_water(self, directory: str | None = None, mcpbpy_tleap_file: str | None = None) -> Self:
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        
+        self._validate_disulfide_bridges()
 
-        with open(tleap_input_file, "w") as ifile:
-            ifile.writelines(tleap_lines)
+        if self.recipe.model == 0: 
+            parameterised_ligand = self.ligand.parameterise(directory)
+            parameterised_non_standard_residues = self.parameterise_non_standard_residues(directory)
+            ligand_name = parameterised_ligand.name 
+        elif self.recipe.model == 2:
+            parameterised_ligand = self.ligand 
+            parameterised_non_standard_residues = self.non_standard_residues
+        else: 
+            raise NotImplementedError(
+                f"Model option {self.recipe.model} is not implemented"
+            )
+
+        if not mcpbpy_tleap_file:
+            tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
+            tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
+
+            tleap_lines = _write_tleap_solvation_input(
+                protein_file=self.topology,
+                ligand=parameterised_ligand,
+                non_standard_residues=parameterised_non_standard_residues,
+                disulfide_bridges=self.disulfide_bridges,
+                protein_ff=self.recipe.protein_forcefield,
+                ligand_ff=self.recipe.ligand_forcefield,
+                water_model=self.recipe.water_model,
+                box_shape=self.recipe.box_shape,
+                box_edges=self.recipe.box_edges,
+                solvent_closeness=self.recipe.solvent_closeness
+            ) 
+            with open(tleap_input_file, "w") as ifile:
+                ifile.writelines(tleap_lines)
+
+            solvated_complex_topology = f"{parameterised_ligand.name}_complex_solv.prmtop"
+            solvated_complex_coordinates = f"{parameterised_ligand.name}_complex_solv.inpcrd"
+            
+        else:
+            tleap_input_file = mcpbpy_tleap_file
+            tleap_output_file = os.path.join(directory, f"tleap_solvate.out")
+            tleap_lines = _edit_mcpbpy_tleap_input(tleap_input_file) #TODO disulfide bridges?
+
+            saveline = [line for line in tleap_lines if "saveamberparm" in line and "solv" in line][0]
+            components = saveline.split()
+            solvated_complex_topology = components[2]
+            solvated_complex_coordinates = components[3]
+
+            with open(tleap_input_file, "w") as ifile:
+                ifile.writelines(tleap_lines)
         
         workdir = os.getcwd()
         os.chdir(directory)
         tleap_command = f"tleap -s -f {tleap_input_file} > {tleap_output_file}"
-        print(f"Running tleap with command:")
-        print(tleap_command)
+        logging.info(f"Running tleap with command:")
+        logging.info(tleap_command)
         os.system(tleap_command)
 
         try:
             solvated_topology = os.path.join(
                 directory, 
-                f"{parameterised_ligand.name}_complex_solv.prmtop"
+                solvated_complex_topology
             )
             solvated_coordinates = os.path.join(
                 directory, 
-                f"{parameterised_ligand.name}_complex_solv.inpcrd"
+                solvated_complex_coordinates
             )
             solvated_meze = dataclasses.replace(
                 self, 
@@ -649,6 +785,605 @@ class Meze:
         os.chdir(workdir)
         return solvated_meze
 
+
+    def prepare_mcpb_system(self,
+                            directory: str | None = None, 
+                            ligand_name: str = "ligand") -> Self:
+        
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
+        parameterisation_directory = os.path.join(directory, "01_mcpb_parameterisation")
+        os.makedirs(parameterisation_directory, exist_ok=True)
+
+        self._validate_disulfide_bridges()
+
+        parameterised_ligand = self.ligand.parameterise(
+            directory=parameterisation_directory, 
+            filename="MOL"
+        )
+
+        self.prepare_metals_for_ezaff(directory=parameterisation_directory)
+
+        parameterised_non_standard_residues = self.parameterise_non_standard_residues(
+            directory=parameterisation_directory
+        )
+
+        complex = self.write_complex(
+            directory=parameterisation_directory,
+            ligand_name=ligand_name,
+        )
+        
+        return dataclasses.replace(
+            self,
+            parameterisation_directory=parameterisation_directory,
+            topology=complex["topology"],
+            coordinates=complex["coordinates"],
+            ligand=parameterised_ligand,
+            non_standard_residues=parameterised_non_standard_residues,
+        )
+
+    def write_mcpb_input_file(self,
+                              directory: str,
+                              original_pdb: str,
+                              parameterised_ligand: Ligand,
+                              parameterised_non_standard_residues: Optional[list[Ligand]],
+                              metals: list[str],
+                              ligand_name: str = "ligand") -> str:
+        
+        mcpb_input_file = os.path.join(directory, "mcpbpy.in")
+
+        mcpb_input_options = {
+            "original_pdb": original_pdb,
+            "group_name": self.recipe.group_name + f"_{ligand_name}",
+            "cut_off": self.recipe.coordination_cut_off,
+            "ion_mol2files": " ".join(metals),
+            "naa_mol2files": f"{parameterised_ligand.name}.mol2" if not parameterised_non_standard_residues else " ".join(
+                [parameterised_ligand.name + ".mol2"] +
+                [residue.name + ".mol2" for residue in parameterised_non_standard_residues]
+            ),
+            "frcmod_files": f"{parameterised_ligand.name}.frcmod" if not parameterised_non_standard_residues else " ".join(
+                [parameterised_ligand.name + ".frcmod"] +
+                [residue.name + ".frcmod" for residue in parameterised_non_standard_residues]
+            ),
+            "software_version": self.recipe.gaussian_version,
+            "ion_ids": " ".join(str(atomid) for atomid in self.metal_atomids),
+            "large_opt": int(self.recipe.only_optimise_hydrogens),
+            "force_field": self.recipe.protein_forcefield,
+            "water_model": self.recipe.water_model,
+            "gaff": self.recipe.ligand_forcefield.replace("gaff", "")
+        }
+
+        with open(mcpb_input_file, "w") as mcpb_file:
+            for key, value in mcpb_input_options.items():
+                mcpb_file.write(f"{key} {value}\n") 
+
+        return mcpb_input_file
+    
+    def prepare_resp_calculation(self,
+                                 ligand_name: str = "ligand",
+                                 split_large_files: bool = True,
+                                 sbatch_options: Optional[dict] = None,
+                                 additional_lines: Optional[list[str]] = None):
+        
+        #TODO check prepare mcpb files exist
+        if not self.parameterisation_directory:
+            raise ValueError("MCPB parameterisation directory not set.")
+        
+        metals = []
+        for i, metal in enumerate(self.metals):
+            metal_mcpb_resname = f"{metal.name.upper()}{i+1}"
+            metals.append(f"{metal_mcpb_resname}.mol2")
+
+        mcpb_input_file = self.write_mcpb_input_file(
+            directory=self.parameterisation_directory,
+            original_pdb=self.topology,
+            parameterised_ligand=self.ligand,
+            parameterised_non_standard_residues=self.non_standard_residues if isinstance(self.non_standard_residues, list) else None,
+            metals=metals,
+            ligand_name=ligand_name
+        )
+
+        workdir = os.getcwd()
+        os.chdir(self.parameterisation_directory)
+
+        mcpb_output_file = os.path.join(
+            self.parameterisation_directory, "mcpb_step1.out"
+        )
+        mcpb_command = f"MCPB.py -i {mcpb_input_file} -s 1 > {mcpb_output_file}"
+        logging.info(f"Running MCPB.py step 1 with command:\n{mcpb_command}")
+        os.system(mcpb_command)
+
+        com_files = sorted(glob.glob(f"{self.parameterisation_directory}/*.com"))
+
+        if not com_files:
+            raise ValueError(f"No Gaussian .com files found in {self.parameterisation_directory}.")
+        
+        if split_large_files:
+            self.update_gaussian_inputs(directory=self.parameterisation_directory)
+            com_files = sorted(glob.glob(f"{self.parameterisation_directory}/*.com"))
+            large_opt = [f for f in com_files if "large_opt" in f][0]
+            geo_opt = _write_gaussian_script(
+                job_name=f"{ligand_name}-g-opt",
+                gaussian_version=self.recipe.gaussian_version,
+                script_name=f"{ligand_name}_slurm_g_opt.sh",
+                directory=self.parameterisation_directory,
+                com_file=large_opt,
+                sbatch_options=sbatch_options,
+                additional_lines=additional_lines
+            )
+            os.system(f"chmod +x {geo_opt}")
+
+        large_mk = [f for f in com_files if "large_mk" in f][0]
+        mk = _write_gaussian_script(
+            job_name=f"{ligand_name}-mk",
+            gaussian_version=self.recipe.gaussian_version,
+            script_name=f"{ligand_name}_slurm_mk.sh",
+            directory=self.parameterisation_directory,
+            com_file=large_mk,
+            sbatch_options=sbatch_options,
+            additional_lines=additional_lines
+        )
+        os.system(f"chmod +x {mk}")
+        os.chdir(workdir)
+
+        return dataclasses.replace(
+            self,
+            mcpbpy_input_file=mcpb_input_file
+        )
+
+
+    def update_gaussian_inputs(self,
+                               directory: str):
+        
+        com_files = sorted(glob.glob(f"{directory}/*.com"))
+        for com_file in com_files:
+            if "large_mk" in com_file:
+                large_file = com_file
+                with open(large_file, "r") as ilarge:
+                    large_lines = ilarge.readlines()
+
+                if "Opt" in "".join(large_lines):
+
+                    calculation_line = [line for line in large_lines if "#" in line][0]
+                    replace_index = large_lines.index(calculation_line)
+
+                    split_parts = calculation_line.split("Opt", 1)
+                    level_of_theory = split_parts[0]
+                    pop_analysis = split_parts[1]
+                    large_optimisation_line = level_of_theory + "Opt\n"
+                    population_analysis_line = level_of_theory + "guess=read geom=checkpoint" + pop_analysis
+
+                    clear_line = [i for i, line in enumerate(large_lines) if "CLR" in line][0]
+                    header_end = clear_line + 3
+
+                    large_opt_lines = large_lines.copy()
+                    large_opt_lines[replace_index] = large_optimisation_line
+
+                    large_mk_lines = large_lines[:header_end]
+                    large_mk_lines[replace_index] = population_analysis_line
+
+                    large_opt_file = large_file.replace("large_mk", "large_opt")
+                    
+                    large_opt_lines = [line.replace(line, "") if self.metal_element in line and len(line.split()) < 3 else line for line in large_opt_lines]
+
+                    with open(large_opt_file, "w") as olarge_opt:
+                        olarge_opt.writelines(large_opt_lines)
+
+                    with open(large_file, "w") as opop:
+                        opop.writelines(large_mk_lines)
+
+        com_files = sorted(glob.glob(f"{directory}/*.com"))
+        for com_file in com_files:
+            with open(com_file, "r") as file:
+                lines = file.readlines()
+            
+            new_lines = []
+            for line in lines:
+                if "%Mem" in line:
+                    new_lines.append(f"%Mem={int(self.recipe.memory)}MB\n")
+                elif "%NProcShared" in line:
+                    new_lines.append(f"%NProcShared={self.recipe.nprocshared}\n")
+                else:
+                    new_lines.append(line)
+            
+            with open(com_file, "w") as file:
+                file.writelines(new_lines)
+
+    def prepare_metals_for_ezaff(self, directory: str) -> List[str]:
+
+        metals = []
+        for i, metal in enumerate(self.metals):
+            metal_atomgroup = self.universe.select_atoms(f"resid {metal.resid}")
+            metal_mcpb_resname = f"{metal.name.upper()}{i+1}"
+
+            metal_atomgroup.write(f"{directory}/{metal_mcpb_resname}.pdb")
+
+            metal_to_pdb_command = f"metalpdb2mol2.py -i {directory}/{metal_mcpb_resname}.pdb -o {directory}/{metal_mcpb_resname}.mol2 -c {self.recipe.metal_charge}"
+
+            os.system(metal_to_pdb_command)
+            metals.append(f"{metal_mcpb_resname}.mol2")
+
+        return metals
+
+
+    def write_complex(self, 
+                      directory: str,
+                      ligand_name: str = "ligand") -> dict[str, str]:
+        
+        ligand_file = os.path.join(directory, f"{self.ligand.name}.pdb")
+
+        components = [self.coordinates, ligand_file]
+        components_str = " ".join(components)
+
+        cat_command = "cat " + components_str + f" > {directory}/{ligand_name}_complex.pdb"
+        pdb4amber_command = f"pdb4amber -i {directory}/{ligand_name}_complex.pdb -o {directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
+
+        logging.info(f"Combining complex files with command:\n{cat_command}")
+        os.system(cat_command)
+
+        logging.info(f"Running pdb4amber with command:\n{pdb4amber_command}")
+        os.system(pdb4amber_command)
+
+        return {"coordinates": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
+                "topology": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"}
+
+
+    def build_empirical_bonds(self):
+
+        mcpbpy_input_file = self.mcpbpy_input_file
+
+        self._remove_ligand_bond()
+        self._remove_double_oxygen_bond()        
+        
+        workdir = os.getcwd()
+        os.chdir(self.parameterisation_directory)
+        step_2e_output_file = os.path.join(
+            self.parameterisation_directory, "mcpb_step2e.out"
+        )
+        step_2e_command = f"MCPB.py -i {mcpbpy_input_file} -s 2e > {step_2e_output_file}"
+        logging.info(f"Running MCPB.py step 2e with command:\n{step_2e_command}")
+        os.system(step_2e_command)
+        os.chdir(workdir)
+
+
+    def _remove_double_oxygen_bond(self):
+
+        standard_fingerprint_file = glob.glob(
+            f"{self.parameterisation_directory}/*standard.fingerprint"
+        )
+        if len(standard_fingerprint_file) == 0:
+            raise FileNotFoundError(
+                "Cannot find standard fingerprint file: "
+                f"{self.parameterisation_directory}/*standard.fingerprint"
+            )
+
+        standard_fingerprint = standard_fingerprint_file[0]
+
+        if not os.path.isfile(standard_fingerprint + "_unedited"):
+            shutil.copy(
+                standard_fingerprint,
+                standard_fingerprint + "_unedited"
+            )
+
+        with open(standard_fingerprint, "r") as ifile:
+            all_lines = ifile.readlines()
+        
+        oxygen_ligands = {}
+        for metal, ligands in self.coordinating_residues.items():
+            oxygen_ligands[metal] = []
+            for atom in ligands:
+                if atom.element == "O":
+                    oxygen_ligands[metal].append(atom)
+
+        water_ids = []
+        zincs_with_multiple_oxygens = []
+        for metal, oxygens in oxygen_ligands.items():
+            n_oxygens = len(oxygens)
+            if n_oxygens > 1:
+                for oxygen in oxygens:
+                    if oxygen.resname in ["HOH", "WAT", "MOH", "DOH"]:
+                        water_ids.append(oxygen.id)
+                        zincs_with_multiple_oxygens.append(metal)
+        
+        atom_numbers = []
+        atoms = []
+        for line in all_lines:
+            words = line.split()
+            if "->" in words and int(words[1]) in water_ids:
+                atom = words[0].split("-")[-1]
+                atoms.append(atom)
+                atom_number = words[1]
+                atom_numbers.append(atom_number)
+
+        new_lines = all_lines.copy()
+        if atoms and atom_numbers:
+            for line in all_lines:
+                words = line.split()
+                if "LINK" in words:
+                    zinc = int(words[1].split("-")[0])
+                    ligand = words[-1].split("-")
+                    for atom, atom_number in zip(atoms, atom_numbers):
+                        if atom in ligand and atom_number in ligand and zinc in zincs_with_multiple_oxygens:
+                            ligand_line = line
+                            new_lines.remove(ligand_line)
+
+        with open(standard_fingerprint, "w") as ofile:
+            ofile.writelines(new_lines)
+
+
+
+    def _remove_ligand_bond(self):
+
+        standard_fingerprint_file = glob.glob(
+            f"{self.parameterisation_directory}/*standard.fingerprint"
+        )
+        if len(standard_fingerprint_file) == 0:
+            raise FileNotFoundError(
+                "Cannot find standard fingerprint file: "
+                f"{self.parameterisation_directory}/*standard.fingerprint"
+            )
+
+        standard_fingerprint = standard_fingerprint_file[0]
+        if not os.path.isfile(standard_fingerprint + "_unedited"):
+            shutil.copy(
+                standard_fingerprint,
+                standard_fingerprint + "_unedited"
+            )
+
+        with open(standard_fingerprint, "r") as ifile:
+            all_lines = ifile.readlines()
+        
+        metal_linked_atoms = [line.split()[-1].split("-") for line in all_lines if "LINK" in line]
+
+        ligand_linked_atoms = []
+        for line in all_lines:
+            if "LINK" not in line:
+                atom_name = line.split()[0].split("-")[2]
+                atom_number = line.split()[1]
+                for link in metal_linked_atoms:
+                    if atom_name in link and atom_number in link and self.ligand.residue_name in line:
+                        ligand_linked_atoms.append(
+                            f"{atom_number}-{atom_name}"
+                        )
+        
+        if not ligand_linked_atoms:
+            logging.info(
+                f"Did not find a bond between the ligand {self.ligand.residue_name} and the metal"
+            )
+        else:
+            ligand_links = []
+            for line in all_lines:
+                if "LINK" in line:
+                    link = line.split()[-1]
+                    if link in ligand_linked_atoms:
+                        ligand_links.append(line)
+
+            new_lines = [line for line in all_lines if line not in ligand_links]
+
+            with open(standard_fingerprint, "w") as ofile:
+                ofile.writelines(new_lines)
+            
+            for line in ligand_links:
+                logging.info(
+                    "Succesfully removed bond: "
+                    f"{line}"
+                )
+
+
+    def build_resp_charges(self, 
+                           fix_ligand_charge: bool = True, 
+                           directory: Optional[str] = None):
+        
+        mcpbpy_input_file = self.mcpbpy_input_file
+
+        mcpb_input_options = _parse_mcpbpy_input(
+            mcpbpy_input_file=mcpbpy_input_file
+        )
+    
+        log_files = _check_log_files(directory=self.parameterisation_directory)
+
+        if not hasattr(self, "ligand_resid"):
+            ligand_residue_id = self.get_ligand_resid()
+        else:
+            ligand_residue_id = self.ligand_resid
+        
+        if fix_ligand_charge:
+            if not directory:
+                warnings.warn(
+                    f"parent directory not set, inferring from {self.parameterisation_directory}"
+                )
+                directory = str(pathlib.Path(self.parameterisation_directory).parent)
+    
+
+            parameterisation_directory = os.path.join(
+                directory, "02_fixed_ligand_charge"
+            )
+            parameterisation_directory = parameterisation_directory
+            logging.info(f"Creating directory: {parameterisation_directory}")
+            os.makedirs(parameterisation_directory, exist_ok=True)
+
+            ligand_files = glob.glob(
+                f"{self.parameterisation_directory}/{self.ligand.residue_name}.*"
+            )
+            original_pdb_file = mcpb_input_options["original_pdb"]
+
+            large_pdb_file = glob.glob(
+                f"{self.parameterisation_directory}/*_large.pdb"
+            )
+            large_fingerprint = glob.glob(
+                f"{self.parameterisation_directory}/*_large.fingerprint"
+            )
+            standard_pdb = glob.glob(
+                f"{self.parameterisation_directory}/*_standard.pdb"
+            )
+
+            non_standard_residue_files = [res.file[0] for res in self.non_standard_residues]
+            frcmod_files = glob.glob(
+                f"{self.parameterisation_directory}/*.frcmod"
+            )
+            standard_fingerprint_file = glob.glob(
+                f"{self.parameterisation_directory}/*standard.fingerprint"
+            )
+            if len(standard_fingerprint_file) == 0:
+                raise FileNotFoundError(
+                    "Cannot find standard fingerprint file: "
+                    f"{self.parameterisation_directory}/*standard.fingerprint"
+                )
+            
+            standard_fingerprint = standard_fingerprint_file[0]
+            
+            original_zn_files = glob.glob(
+                f"{self.parameterisation_directory}/ZN*_input.mol2"
+            )
+
+            checkpoint_files = glob.glob(f"{self.parameterisation_directory}/*.chk")
+
+            param_files = ligand_files + non_standard_residue_files + original_zn_files + \
+                          log_files + frcmod_files + checkpoint_files + large_pdb_file + \
+                          large_fingerprint + standard_pdb + \
+                          [original_pdb_file, standard_fingerprint, mcpbpy_input_file]
+            
+            new_zn_files = []
+            for old_file in param_files: 
+                file = os.path.basename(old_file)
+                new_file = os.path.join(parameterisation_directory, file)
+                shutil.copy(old_file, new_file)
+                if "ZN" in file:
+                    new_zn_files.append(new_file)
+
+            for file in new_zn_files:
+
+                new_filename = file.replace("_input", "")
+                os.rename(file, new_filename)
+
+            with open(mcpbpy_input_file, "r") as ifile:
+                inputs = ifile.read()
+            
+            new_input_file = mcpbpy_input_file.replace(
+                self.parameterisation_directory, parameterisation_directory
+            )
+            inputs = inputs.replace(
+                self.parameterisation_directory, parameterisation_directory
+            )
+            with open(new_input_file, "w") as ofile:
+                ofile.write(inputs)
+                ofile.write("\n")
+                ofile.write(f"chgfix_resids {ligand_residue_id}")
+
+            mcpbpy_input_file = new_input_file
+            step_3_output_file = os.path.join(
+                parameterisation_directory, "mcpb_step3.out"
+            )
+            step_4_output_file = os.path.join(
+                parameterisation_directory, "mcpb_step4.out"
+            )
+        else:            
+            parameterisation_directory = self.parameterisation_directory
+            ion_mol2files = mcpb_input_options["ion_mol2files"]
+            if isinstance(ion_mol2files, str):
+                ion_mol2files = [ion_mol2files]
+            
+            for mol2file in ion_mol2files:
+                filepath = str(pathlib.Path(mol2file).parent)
+                if filepath == "" or filepath == ".":
+                    mol2file = os.path.join(
+                        self.parameterisation_directory,
+                        mol2file
+                    )
+                if not os.path.isfile(mol2file):
+                    raise FileNotFoundError(
+                        "mol2 file for the metal does not exist: "
+                        f"{mol2file}"
+                    )
+                filename = pathlib.Path(mol2file).stem
+                new_mol2file = mol2file.replace(filename, f"{filename}_input")
+                if not os.path.isfile(new_mol2file):
+                    shutil.copy(mol2file, new_mol2file)
+
+            step_3_output_file = os.path.join(
+                self.parameterisation_directory, "mcpb_step3.out"
+            )
+            step_4_output_file = os.path.join(
+                self.parameterisation_directory, "mcpb_step4.out"
+            )
+            
+
+        step_3_command = f"MCPB.py -i {mcpbpy_input_file} -s 3 > {step_3_output_file}"
+        logging.info(f"Running MCPB.py step 3 with command:\n{step_3_command}")
+        workdir = os.getcwd()
+        os.chdir(parameterisation_directory)
+        os.system(step_3_command)
+
+        step_4_command = f"MCPB.py -i {mcpbpy_input_file} -s 4 > {step_4_output_file}"
+        logging.info(f"Running MCPB.py step 4 with command:\n{step_4_command}")
+        os.system(step_4_command)
+        os.chdir(workdir)
+
+        tleap_file = glob.glob(f"{parameterisation_directory}/*tleap.in")[0]
+        if not tleap_file:
+            raise RuntimeError(
+                "No tleap input file found after MCPB.py step 4. "
+                f"Check log file: {step_4_output_file}"
+            )
+        
+        new_coordinates = glob.glob(f"{parameterisation_directory}/*_mcpbpy.pdb")
+        if not new_coordinates:
+            raise RuntimeError(
+                "No MCPB.py output pdb file found."
+                "Check step 3 or 4 log files: "
+                f"Step 3: {step_3_output_file}"
+                f"Step 4: {step_4_output_file}"
+            )
+        else:
+            new_coordinates = new_coordinates[0]
+        
+        new_ligand_file = glob.glob(
+            f"{parameterisation_directory}/{self.ligand.residue_name[0] + self.ligand.residue_name[-1]}*.mol2"
+        )[0]
+
+        new_ligand_resname = pathlib.Path(new_ligand_file).stem
+        new_ligand = Ligand(new_ligand_file, 
+                            charge=_get_mol2_charge(new_ligand_file),
+                            parameterised=True,
+                            residue_name=new_ligand_resname,
+                            frcmod_file=self.ligand.frcmod_file)
+
+        new_non_standard_files = [glob.glob(
+            f"{parameterisation_directory}/{residue.residue_name[0] + residue.residue_name[-1]}*.mol2"
+        )[0] for residue in self.non_standard_residues]
+        non_standard_frcmod_files = [glob.glob(
+            f"{parameterisation_directory}/{residue.residue_name}.frcmod"
+        )[0] for residue in self.non_standard_residues]
+
+        new_non_standard_resnames = [pathlib.Path(file).stem for file in new_non_standard_files]
+        new_non_standard_charges = [_get_mol2_charge(file) for file in new_non_standard_files]
+        new_non_standard_residues = [Ligand(
+            file=mol2, 
+            charge=charge, 
+            parameterised=True,
+            residue_name=name,
+            frcmod_file=frcmod
+        ) for mol2, charge, name, frcmod in zip(
+            new_non_standard_files, new_non_standard_charges, new_non_standard_resnames, non_standard_frcmod_files
+        )]
+
+        return dataclasses.replace(
+            self,
+            tleap_input_file=tleap_file,
+            parameterisation_directory=parameterisation_directory,
+            mcpbpy_input_file=mcpbpy_input_file,
+            coordinates=new_coordinates,
+            topology=new_coordinates,
+            ligand=new_ligand,
+            non_standard_residues=new_non_standard_residues
+        )
+
+    def build_averaged_charges(self):
+
+
+
+        pass
 
 
 @dataclass
@@ -673,12 +1408,16 @@ class ColdMeze(Meze):
         ligand: Optional[Ligand] = None,
         disulfide_bridges: Optional[List[dict[str, int]]] = None,
         non_standard_residues: Optional[dict[dict]] = None,
+        parameterisation_directory: Optional[str] = None,
+        mcpbpy_input_file: Optional[str] = None,
+        tleap_input_file: Optional[str] = None,
         **kwargs
     ) -> "ColdMeze":
         """
         Build a ColdMeze object from topology and coordinates.
         Passes extra kwargs into ColdMezeRecipe.
         """
+
         if pdb_file:
             topology = pdb_file
             coordinates = pdb_file
@@ -695,7 +1434,7 @@ class ColdMeze(Meze):
             raise TypeError(
                 f"Expected 'recipe' to be a ColdMezeRecipe, dict, or None, but got {type(recipe).__name__}"
             )
-        
+
         return cls(
             topology=topology, 
             coordinates=coordinates, 
@@ -703,9 +1442,12 @@ class ColdMeze(Meze):
             recipe=recipe,
             ligand=ligand,
             disulfide_bridges=disulfide_bridges,
-            non_standard_residues=non_standard_residues
+            non_standard_residues=non_standard_residues,
+            parameterisation_directory=parameterisation_directory,
+            mcpbpy_input_file=mcpbpy_input_file,
+            tleap_input_file=tleap_input_file
         )
-    
+
     def _build_restraint_mask(
             self, 
             position_restraints: str, 
@@ -746,13 +1488,13 @@ class ColdMeze(Meze):
         if position_restraints == "solute":
             protein_resids = [atom.resnum for atom in self.universe.select_atoms("protein")]
             constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist()
-            return f"':{residue_restraint_mask(constraint_resids)}'"
+            return f"':{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "backbone":
             constraint_resids = coordinating_resids + self.metal_resids.tolist()
-            return f"'(@N,CA,C,O & !:WAT)|:{residue_restraint_mask(constraint_resids)}'"
+            return f"'(@N,CA,C,O & !:WAT)|:{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "metal-coordination":
             constraint_resids = coordinating_resids + self.metal_resids.tolist()
-            return f"':{residue_restraint_mask(constraint_resids)}'"
+            return f"':{_residue_restraint_mask(constraint_resids)}'"
         else: 
             return None
         
@@ -989,16 +1731,32 @@ class HotMeze(Meze):
     @classmethod
     def from_files(
         cls, 
-        topology: str, 
-        coordinates: str, 
         restraint_file: Optional[str] = "",
         recipe: Optional[Union[dict, "HotMezeRecipe"]] = None,
+        pdb_file: Optional[str] = None,
+        topology: Optional[str] = None, 
+        coordinates: Optional[str] = None, 
+        exclude_resids: Optional[Union[int, list[int]]] = [],
+        ligand: Optional[Ligand] = None,
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
+        non_standard_residues: Optional[dict[dict]] = None,
+        parameterisation_directory: Optional[str] = None,
+        mcpbpy_input_file: Optional[str] = None,
+        tleap_input_file: Optional[str] = None,
         **kwargs
     ) -> "HotMeze":
         """
         Build a HotMeze object from topology and coordinates.
         Passes extra kwargs into HotMezeRecipe.
         """
+        if pdb_file:
+            topology = pdb_file
+            coordinates = pdb_file
+        if not topology or not coordinates:
+            raise ValueError(
+                "You must supply either a pdb file or both a topology and coordinate file."
+            )
+        
         if recipe is None:
             recipe = HotMezeRecipe(**kwargs)
         elif isinstance(recipe, dict):
@@ -1012,7 +1770,14 @@ class HotMeze(Meze):
             topology=topology, 
             coordinates=coordinates, 
             recipe=recipe,
-            restraint_file=restraint_file
+            restraint_file=restraint_file,
+            ligand=ligand,
+            disulfide_bridges=disulfide_bridges,
+            non_standard_residues=non_standard_residues,
+            parameterisation_directory=parameterisation_directory,
+            mcpbpy_input_file=mcpbpy_input_file,
+            tleap_input_file=tleap_input_file,
+            exclude_resids=exclude_resids
         )
 
     def run(
@@ -1203,7 +1968,7 @@ class QuantumMeze(Meze):
     
     def _write_qm_namelist(self, qm_theory: str = "DFTB3"):
 
-        parsed_whole_residues = residue_restraint_mask(self.qm_region["whole_residues"])
+        parsed_whole_residues = _residue_restraint_mask(self.qm_region["whole_residues"])
         atom_ids = ",".join(list(map(str, self.qm_region["atom_ids"])))
         
         qm_config_options = {
@@ -1235,7 +2000,7 @@ class QuantumMeze(Meze):
             for resid in metal_resids_for_distance_restraints
         ]
         distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
-        return write_distance_restraints(distance_restraints_dict)
+        return _write_distance_restraints(distance_restraints_dict)
     
     def run_qm(
         self,
