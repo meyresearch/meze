@@ -843,6 +843,11 @@ class Meze:
         
         mcpb_input_file = os.path.join(directory, "mcpbpy.in")
 
+        if "gaff" in self.recipe.ligand_forcefield:
+            gaff = self.recipe.ligand_forcefield.replace("gaff", "")
+        else:
+            gaff = "0"
+
         mcpb_input_options = {
             "original_pdb": original_pdb,
             "group_name": self.recipe.group_name + f"_{ligand_name}",
@@ -861,7 +866,7 @@ class Meze:
             "large_opt": int(self.recipe.only_optimise_hydrogens),
             "force_field": self.recipe.protein_forcefield,
             "water_model": self.recipe.water_model,
-            "gaff": self.recipe.ligand_forcefield.replace("gaff", "")
+            "gaff": gaff
         }
 
         with open(mcpb_input_file, "w") as mcpb_file:
