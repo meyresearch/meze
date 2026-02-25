@@ -30,7 +30,6 @@ loadamberparams vim2_ligand_11_mcpbpy.frcmod
 mol = loadpdb vim2_ligand_11_mcpbpy.pdb
 bond mol.83.NE2 mol.233.ZN
 bond mol.85.ND1 mol.233.ZN
-bond mol.87.OD2 mol.234.ZN
 bond mol.148.NE2 mol.233.ZN
 bond mol.167.SG mol.234.ZN
 bond mol.209.NE2 mol.234.ZN
