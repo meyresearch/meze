@@ -324,7 +324,7 @@ class Meze:
         restraints = {}
         for metal_id, ligating_atoms in coordinating_residues:
             if metal_id in metal_atom_ids:
-                atom_group_1 = self.metals.select_atoms(f"bynum {metal_id}")
+                atom_group_1 = self.metals.select_atoms(f"index {metal_id}")
 
                 for ligating_atom in ligating_atoms:
                     if ligating_atom.resname.upper() != self.ligand.residue_name:
@@ -447,7 +447,7 @@ class Meze:
             raise ValueError(f"No atoms found for metal: {self.recipe.metal}")
 
         self.metal_resids = self.metals.resids
-        self.metal_atomids = self.metals.atoms.ids
+        self.metal_atomids = self.metals.atoms.indices
         self.metal_resname = metal
         self.metal_element = metal.capitalize()
 
@@ -1111,6 +1111,7 @@ class Meze:
                             harmonic_restraint_ligands.append((metal, atom_number))
 
         # build harmonic restraint for deleted bond(s):
+        metal_ag = self.universe.select_atoms(f"index ")
         force_constant = fcfit_ep_bond()
 
         self.build_distance_restraints(
@@ -1905,7 +1906,7 @@ class QuantumMeze(Meze):
 
         excluded_atoms = set()
         for metal_atom_idx, metal_ligands in self.coordinating_residues.items():
-            metal_resid = self.universe.select_atoms(f"bynum {metal_atom_idx}").resids[0]
+            metal_resid = self.universe.select_atoms(f"index {metal_atom_idx}").resids[0]
             if metal_resid in exclude_resids:
                 excluded_atoms.add(metal_atom_idx)
                 for residue in metal_ligands.residues:
@@ -1920,7 +1921,7 @@ class QuantumMeze(Meze):
             if metal_id in excluded_atoms:
                 continue 
 
-            metal_atom = self.universe.select_atoms(f"bynum {metal_id}")[0]
+            metal_atom = self.universe.select_atoms(f"index {metal_id}")[0]
             if metal_atom.resid not in exclude_resids:
                 qm_region_atom_ids.add(str(metal_id))
 
@@ -1970,7 +1971,7 @@ class QuantumMeze(Meze):
 
         for atom_selection in self.qm_region["atom_ids"]:
             atom_id = atom_selection.replace("-", " to ")
-            atoms = self.universe.select_atoms(f"bynum {atom_id}")
+            atoms = self.universe.select_atoms(f"index {atom_id}")
             charge += atoms.charges.sum()
         return int(np.round(charge))
 
