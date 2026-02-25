@@ -107,7 +107,7 @@ def _write_tleap_solvation_input(
     if workdir:
         os.chdir(workdir)
     lines = [
-        f"source oldff/leaprc.{protein_ff}\n",
+        f"source leaprc.protein.{protein_ff}\n",
         f"source leaprc.water.{water_model.lower()}\n",       
     ]
     if "tip3p" in water_model.lower():
