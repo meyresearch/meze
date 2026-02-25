@@ -17,16 +17,16 @@ prepared_meze = ColdMeze.load(
 )
 print(prepared_meze)
 
-prepared_meze.build_empirical_bonds()
+bonded_meze = prepared_meze.build_empirical_bonds()
 
 # run once without chgfix_resids
-resp_charged_meze = prepared_meze.build_resp_charges(fix_ligand_charge=False) 
+resp_charged_meze = bonded_meze.build_resp_charges(fix_ligand_charge=False) 
 resp_charged_meze.save(
      filename=f"{resp_charged_meze.parameterisation_directory}/{ligand_name}_meze_resp_charges"
 )
 
 # then fix ligand charge, making a new directory
-fixed_ligand_charges_meze = prepared_meze.build_resp_charges(fix_ligand_charge=True) 
+fixed_ligand_charges_meze = bonded_meze.build_resp_charges(fix_ligand_charge=True) 
 fixed_ligand_charges_meze.save(
      filename=f"{fixed_ligand_charges_meze.parameterisation_directory}/{ligand_name}_meze_fixed_ligand_charges"
 )

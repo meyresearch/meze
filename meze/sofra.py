@@ -184,6 +184,7 @@ class Meze:
     parameterisation_directory: Optional[str] = None
     mcpbpy_input_file: Optional[str] = None
     tleap_input_file: Optional[str] = None
+    restraint_file: Optional[str] = None
 
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
@@ -229,7 +230,10 @@ class Meze:
         with open(filename, "wb") as file:
             pickle.dump(self, file)
     
-    def add_to_sofra(self, filename: str, key: str):
+    def add_to_sofra(self, 
+                     filename: str, 
+                     key: str, 
+                     extra_fields: Optional[dict] = None):
         new_entry = {
             key: {}
         }
@@ -240,6 +244,11 @@ class Meze:
             new_entry[key]["mcpbpy_input_file"] = self.mcpbpy_input_file
         if self.tleap_input_file is not None:
             new_entry[key]["tleap_input_file"] = self.tleap_input_file
+        if self.restraint_file is not None:
+            new_entry[key]["restraint_file"] = self.restraint_file
+
+        if extra_fields:
+            new_entry[key].update(extra_fields)
 
         if os.path.exists(filename):
             with open(filename, "r") as f:
@@ -314,15 +323,15 @@ class Meze:
     def build_distance_restraints( 
             self,
             metal_atom_ids: Optional[list[int]] = None,
-            coordinating_residues: Optional[list[mda.AtomGroup]] = None,
+            coordinating_residues: Optional[dict[int, mda.AtomGroup]] = None,
             force_constant: Optional[float] = 100.0,
             flat_bottom_radius: Optional[float] = 1.00
     ) -> dict[tuple[int, int], tuple[float, float, float]]:
 
         metal_atom_ids = metal_atom_ids or list(self.coordinating_residues.keys())
-        coordinating_residues = coordinating_residues or self.coordinating_residues.items()
+        ligand_residues = coordinating_residues or self.coordinating_residues
         restraints = {}
-        for metal_id, ligating_atoms in coordinating_residues:
+        for metal_id, ligating_atoms in ligand_residues.items():
             if metal_id in metal_atom_ids:
                 atom_group_1 = self.metals.select_atoms(f"index {metal_id}")
 
@@ -1035,7 +1044,7 @@ class Meze:
         mcpbpy_input_file = self.mcpbpy_input_file
 
         self._remove_ligand_bond()
-        self._remove_double_oxygen_bond()        
+        self.restraint_file = self._remove_double_oxygen_bond()        
         
         workdir = os.getcwd()
         os.chdir(self.parameterisation_directory)
@@ -1046,6 +1055,10 @@ class Meze:
         logging.info(f"Running MCPB.py step 2e with command:\n{step_2e_command}")
         os.system(step_2e_command)
         os.chdir(workdir)
+        return dataclasses.replace(
+            self,
+            restraint_file=self.restraint_file
+        )
 
 
     def _remove_double_oxygen_bond(self):
@@ -1108,18 +1121,44 @@ class Meze:
                         if atom in ligand and str(atom_number) in ligand and metal in metals_with_multiple_oxygens:
                             ligand_line = line
                             new_lines.remove(ligand_line)
-                            harmonic_restraint_ligands.append((metal, atom_number))
+                            temp_dict = {"metal": metal, "atom_number": atom_number}
+                            harmonic_restraint_ligands.append(temp_dict)
 
         # build harmonic restraint for deleted bond(s):
-        metal_ag = self.universe.select_atoms(f"index ")
-        force_constant = fcfit_ep_bond()
+        # MDAnalysis atom indices are 0-based 
+        metal_ags = [self.universe.select_atoms(f"index {item['metal']-1}") for item in harmonic_restraint_ligands]
+        ligand_ags = [self.universe.select_atoms(f"index {item['atom_number']-1}") for item in harmonic_restraint_ligands]
+        distances = [np.round(MDAnalysis.analysis.distances.dist(
+            atom_group_1, atom_group_2
+        )[-1][0], 4) for atom_group_1, atom_group_2 in zip(metal_ags, ligand_ags)]
 
-        self.build_distance_restraints(
-            metal_atom_ids=[item[0] for item in harmonic_restraint_ligands],
-            coordinating_residues=[item[1] for item in harmonic_restraint_ligands],
+        elements = [[self.metal_element, ligand_ag.atoms[0].element] for ligand_ag in ligand_ags]
+
+        force_constants = [fcfit_ep_bond(distance, element) for distance, element in zip(distances, elements)]
+
+        restraints = []
+        for metal_ag, ligand_ag, force_constant in zip(metal_ags, ligand_ags, force_constants):
+            temp_dict = {metal_ag.atoms[0].index: ligand_ag}
+            restraints.append(self.build_distance_restraints(
+                coordinating_residues=temp_dict,
+                force_constant=force_constant
+            ))
+
+
+        restraint_lines = [_write_distance_restraints(restraint) for restraint in restraints]
+        restraint_file = os.path.join(self.parameterisation_directory, "double_oxygen_restraints.RST")
+        if not os.path.isfile(restraint_file):
+            with open(restraint_file, "w") as file:
+                for lines in restraint_lines:
+                    file.writelines(lines)
+        logging.info(
+            f"Added harmonic restraints for deleted bonds between metal and oxygen ligand(s) to {restraint_file}."
         )
+
         with open(standard_fingerprint, "w") as ofile:
             ofile.writelines(new_lines)
+        
+        return restraint_file
 
 
 
@@ -1252,7 +1291,7 @@ class Meze:
             param_files = ligand_files + non_standard_residue_files + original_zn_files + \
                           log_files + frcmod_files + checkpoint_files + large_pdb_file + \
                           large_fingerprint + standard_pdb + \
-                          [original_pdb_file, standard_fingerprint, mcpbpy_input_file]
+                          [original_pdb_file, standard_fingerprint, mcpbpy_input_file, self.restraint_file]
             
             new_zn_files = []
             for old_file in param_files: 
