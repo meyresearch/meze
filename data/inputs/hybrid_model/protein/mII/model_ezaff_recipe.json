@@ -11,7 +11,7 @@
   "nprocshared": 8,
   "only_optimise_hydrogens": true,
   "protein_forcefield": "ff19SB",
-  "ligand_forcefield": "GLUCAM_06j-1",
+  "ligand_forcefield": "GLYCAM_06j-1",
   "water_model": "opc",
   "box_shape": "cubic",
   "box_edges": 10.0,
