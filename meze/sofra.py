@@ -1090,10 +1090,11 @@ class Meze:
         
         oxygen_ligands = {}
         for metal, ligands in self.coordinating_residues.items():
-            oxygen_ligands[metal] = []
+            metal_corrected = metal + 1
+            oxygen_ligands[metal_corrected] = []
             for atom in ligands:
                 if atom.element == "O":
-                    oxygen_ligands[metal].append(atom)
+                    oxygen_ligands[metal_corrected].append(atom)
 
         oxygen_ids = []
         metals_with_multiple_oxygens = []
