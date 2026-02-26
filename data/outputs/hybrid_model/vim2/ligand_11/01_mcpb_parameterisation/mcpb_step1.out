@@ -14,7 +14,7 @@
 The input file you are using is : /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/mcpbpy.in
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 The following is the input variable you have:
-The variable ion_ids is :  [3450, 3451]
+The variable ion_ids is :  [3449, 3450]
 The variable ion_info is :  []
 The variable ion_mol2files is :  ['ZN1.mol2', 'ZN2.mol2']
 The variable original_pdb is :  /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/vim2_ligand_11.amber.pdb
@@ -51,8 +51,8 @@ The variable xstru is :  0
 *=======================Metal Site Information===================*
 *                                                                *
 ******************************************************************
-***Selected Metal ion ZN is atom 3450 in residue 233-ZN
-***Selected Metal ion ZN is atom 3451 in residue 234-ZN
+***Selected Metal ion ZN is atom 3449 in residue 233-ZN
+***Selected Metal ion ZN is atom 3450 in residue 234-ZN
 83-HID@NE2 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
 85-HIE@ND1 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
 148-HID@NE2 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions

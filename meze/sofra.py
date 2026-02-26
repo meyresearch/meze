@@ -862,7 +862,7 @@ class Meze:
                 [residue.name + ".frcmod" for residue in parameterised_non_standard_residues]
             ),
             "software_version": self.recipe.gaussian_version,
-            "ion_ids": " ".join(str(atomid) for atomid in self.metal_atomids),
+            "ion_ids": " ".join(str(atomid+1) for atomid in self.metal_atomids),
             "large_opt": int(self.recipe.only_optimise_hydrogens),
             "force_field": self.recipe.protein_forcefield,
             "water_model": self.recipe.water_model,

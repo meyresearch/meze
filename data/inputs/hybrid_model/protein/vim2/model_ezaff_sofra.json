@@ -1,8 +1,6 @@
 {
     "ligand_11": {
-        "parameterisation_directory": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge",
-        "mcpbpy_input_file": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/mcpbpy.in",
-        "tleap_input_file": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/vim2_ligand_11_tleap.in",
-        "restraint_file": "/Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/double_oxygen_restraints.RST"
+        "parameterisation_directory": "/Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation",
+        "mcpbpy_input_file": "/Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/mcpbpy.in"
     }
 }
