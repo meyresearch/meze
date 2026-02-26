@@ -195,9 +195,18 @@ class Meze:
         topology_extension = os.path.splitext(self.topology)[1]
         try:
             if coordinate_extension == topology_extension:
-                self.universe = mda.Universe(
-                    self.topology,
-                )   
+                with warnings.catch_warnings(record=True) as caught_warnings:
+                    warnings.filterwarnings(
+                        "always",
+                        message=r"Unknown element.*empty element record",
+                        category=UserWarning,
+                        module=r"MDAnalysis\.topology\.PDBParser",
+                    )
+                    self.universe = mda.Universe(
+                        self.topology,
+                    )   
+                    guessed_elements = guess_types(self.universe.atoms.names)
+                    self.universe.add_TopologyAttr("elements", guessed_elements)
             else:         
                 self.universe = mda.Universe(
                     self.topology,
@@ -453,7 +462,9 @@ class Meze:
                 raise e
 
         if len(self.metals) == 0:
-            raise ValueError(f"No atoms found for metal: {self.recipe.metal}")
+            self.metals = self.universe.select_atoms(f"element {metal.upper()}")
+            if len(self.metals) == 0:
+                raise ValueError(f"No atoms found for metal: {self.recipe.metal}")
 
         self.metal_resids = self.metals.resids
         self.metal_atomids = self.metals.atoms.indices
@@ -677,9 +688,12 @@ class Meze:
                     f"Non-standard residue '{residue}' has invalid 'charge': {properties['charge']}"
                 )
             if properties["atom_type"] not in ["amber", "gaff", "gaff2"]:
-                raise ValueError(
-                    f"Non-standard residue '{residue}' has unsupported 'atom_type': {properties['atom_type']}"
+                warnings.warn(
+                     f"Non-standard residue '{residue}' has potentially unsupported 'atom_type': {properties['atom_type']}",
+                     UserWarning
                 )
+                   
+                
 
     def parameterise_non_standard_residues(self, directory: str) -> Optional[list[Ligand]]:
         if self.non_standard_residues:
@@ -2113,9 +2127,11 @@ class ColdQuantumMeze(QuantumMeze):
     @classmethod
     def from_files(
         cls, 
-        topology: str, 
-        coordinates: str, 
-        exclude_resids: Optional[Union[int, list[int]]] = None,
+        topology: Optional[str] = None, 
+        coordinates: Optional[str] = None, 
+        exclude_resids: Optional[Union[int, list[int]]] = [],
+        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
         **kwargs
     ) -> "ColdQuantumMeze":
@@ -2123,12 +2139,21 @@ class ColdQuantumMeze(QuantumMeze):
         Build a Meze object from topology and coordinates.
         Passes extra kwargs into MezeRecipe.
         """
-        recipe = ColdMezeRecipe(**kwargs)
+        
+        if recipe is None:
+            recipe = ColdMezeRecipe(**kwargs)
+        elif isinstance(recipe, dict):
+            recipe = ColdMezeRecipe(**recipe)
+        elif not isinstance(recipe, ColdMezeRecipe):
+            raise TypeError(
+                f"Expected 'recipe' to be a ColdMezeRecipe, dict, or None, but got {type(recipe).__name__}"
+            )
         return cls(
             topology=topology, 
             coordinates=coordinates,
             exclude_resids=exclude_resids,
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
+            disulfide_bridges=disulfide_bridges,
             recipe=recipe
         )
 
@@ -2298,9 +2323,11 @@ class HotQuantumMeze(QuantumMeze):
     @classmethod
     def from_files(
         cls, 
-        topology: str, 
-        coordinates: str, 
+        topology: Optional[str] = None, 
+        coordinates: Optional[str] = None, 
         exclude_resids: Optional[Union[int, list[int]]] = [],
+        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
         **kwargs
     ) -> "HotQuantumMeze":
@@ -2308,13 +2335,22 @@ class HotQuantumMeze(QuantumMeze):
         Build a Meze object from topology and coordinates.
         Passes extra kwargs into MezeRecipe.
         """
-        recipe = HotMezeRecipe(**kwargs)
+
+        if recipe is None:
+            recipe = HotMezeRecipe(**kwargs)
+        elif isinstance(recipe, dict):
+            recipe = HotMezeRecipe(**recipe)
+        elif not isinstance(recipe, HotMezeRecipe):
+            raise TypeError(
+                f"Expected 'recipe' to be a HotMezeRecipe, dict, or None, but got {type(recipe).__name__}"
+            )
         return cls(
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
-            recipe=recipe
+            recipe=recipe,
+            disulfide_bridges=disulfide_bridges
         )
     
     def run(
