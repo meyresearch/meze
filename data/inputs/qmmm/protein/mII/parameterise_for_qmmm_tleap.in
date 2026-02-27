@@ -2,6 +2,22 @@ source leaprc.protein.ff19SB
 source leaprc.water.opc
 source leaprc.GLYCAM_06j-1
 
-pdb = loadpdb mII.input.pdb
+pdb = loadpdb complex.pdb
 
-solvatebox OPCB
+bond pdb.970.SG pdb.978.SG
+bond pdb.1001.SG pdb.1.SG
+bond pdb.957.SG pdb.872.SG
+bond pdb.245.SG pdb.252.SG
+bond pdb.267.SG pdb.253.SG
+
+saveamberparm pdb complex.dry.prm7 complex.dry.rst7
+
+solvatebox pdb OPC 10.0 
+
+addions2 pdb Na+ 0
+addions2 pdb Cl- 0
+
+
+saveamberparm pdb complex.prm7 complex.rst7
+quit
+
