@@ -2108,19 +2108,19 @@ class QuantumMeze(Meze):
     
     def _prepare_distance_restraints(
         self,
-        metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+        resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> Optional[list[str]]:
-        if not metal_resids_for_distance_restraints:
+        if not resids_for_distance_restraints:
             return None
 
-        if isinstance(metal_resids_for_distance_restraints, int):
-            metal_resids_for_distance_restraints = [metal_resids_for_distance_restraints]
+        if isinstance(resids_for_distance_restraints, int):
+            resids_for_distance_restraints = [resids_for_distance_restraints]
 
-        metal_atom_ids = [
+        atom_ids = [
             self.universe.select_atoms(f"resid {resid}").ids[0]
-            for resid in metal_resids_for_distance_restraints
+            for resid in resids_for_distance_restraints
         ]
-        distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
+        distance_restraints_dict = self.build_distance_restraints(atom_ids)
         return _write_distance_restraints(distance_restraints_dict)
     
     def run_qm(
@@ -2132,14 +2132,37 @@ class QuantumMeze(Meze):
         config_options: Optional[dict] = None,
         qm_theory: str = "DFTB3",
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
-        is_gpu: bool = False
+        is_gpu: bool = False,
+        additional_restraints: Optional[dict[str, Any]] = None
     ) -> "QuantumMeze":
         
         config_options["ntc"] = 1
         config_options["ntf"] = 1
 
-        disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
-        
+        if not additional_restraints:
+            disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
+        else: 
+            if not {"resids"} <= additional_restraints.keys() and not {"resnames"} <= additional_restraints.keys():
+                raise ValueError(
+                    "additional_restraints must contain 'resids' or 'resnames' keys."
+                )
+            additional_resids = additional_restraints.get("resids", [])
+            if isinstance(additional_resids, int):
+                additional_resids = [additional_resids]
+            additional_resids = set(additional_resids)
+
+            additional_resnames = additional_restraints.get("resnames", [])
+            if isinstance(additional_resnames, str):
+                additional_resnames = [additional_resnames]
+            additional_resnames = set(additional_resnames)
+            for resname in additional_resnames:
+                resname_resids = set(
+                    atom.resid for atom in self.universe.select_atoms(f"resname {resname}")
+                )
+                additional_resids.update(resname_resids)
+            additional_resids = list(additional_resids)
+            disres = additional_resids
+            
         self.qm_region = self._define_qm_region(
             resids_to_exclude=metal_resids_for_distance_restraints
         )
@@ -2228,7 +2251,8 @@ class ColdQuantumMeze(QuantumMeze):
             pressure: Optional[Union[float, bssPressure]] = None,
             engine_executable: Optional[str] = None,
             qm_theory: Optional[str] = "DFTB3",
-            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
 
     ) -> "ColdQuantumMeze":
 
@@ -2303,6 +2327,7 @@ class ColdQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
             config_options=config_options,
             is_gpu=False,
+            additional_restraints=additional_restraints
         )
     
     def minimise(
@@ -2316,7 +2341,8 @@ class ColdQuantumMeze(QuantumMeze):
             nb_cutoff: Optional[float] = None,
             engine_executable: Optional[str] = None,
             qm_theory: Optional[str] = "DFTB3",
-            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdQuantumMeze":  
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
 
@@ -2331,7 +2357,8 @@ class ColdQuantumMeze(QuantumMeze):
             method=method,
             engine_executable=engine_executable,
             qm_theory=qm_theory,
-            metal_resids_for_distance_restraints=disres
+            metal_resids_for_distance_restraints=disres,
+            additional_restraints=additional_restraints
         )
     
     def heat(
@@ -2347,7 +2374,8 @@ class ColdQuantumMeze(QuantumMeze):
             process_name: Optional[str] = "qm-nvt",
             engine_executable: Optional[str] = None,
             qm_theory: Optional[str] = "DFTB3",
-            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdQuantumMeze":
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
         return self.run(
@@ -2363,7 +2391,8 @@ class ColdQuantumMeze(QuantumMeze):
             end_temperature=end_temperature,
             engine_executable=engine_executable,
             qm_theory=qm_theory,
-            metal_resids_for_distance_restraints=disres
+            metal_resids_for_distance_restraints=disres,
+            additional_restraints=additional_restraints
         )
     
 @dataclass
@@ -2418,7 +2447,8 @@ class HotQuantumMeze(QuantumMeze):
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 500,
             qm_theory: Optional[str] = "DFTB3",
-            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "HotQuantumMeze":
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
         recipe = HotMezeRecipe(
@@ -2458,4 +2488,5 @@ class HotQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints=disres,
             config_options=config_options,
             is_gpu=False,
+            additional_restraints=additional_restraints
         )
