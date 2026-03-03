@@ -700,9 +700,24 @@ class Meze:
         if self.non_standard_residues:
             
             for residue in self.non_standard_residues.keys():
-                ag = self.universe.select_atoms(f"resname {residue}")
+                if not residue.isnumeric():
+                    ag = self.universe.select_atoms(f"resname {residue}")
+                    if len(ag) == 0:
+                        raise RuntimeError(
+                            f"Could not find residue with resname {residue}"
+                        )
+                else:
+                    try:
+                        residue = int(residue)
+                        ag = self.universe.select_atoms(f"resid {residue}")
+                    except ValueError as e:
+                        logging.error(
+                            f"Could not convert residue id {residue} to integer:"
+                            f"{e}"
+                        )
+                residue = str(residue)
                 ag.write(f"{directory}/{residue}.pdb")
-
+            
             non_standard_residues = [
                 Ligand(
                     file=f"{directory}/{residue}.pdb",
