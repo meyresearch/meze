@@ -18,8 +18,8 @@ json_recipe["path_to_engine"] = os.path.join(
 input_dir = f"{project_dir}/inputs/model_0/protein/{system_name}/"
 
 solvated_meze = ColdMeze.from_files(
-    topology=f"{input_dir}/complex.prm7", 
-    coordinates=f"{input_dir}/complex.rst7",
+    topology=f"{input_dir}/complex.prm7",  # parameterise + solvate separately in tleap
+    coordinates=f"{input_dir}/complex.rst7", # parameterise + solvate separately in tleap
     recipe=ColdMezeRecipe(**json_recipe),
     non_standard_residues= {
         "0YB": {"charge": 0, "atom_type": "glycam"}, 

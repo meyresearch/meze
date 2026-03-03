@@ -63,7 +63,8 @@ class Ligand():
                      method: Literal["antechamber", "tleap"] = "antechamber",  
                      atom_type: str = "gaff2",
                      charge_method: str = "bcc", 
-                     residue_name: str = "MOL", 
+                     residue_name: str = "MOL",
+                     force_field: Optional[str] = None, 
                      filename: Optional[str] = None) -> "Ligand":
         
         if not directory:
@@ -78,7 +79,7 @@ class Ligand():
 
         with open(file, "r") as ifile:
             lines = ifile.readlines()
-        old_resname = [line.split()[3] for line in lines if "HETATM" in line][0]
+        old_resname = [line.split()[3] for line in lines if "HETATM" in line or "ATOM" in line][0]
         new_lines = [line.replace(old_resname, residue_name) for line in lines]
         
         with open(f"{directory}/{residue_name}.pdb", "w") as ofile:
@@ -107,7 +108,12 @@ class Ligand():
                 atom_type=atom_type
             )
         elif method == "tleap":
-            pass
+            output_coordinate_file = self.run_ligand_tleap(
+                parameterisation_directory=directory,
+                coordinate_file=file,
+                residue_name=residue_name,
+                force_field=force_field
+            )
 
         return dataclasses.replace(
             self,
@@ -190,9 +196,13 @@ class Ligand():
                          residue_name: str = "MAN",
                          atom_type: Literal["default", "amber"] = "default"):
         workdir = os.getcwd()
+        if atom_type == "default":
+            atom_type = "0"
+        else:
+            atom_type = "1"
         lines = [f"source leaprc.{force_field}\n",
-                 f"loadpdb {coordinate_file}\n",
-                 f"savemol2 {residue_name}.mol2 {atom_type}\n",
+                 f"lig = loadpdb {coordinate_file}\n",
+                 f"savemol2 lig {residue_name}.mol2 {atom_type}\n",
                  "quit"]
         with open(f"{parameterisation_directory}/{residue_name}_tleap.in", "w") as ofile: 
             ofile.writelines(lines)

@@ -696,7 +696,11 @@ class Meze:
                    
                 
 
-    def parameterise_non_standard_residues(self, directory: str) -> Optional[list[Ligand]]:
+    def parameterise_non_standard_residues(
+            self, 
+            directory: str, 
+            non_standard_parameterisation_method: Literal["antechamber", "tleap"] = "antechamber"
+    ) -> Optional[list[Ligand]]:
         if self.non_standard_residues:
             
             for residue in self.non_standard_residues.keys():
@@ -731,7 +735,9 @@ class Meze:
                 non_standard_residue.parameterise(
                     directory=directory,
                     atom_type=non_standard_residue.atom_type,
-                    residue_name=non_standard_residue.name
+                    residue_name=non_standard_residue.name,
+                    method=non_standard_parameterisation_method,
+                    force_field=self.recipe.ligand_forcefield
                 )
                 for non_standard_residue in non_standard_residues
             ]
@@ -741,16 +747,26 @@ class Meze:
         return parameterised_non_standard_residues
 
 
-    def add_water(self, directory: str | None = None, mcpbpy_tleap_file: str | None = None) -> Self:
+    def add_water(
+            self,
+            directory: str | None = None, 
+            mcpbpy_tleap_file: str | None = None, 
+            non_standard_parameterisation_method: Literal["antechamber", "tleap"] = "antechamber"
+    ) -> Self:
         if directory:
             os.makedirs(directory, exist_ok=True)
         
         self._validate_disulfide_bridges()
 
         if self.recipe.model == 0: 
-            parameterised_ligand = self.ligand.parameterise(directory)
-            parameterised_non_standard_residues = self.parameterise_non_standard_residues(directory)
-            ligand_name = parameterised_ligand.name 
+            if self.ligand:
+                parameterised_ligand = self.ligand.parameterise(directory)
+                ligand_name = parameterised_ligand.name 
+            if self.non_standard_residues:
+                parameterised_non_standard_residues = self.parameterise_non_standard_residues(
+                    directory=directory,
+                    non_standard_parameterisation_method=non_standard_parameterisation_method
+                )
         elif self.recipe.model == 2:
             parameterised_ligand = self.ligand 
             parameterised_non_standard_residues = self.non_standard_residues
