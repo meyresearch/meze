@@ -17,6 +17,7 @@ from pydantic import (
     BaseModel
 )
 from typing import (
+    Any,
     List,
     Optional,
     Literal,
@@ -1520,12 +1521,14 @@ class ColdMeze(Meze):
     def _build_restraint_mask(
             self, 
             position_restraints: str, 
-            exclude_resids: Optional[Union[int, list[int]]] = []
+            exclude_resids: Optional[Union[int, list[int]]] = [],
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> str | None:
         """Build an amber-compatible restraint mask
 
         Args:
             position_restraints (str): what type of position restraints to apply
+            additional_restraints (Optional[dict[str, Any]]): Additional restraints to apply
 
         Raises:
             ValueError: If position_restraint option is invalid.
@@ -1550,20 +1553,42 @@ class ColdMeze(Meze):
             coordinating_atomgroups += atomgroup
 
         coordinating_resids = [
-            atom.resnum for atom in coordinating_atomgroups
-            if atom.resnum not in exclude_resids
+            atom.resid for atom in coordinating_atomgroups
+            if atom.resid not in exclude_resids
         ]
-        
+        additional_resids = []
+        if additional_restraints:
+            if not {"resids"} <= additional_restraints.keys() and not {"resnames"} <= additional_restraints.keys():
+                raise ValueError(
+                    "additional_restraints must contain 'resids' or 'resnames' keys."
+                )
+            additional_resids = additional_restraints.get("resids", [])
+            if isinstance(additional_resids, int):
+                additional_resids = [additional_resids]
+            additional_resids = set(additional_resids)
+
+            additional_resnames = additional_restraints.get("resnames", [])
+            if isinstance(additional_resnames, str):
+                additional_resnames = [additional_resnames]
+            additional_resnames = set(additional_resnames)
+            for resname in additional_resnames:
+                resname_resids = set(
+                    atom.resid for atom in self.universe.select_atoms(f"resname {resname}")
+                )
+                additional_resids.update(resname_resids)
+            additional_resids = list(additional_resids)
         if position_restraints == "solute":
-            protein_resids = [atom.resnum for atom in self.universe.select_atoms("protein")]
-            constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist()
+            protein_resids = [atom.resid for atom in self.universe.select_atoms("protein")]
+            constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist() + additional_resids
             return f"':{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "backbone":
-            constraint_resids = coordinating_resids + self.metal_resids.tolist()
+            constraint_resids = coordinating_resids + self.metal_resids.tolist() + additional_resids
             return f"'(@N,CA,C,O & !:WAT)|:{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "metal-coordination":
-            constraint_resids = coordinating_resids + self.metal_resids.tolist()
+            constraint_resids = coordinating_resids + self.metal_resids.tolist() + additional_resids
             return f"':{_residue_restraint_mask(constraint_resids)}'"
+        elif position_restraints is None and additional_resids:
+            return f"':{_residue_restraint_mask(additional_resids)}'"
         else: 
             return None
         
@@ -1588,7 +1613,8 @@ class ColdMeze(Meze):
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = None,
             is_gpu: Optional[bool] = True,
-            engine_executable: Optional["str"] = None
+            engine_executable: Optional["str"] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdMeze":
 
         recipe = ColdMezeRecipe(
@@ -1620,7 +1646,10 @@ class ColdMeze(Meze):
             config_options["ntx"] = 5
 
         if position_restraints:
-            config_options["restraintmask"] = self._build_restraint_mask(position_restraints)
+            config_options["restraintmask"] = self._build_restraint_mask(
+                position_restraints=position_restraints, 
+                additional_restraints=additional_restraints
+            )
         
         if self.recipe.model == 0:
             config_options["nmropt"] = 1
@@ -1690,7 +1719,8 @@ class ColdMeze(Meze):
             n_sd_cycles: Optional[int] = None,
             nb_cutoff: Optional[float] = None,
             is_gpu: Optional[bool] = False,
-            engine_executable: Optional[str] = None
+            engine_executable: Optional[str] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdMeze":  
         
         return self.run(
@@ -1705,7 +1735,8 @@ class ColdMeze(Meze):
             nb_cutoff=nb_cutoff,
             method=method,
             is_gpu=is_gpu,
-            engine_executable=engine_executable
+            engine_executable=engine_executable,
+            additional_restraints=additional_restraints
         )
 
     def heat(
@@ -1724,7 +1755,8 @@ class ColdMeze(Meze):
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             process_name: Optional[str] = "nvt",
             is_gpu: Optional[bool] = True,
-            engine_executable: Optional[str] = None
+            engine_executable: Optional[str] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdMeze":
 
         return self.run(
@@ -1741,7 +1773,8 @@ class ColdMeze(Meze):
             start_temperature=start_temperature,
             end_temperature=end_temperature,
             is_gpu=is_gpu,
-            engine_executable=engine_executable
+            engine_executable=engine_executable,
+            additional_restraints=additional_restraints
         )
 
     def pressurise(
@@ -1759,7 +1792,8 @@ class ColdMeze(Meze):
             pressure: Optional[Union[float, bssPressure]] = 1.0,
             process_name: Optional[str] = "npt",
             is_gpu: Optional[bool] = True,
-            engine_executable: Optional[str] = None
+            engine_executable: Optional[str] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdMeze":
 
         return self.run(
@@ -1775,7 +1809,8 @@ class ColdMeze(Meze):
             runtime=runtime,
             pressure=pressure,
             is_gpu=is_gpu,
-            engine_executable=engine_executable
+            engine_executable=engine_executable,
+            additional_restraints=additional_restraints
         )
 
 @dataclass
@@ -1861,7 +1896,8 @@ class HotMeze(Meze):
             pressure: Optional[Union[float, bssPressure]] = 1,
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 100000,
-            distance_write_frequency: Optional[int] = 10000
+            distance_write_frequency: Optional[int] = 10000,
+            additional_restraints: Optional[dict[str, Any]] = None
     ):
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
@@ -1901,7 +1937,8 @@ class HotMeze(Meze):
             system=system,
             process_name=process_name,
             config_options=config_options,
-            distance_write_frequency=distance_write_frequency
+            distance_write_frequency=distance_write_frequency,
+            additional_restraints=additional_restraints
         )
         
 @dataclass

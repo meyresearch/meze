@@ -7,7 +7,8 @@ system = "mII"
 project_dir = "/Users/af25016/projects/meze/data/"
 
 cold_qm_meze = ColdQuantumMeze.from_files(
-    
+    topology=f"{project_dir}/inputs/qmmm/protein/{system}/complex.prm7",
+    coordinates=f"{project_dir}/inputs/qmmm/protein/{system}/complex.rst7",
     group_name="qm_mII"
 )
 

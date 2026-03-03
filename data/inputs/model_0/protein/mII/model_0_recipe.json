@@ -1,7 +1,7 @@
 {
     "workdir": "",
     "metal": "ZN",
-    "group_name": "vim2_model_0",
+    "group_name": "mII",
     "max_cycles": 5000,
     "n_sd_cycles": 1000,
     "min_method": 1,
@@ -10,6 +10,5 @@
     "runtime": 100.0,
     "dt": 0.001,
     "model": 0,
-    "non_standard_residues": ["MOH", "DOH"],
-    "ligand_charge": -1
+    "ligand_charge": 0
 }
