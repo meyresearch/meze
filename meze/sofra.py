@@ -17,6 +17,7 @@ from pydantic import (
     BaseModel
 )
 from typing import (
+    Any,
     List,
     Optional,
     Literal,
@@ -195,9 +196,18 @@ class Meze:
         topology_extension = os.path.splitext(self.topology)[1]
         try:
             if coordinate_extension == topology_extension:
-                self.universe = mda.Universe(
-                    self.topology,
-                )   
+                with warnings.catch_warnings(record=True) as caught_warnings:
+                    warnings.filterwarnings(
+                        "always",
+                        message=r"Unknown element.*empty element record",
+                        category=UserWarning,
+                        module=r"MDAnalysis\.topology\.PDBParser",
+                    )
+                    self.universe = mda.Universe(
+                        self.topology,
+                    )   
+                    guessed_elements = guess_types(self.universe.atoms.names)
+                    self.universe.add_TopologyAttr("elements", guessed_elements)
             else:         
                 self.universe = mda.Universe(
                     self.topology,
@@ -453,7 +463,9 @@ class Meze:
                 raise e
 
         if len(self.metals) == 0:
-            raise ValueError(f"No atoms found for metal: {self.recipe.metal}")
+            self.metals = self.universe.select_atoms(f"element {metal.upper()}")
+            if len(self.metals) == 0:
+                raise ValueError(f"No atoms found for metal: {self.recipe.metal}")
 
         self.metal_resids = self.metals.resids
         self.metal_atomids = self.metals.atoms.indices
@@ -677,17 +689,39 @@ class Meze:
                     f"Non-standard residue '{residue}' has invalid 'charge': {properties['charge']}"
                 )
             if properties["atom_type"] not in ["amber", "gaff", "gaff2"]:
-                raise ValueError(
-                    f"Non-standard residue '{residue}' has unsupported 'atom_type': {properties['atom_type']}"
+                warnings.warn(
+                     f"Non-standard residue '{residue}' has potentially unsupported 'atom_type': {properties['atom_type']}",
+                     UserWarning
                 )
+                   
+                
 
-    def parameterise_non_standard_residues(self, directory: str) -> Optional[list[Ligand]]:
+    def parameterise_non_standard_residues(
+            self, 
+            directory: str, 
+            non_standard_parameterisation_method: Literal["antechamber", "tleap"] = "antechamber"
+    ) -> Optional[list[Ligand]]:
         if self.non_standard_residues:
             
             for residue in self.non_standard_residues.keys():
-                ag = self.universe.select_atoms(f"resname {residue}")
+                if not residue.isnumeric():
+                    ag = self.universe.select_atoms(f"resname {residue}")
+                    if len(ag) == 0:
+                        raise RuntimeError(
+                            f"Could not find residue with resname {residue}"
+                        )
+                else:
+                    try:
+                        residue = int(residue)
+                        ag = self.universe.select_atoms(f"resid {residue}")
+                    except ValueError as e:
+                        logging.error(
+                            f"Could not convert residue id {residue} to integer:"
+                            f"{e}"
+                        )
+                residue = str(residue)
                 ag.write(f"{directory}/{residue}.pdb")
-
+            
             non_standard_residues = [
                 Ligand(
                     file=f"{directory}/{residue}.pdb",
@@ -701,7 +735,9 @@ class Meze:
                 non_standard_residue.parameterise(
                     directory=directory,
                     atom_type=non_standard_residue.atom_type,
-                    residue_name=non_standard_residue.name
+                    residue_name=non_standard_residue.name,
+                    method=non_standard_parameterisation_method,
+                    force_field=self.recipe.ligand_forcefield
                 )
                 for non_standard_residue in non_standard_residues
             ]
@@ -711,16 +747,26 @@ class Meze:
         return parameterised_non_standard_residues
 
 
-    def add_water(self, directory: str | None = None, mcpbpy_tleap_file: str | None = None) -> Self:
+    def add_water(
+            self,
+            directory: str | None = None, 
+            mcpbpy_tleap_file: str | None = None, 
+            non_standard_parameterisation_method: Literal["antechamber", "tleap"] = "antechamber"
+    ) -> Self:
         if directory:
             os.makedirs(directory, exist_ok=True)
         
         self._validate_disulfide_bridges()
 
         if self.recipe.model == 0: 
-            parameterised_ligand = self.ligand.parameterise(directory)
-            parameterised_non_standard_residues = self.parameterise_non_standard_residues(directory)
-            ligand_name = parameterised_ligand.name 
+            if self.ligand:
+                parameterised_ligand = self.ligand.parameterise(directory)
+                ligand_name = parameterised_ligand.name 
+            if self.non_standard_residues:
+                parameterised_non_standard_residues = self.parameterise_non_standard_residues(
+                    directory=directory,
+                    non_standard_parameterisation_method=non_standard_parameterisation_method
+                )
         elif self.recipe.model == 2:
             parameterised_ligand = self.ligand 
             parameterised_non_standard_residues = self.non_standard_residues
@@ -843,6 +889,11 @@ class Meze:
         
         mcpb_input_file = os.path.join(directory, "mcpbpy.in")
 
+        if "gaff" in self.recipe.ligand_forcefield:
+            gaff = self.recipe.ligand_forcefield.replace("gaff", "")
+        else:
+            gaff = "0"
+
         mcpb_input_options = {
             "original_pdb": original_pdb,
             "group_name": self.recipe.group_name + f"_{ligand_name}",
@@ -857,11 +908,11 @@ class Meze:
                 [residue.name + ".frcmod" for residue in parameterised_non_standard_residues]
             ),
             "software_version": self.recipe.gaussian_version,
-            "ion_ids": " ".join(str(atomid) for atomid in self.metal_atomids),
+            "ion_ids": " ".join(str(atomid+1) for atomid in self.metal_atomids),
             "large_opt": int(self.recipe.only_optimise_hydrogens),
             "force_field": self.recipe.protein_forcefield,
             "water_model": self.recipe.water_model,
-            "gaff": self.recipe.ligand_forcefield.replace("gaff", "")
+            "gaff": gaff
         }
 
         with open(mcpb_input_file, "w") as mcpb_file:
@@ -1085,10 +1136,11 @@ class Meze:
         
         oxygen_ligands = {}
         for metal, ligands in self.coordinating_residues.items():
-            oxygen_ligands[metal] = []
+            metal_corrected = metal + 1
+            oxygen_ligands[metal_corrected] = []
             for atom in ligands:
                 if atom.element == "O":
-                    oxygen_ligands[metal].append(atom)
+                    oxygen_ligands[metal_corrected].append(atom)
 
         oxygen_ids = []
         metals_with_multiple_oxygens = []
@@ -1500,12 +1552,14 @@ class ColdMeze(Meze):
     def _build_restraint_mask(
             self, 
             position_restraints: str, 
-            exclude_resids: Optional[Union[int, list[int]]] = []
+            exclude_resids: Optional[Union[int, list[int]]] = [],
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> str | None:
         """Build an amber-compatible restraint mask
 
         Args:
             position_restraints (str): what type of position restraints to apply
+            additional_restraints (Optional[dict[str, Any]]): Additional restraints to apply
 
         Raises:
             ValueError: If position_restraint option is invalid.
@@ -1530,20 +1584,42 @@ class ColdMeze(Meze):
             coordinating_atomgroups += atomgroup
 
         coordinating_resids = [
-            atom.resnum for atom in coordinating_atomgroups
-            if atom.resnum not in exclude_resids
+            atom.resid for atom in coordinating_atomgroups
+            if atom.resid not in exclude_resids
         ]
-        
+        additional_resids = []
+        if additional_restraints:
+            if not {"resids"} <= additional_restraints.keys() and not {"resnames"} <= additional_restraints.keys():
+                raise ValueError(
+                    "additional_restraints must contain 'resids' or 'resnames' keys."
+                )
+            additional_resids = additional_restraints.get("resids", [])
+            if isinstance(additional_resids, int):
+                additional_resids = [additional_resids]
+            additional_resids = set(additional_resids)
+
+            additional_resnames = additional_restraints.get("resnames", [])
+            if isinstance(additional_resnames, str):
+                additional_resnames = [additional_resnames]
+            additional_resnames = set(additional_resnames)
+            for resname in additional_resnames:
+                resname_resids = set(
+                    atom.resid for atom in self.universe.select_atoms(f"resname {resname}")
+                )
+                additional_resids.update(resname_resids)
+            additional_resids = list(additional_resids)
         if position_restraints == "solute":
-            protein_resids = [atom.resnum for atom in self.universe.select_atoms("protein")]
-            constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist()
+            protein_resids = [atom.resid for atom in self.universe.select_atoms("protein")]
+            constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist() + additional_resids
             return f"':{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "backbone":
-            constraint_resids = coordinating_resids + self.metal_resids.tolist()
+            constraint_resids = coordinating_resids + self.metal_resids.tolist() + additional_resids
             return f"'(@N,CA,C,O & !:WAT)|:{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "metal-coordination":
-            constraint_resids = coordinating_resids + self.metal_resids.tolist()
+            constraint_resids = coordinating_resids + self.metal_resids.tolist() + additional_resids
             return f"':{_residue_restraint_mask(constraint_resids)}'"
+        elif position_restraints is None and additional_resids:
+            return f"':{_residue_restraint_mask(additional_resids)}'"
         else: 
             return None
         
@@ -1568,7 +1644,8 @@ class ColdMeze(Meze):
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             pressure: Optional[Union[float, bssPressure]] = None,
             is_gpu: Optional[bool] = True,
-            engine_executable: Optional["str"] = None
+            engine_executable: Optional["str"] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdMeze":
 
         recipe = ColdMezeRecipe(
@@ -1600,7 +1677,10 @@ class ColdMeze(Meze):
             config_options["ntx"] = 5
 
         if position_restraints:
-            config_options["restraintmask"] = self._build_restraint_mask(position_restraints)
+            config_options["restraintmask"] = self._build_restraint_mask(
+                position_restraints=position_restraints, 
+                additional_restraints=additional_restraints
+            )
         
         if self.recipe.model == 0:
             config_options["nmropt"] = 1
@@ -1670,7 +1750,8 @@ class ColdMeze(Meze):
             n_sd_cycles: Optional[int] = None,
             nb_cutoff: Optional[float] = None,
             is_gpu: Optional[bool] = False,
-            engine_executable: Optional[str] = None
+            engine_executable: Optional[str] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdMeze":  
         
         return self.run(
@@ -1685,7 +1766,8 @@ class ColdMeze(Meze):
             nb_cutoff=nb_cutoff,
             method=method,
             is_gpu=is_gpu,
-            engine_executable=engine_executable
+            engine_executable=engine_executable,
+            additional_restraints=additional_restraints
         )
 
     def heat(
@@ -1704,7 +1786,8 @@ class ColdMeze(Meze):
             end_temperature: Optional[Union[float, bssTemperature]] = 300,
             process_name: Optional[str] = "nvt",
             is_gpu: Optional[bool] = True,
-            engine_executable: Optional[str] = None
+            engine_executable: Optional[str] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdMeze":
 
         return self.run(
@@ -1721,7 +1804,8 @@ class ColdMeze(Meze):
             start_temperature=start_temperature,
             end_temperature=end_temperature,
             is_gpu=is_gpu,
-            engine_executable=engine_executable
+            engine_executable=engine_executable,
+            additional_restraints=additional_restraints
         )
 
     def pressurise(
@@ -1739,7 +1823,8 @@ class ColdMeze(Meze):
             pressure: Optional[Union[float, bssPressure]] = 1.0,
             process_name: Optional[str] = "npt",
             is_gpu: Optional[bool] = True,
-            engine_executable: Optional[str] = None
+            engine_executable: Optional[str] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdMeze":
 
         return self.run(
@@ -1755,7 +1840,8 @@ class ColdMeze(Meze):
             runtime=runtime,
             pressure=pressure,
             is_gpu=is_gpu,
-            engine_executable=engine_executable
+            engine_executable=engine_executable,
+            additional_restraints=additional_restraints
         )
 
 @dataclass
@@ -1841,7 +1927,8 @@ class HotMeze(Meze):
             pressure: Optional[Union[float, bssPressure]] = 1,
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 100000,
-            distance_write_frequency: Optional[int] = 10000
+            distance_write_frequency: Optional[int] = 10000,
+            additional_restraints: Optional[dict[str, Any]] = None
     ):
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
@@ -1881,7 +1968,8 @@ class HotMeze(Meze):
             system=system,
             process_name=process_name,
             config_options=config_options,
-            distance_write_frequency=distance_write_frequency
+            distance_write_frequency=distance_write_frequency,
+            additional_restraints=additional_restraints
         )
         
 @dataclass
@@ -2036,19 +2124,19 @@ class QuantumMeze(Meze):
     
     def _prepare_distance_restraints(
         self,
-        metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+        resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     ) -> Optional[list[str]]:
-        if not metal_resids_for_distance_restraints:
+        if not resids_for_distance_restraints:
             return None
 
-        if isinstance(metal_resids_for_distance_restraints, int):
-            metal_resids_for_distance_restraints = [metal_resids_for_distance_restraints]
+        if isinstance(resids_for_distance_restraints, int):
+            resids_for_distance_restraints = [resids_for_distance_restraints]
 
-        metal_atom_ids = [
+        atom_ids = [
             self.universe.select_atoms(f"resid {resid}").ids[0]
-            for resid in metal_resids_for_distance_restraints
+            for resid in resids_for_distance_restraints
         ]
-        distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
+        distance_restraints_dict = self.build_distance_restraints(atom_ids)
         return _write_distance_restraints(distance_restraints_dict)
     
     def run_qm(
@@ -2060,14 +2148,37 @@ class QuantumMeze(Meze):
         config_options: Optional[dict] = None,
         qm_theory: str = "DFTB3",
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
-        is_gpu: bool = False
+        is_gpu: bool = False,
+        additional_restraints: Optional[dict[str, Any]] = None
     ) -> "QuantumMeze":
         
         config_options["ntc"] = 1
         config_options["ntf"] = 1
 
-        disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
-        
+        if not additional_restraints:
+            disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
+        else: 
+            if not {"resids"} <= additional_restraints.keys() and not {"resnames"} <= additional_restraints.keys():
+                raise ValueError(
+                    "additional_restraints must contain 'resids' or 'resnames' keys."
+                )
+            additional_resids = additional_restraints.get("resids", [])
+            if isinstance(additional_resids, int):
+                additional_resids = [additional_resids]
+            additional_resids = set(additional_resids)
+
+            additional_resnames = additional_restraints.get("resnames", [])
+            if isinstance(additional_resnames, str):
+                additional_resnames = [additional_resnames]
+            additional_resnames = set(additional_resnames)
+            for resname in additional_resnames:
+                resname_resids = set(
+                    atom.resid for atom in self.universe.select_atoms(f"resname {resname}")
+                )
+                additional_resids.update(resname_resids)
+            additional_resids = list(additional_resids)
+            disres = additional_resids
+            
         self.qm_region = self._define_qm_region(
             resids_to_exclude=metal_resids_for_distance_restraints
         )
@@ -2107,9 +2218,11 @@ class ColdQuantumMeze(QuantumMeze):
     @classmethod
     def from_files(
         cls, 
-        topology: str, 
-        coordinates: str, 
-        exclude_resids: Optional[Union[int, list[int]]] = None,
+        topology: Optional[str] = None, 
+        coordinates: Optional[str] = None, 
+        exclude_resids: Optional[Union[int, list[int]]] = [],
+        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
         **kwargs
     ) -> "ColdQuantumMeze":
@@ -2117,12 +2230,21 @@ class ColdQuantumMeze(QuantumMeze):
         Build a Meze object from topology and coordinates.
         Passes extra kwargs into MezeRecipe.
         """
-        recipe = ColdMezeRecipe(**kwargs)
+        
+        if recipe is None:
+            recipe = ColdMezeRecipe(**kwargs)
+        elif isinstance(recipe, dict):
+            recipe = ColdMezeRecipe(**recipe)
+        elif not isinstance(recipe, ColdMezeRecipe):
+            raise TypeError(
+                f"Expected 'recipe' to be a ColdMezeRecipe, dict, or None, but got {type(recipe).__name__}"
+            )
         return cls(
             topology=topology, 
             coordinates=coordinates,
             exclude_resids=exclude_resids,
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
+            disulfide_bridges=disulfide_bridges,
             recipe=recipe
         )
 
@@ -2145,7 +2267,8 @@ class ColdQuantumMeze(QuantumMeze):
             pressure: Optional[Union[float, bssPressure]] = None,
             engine_executable: Optional[str] = None,
             qm_theory: Optional[str] = "DFTB3",
-            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
 
     ) -> "ColdQuantumMeze":
 
@@ -2220,6 +2343,7 @@ class ColdQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
             config_options=config_options,
             is_gpu=False,
+            additional_restraints=additional_restraints
         )
     
     def minimise(
@@ -2233,7 +2357,8 @@ class ColdQuantumMeze(QuantumMeze):
             nb_cutoff: Optional[float] = None,
             engine_executable: Optional[str] = None,
             qm_theory: Optional[str] = "DFTB3",
-            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdQuantumMeze":  
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
 
@@ -2248,7 +2373,8 @@ class ColdQuantumMeze(QuantumMeze):
             method=method,
             engine_executable=engine_executable,
             qm_theory=qm_theory,
-            metal_resids_for_distance_restraints=disres
+            metal_resids_for_distance_restraints=disres,
+            additional_restraints=additional_restraints
         )
     
     def heat(
@@ -2264,7 +2390,8 @@ class ColdQuantumMeze(QuantumMeze):
             process_name: Optional[str] = "qm-nvt",
             engine_executable: Optional[str] = None,
             qm_theory: Optional[str] = "DFTB3",
-            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdQuantumMeze":
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
         return self.run(
@@ -2280,7 +2407,8 @@ class ColdQuantumMeze(QuantumMeze):
             end_temperature=end_temperature,
             engine_executable=engine_executable,
             qm_theory=qm_theory,
-            metal_resids_for_distance_restraints=disres
+            metal_resids_for_distance_restraints=disres,
+            additional_restraints=additional_restraints
         )
     
 @dataclass
@@ -2292,9 +2420,11 @@ class HotQuantumMeze(QuantumMeze):
     @classmethod
     def from_files(
         cls, 
-        topology: str, 
-        coordinates: str, 
+        topology: Optional[str] = None, 
+        coordinates: Optional[str] = None, 
         exclude_resids: Optional[Union[int, list[int]]] = [],
+        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
         **kwargs
     ) -> "HotQuantumMeze":
@@ -2302,13 +2432,22 @@ class HotQuantumMeze(QuantumMeze):
         Build a Meze object from topology and coordinates.
         Passes extra kwargs into MezeRecipe.
         """
-        recipe = HotMezeRecipe(**kwargs)
+
+        if recipe is None:
+            recipe = HotMezeRecipe(**kwargs)
+        elif isinstance(recipe, dict):
+            recipe = HotMezeRecipe(**recipe)
+        elif not isinstance(recipe, HotMezeRecipe):
+            raise TypeError(
+                f"Expected 'recipe' to be a HotMezeRecipe, dict, or None, but got {type(recipe).__name__}"
+            )
         return cls(
             topology=topology, 
             coordinates=coordinates, 
             exclude_resids=exclude_resids,
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
-            recipe=recipe
+            recipe=recipe,
+            disulfide_bridges=disulfide_bridges
         )
     
     def run(
@@ -2324,7 +2463,8 @@ class HotQuantumMeze(QuantumMeze):
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 500,
             qm_theory: Optional[str] = "DFTB3",
-            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+            additional_restraints: Optional[dict[str, Any]] = None
     ) -> "HotQuantumMeze":
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
         recipe = HotMezeRecipe(
@@ -2364,4 +2504,5 @@ class HotQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints=disres,
             config_options=config_options,
             is_gpu=False,
+            additional_restraints=additional_restraints
         )

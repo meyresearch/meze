@@ -1,0 +1,17 @@
+{
+    "workdir": "",
+    "metal": "ZN",
+    "group_name": "mII",
+    "max_cycles": 5000,
+    "n_sd_cycles": 1000,
+    "min_method": 1,
+    "barostat": 2,
+    "nb_cutoff": 12.0,
+    "runtime": 100.0,
+    "dt": 0.001,
+    "model": 0,
+    "ligand_charge": 0,
+    "protein_forcefield": "ff19SB",
+    "water_model": "opc",
+    "ligand_forcefield": "GLYCAM_06j-1"
+}

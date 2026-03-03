@@ -1,3 +1,5 @@
+import logging
+
 import BioSimSpace as bss
 from BioSimSpace._SireWrappers import System as bssSystem
 from pathlib import Path
@@ -5,6 +7,7 @@ import dataclasses
 from dataclasses import dataclass
 import warnings
 from typing import (
+    Literal,
     Optional,
     Union,
     List
@@ -56,12 +59,17 @@ class Ligand():
         self.system = bss.IO.readMolecules(self.file)
 
     def parameterise(self, 
-                     directory: str | None = None,
+                     directory: Optional[str] = None,
+                     method: Literal["antechamber", "tleap"] = "antechamber",  
                      atom_type: str = "gaff2",
                      charge_method: str = "bcc", 
-                     residue_name: str = "MOL", 
+                     residue_name: str = "MOL",
+                     force_field: Optional[str] = None, 
                      filename: Optional[str] = None) -> "Ligand":
         
+        if not directory:
+            directory = os.getcwd()
+
         if len(self.file) > 1:
             raise UserWarning(f"Expected one ligand file but got {self.file}")
         else:
@@ -71,75 +79,143 @@ class Ligand():
 
         with open(file, "r") as ifile:
             lines = ifile.readlines()
-        old_resname = [line.split()[3] for line in lines if "HETATM" in line][0]
+        old_resname = [line.split()[3] for line in lines if "HETATM" in line or "ATOM" in line][0]
         new_lines = [line.replace(old_resname, residue_name) for line in lines]
         
         with open(f"{directory}/{residue_name}.pdb", "w") as ofile:
             ofile.writelines(new_lines)
 
         file = f"{directory}/{residue_name}.pdb"
-
-        ext = Path(file).suffix[1:]
-
         os.makedirs(directory, exist_ok=True)
 
-        charge = int(self.charge)
+        output_coordinate_file = None
+        output_frcmod_file = None
+        if method == "antechamber":
+            mol2_path = os.path.join(directory, f"{output_filename}.mol2")
+            output_coordinate_file = self._run_antechamber(
+                parameterisation_directory=directory,
+                input_file=file,
+                output_file=mol2_path,
+                atom_type=atom_type,
+                charge_method=charge_method,
+                residue_name=residue_name
+            )
+            frcmod_path = os.path.join(directory, f"{output_filename}.frcmod")
+            output_frcmod_file = self._run_parmchk2(
+                parameterisation_directory=directory,
+                input_file=mol2_path,
+                output_file=frcmod_path,
+                atom_type=atom_type
+            )
+        elif method == "tleap":
+            output_coordinate_file = self.run_ligand_tleap(
+                parameterisation_directory=directory,
+                coordinate_file=file,
+                residue_name=residue_name,
+                force_field=force_field
+            )
 
-        mol2_path = os.path.join(directory, f"{output_filename}.mol2")
+        return dataclasses.replace(
+            self,
+            file=output_coordinate_file,
+            parameterised=True,
+            frcmod_file=output_frcmod_file,
+            residue_name=residue_name
+        )       
+        
+    def _run_antechamber(self, 
+                         parameterisation_directory: str, 
+                         input_file: str,
+                         output_file: str,
+                         atom_type: str = "gaff2",
+                         charge_method: str = "bcc", 
+                         residue_name: str = "MOL",):
+        
+        charge = int(self.charge)
         workdir = os.getcwd()
         antechamber_cmd = (
-            f"antechamber -fi {ext} -fo mol2 "
-            f"-i {file} -o {mol2_path} "
+            f"antechamber -fi pdb -fo mol2 "
+            f"-i {input_file} -o {output_file} "
             f"-c {charge_method} -nc {charge} -at {atom_type} "
             f"-pf y -rn {residue_name}"
         )
-        print("Running antechamber with command:")
-        print(antechamber_cmd)
-        os.chdir(directory)
+        logging.info("Running antechamber with command:")
+        logging.info(antechamber_cmd)
+        os.chdir(parameterisation_directory)
         os.system(antechamber_cmd)
-        if not os.path.isfile(mol2_path): 
+        if not os.path.isfile(output_file): 
             warnings.warn(
-                f"antechamber failed: missing output files for {output_filename}.mol2",
+                f"antechamber failed: missing output files for {output_file}",
                 UserWarning
             )
         
-        with open(mol2_path, "r") as ifile:
+        with open(output_file, "r") as ifile:
             mol2_lines = ifile.readlines()
         new_lines = []
         for line in mol2_lines:
             if "DU" in line:
-                warnings.warn(f"Atom type DU found in file {mol2_path}")
+                warnings.warn(f"Atom type DU found in file {output_file}")
                 atom_name = line.split()[1]
                 new_line = line.replace("DU", atom_name)
                 warnings.warn(f"Replacing DU with {atom_name}")
             else:
                 new_line = line
             new_lines.append(new_line)
-        with open(mol2_path, "w") as ofile:
+        with open(output_file, "w") as ofile:
             ofile.writelines(new_lines)
-        
-        frcmod_path = os.path.join(directory, f"{output_filename}.frcmod")
+        os.chdir(workdir)
+        return output_file
+    
+    def _run_parmchk2(self, 
+                      parameterisation_directory: str, 
+                      input_file: str, 
+                      output_file: str, 
+                      atom_type: str = "gaff2"):
+        workdir = os.getcwd()
         parmcheck_cmd = (
-            f"parmchk2 -i {mol2_path} -o {frcmod_path} "
+            f"parmchk2 -i {input_file} -o {output_file} "
             f"-f mol2 -s {atom_type}"
         )
-        print("Running parmchk2 with command:")
-        print(parmcheck_cmd)
+        logging.info("Running parmchk2 with command:")
+        logging.info(parmcheck_cmd)
+        os.chdir(parameterisation_directory)
         os.system(parmcheck_cmd)
 
-
-        if not os.path.isfile(frcmod_path):
+        if not os.path.isfile(output_file):
             warnings.warn(
-                f"parmchk2 failed: missing output files for {output_filename}.frcmod",
+                f"parmchk2 failed: missing output files for {output_file}",
                 UserWarning
             )
         os.chdir(workdir)
-
-        return dataclasses.replace(
-            self,
-            file=mol2_path,
-            parameterised=True,
-            frcmod_file=frcmod_path,
-            residue_name=residue_name
-        )       
-        
+        return output_file
+    
+    def run_ligand_tleap(self,
+                         parameterisation_directory: str, 
+                         coordinate_file: str,
+                         force_field: str,
+                         residue_name: str = "MAN",
+                         atom_type: Literal["default", "amber"] = "default"):
+        workdir = os.getcwd()
+        if atom_type == "default":
+            atom_type = "0"
+        else:
+            atom_type = "1"
+        lines = [f"source leaprc.{force_field}\n",
+                 f"lig = loadpdb {coordinate_file}\n",
+                 f"savemol2 lig {residue_name}.mol2 {atom_type}\n",
+                 "quit"]
+        with open(f"{parameterisation_directory}/{residue_name}_tleap.in", "w") as ofile: 
+            ofile.writelines(lines)
+        tleap_cmd = f"tleap -s -f {parameterisation_directory}/{residue_name}_tleap.in"
+        logging.info("Running tleap with command:")
+        logging.info(tleap_cmd)
+        os.chdir(parameterisation_directory)
+        os.system(tleap_cmd)
+        output_file = f"{parameterisation_directory}/{residue_name}.mol2"
+        if not os.path.isfile(output_file): 
+            warnings.warn(
+                f"tleap failed: missing output files for {output_file}",
+                UserWarning
+            )
+        os.chdir(workdir)
+        return output_file

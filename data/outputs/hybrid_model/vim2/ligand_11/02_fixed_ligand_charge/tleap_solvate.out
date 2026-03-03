@@ -122,7 +122,10 @@ One sided connection. Residue (HD3) missing connect0 atom.
 
 /Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
 One sided connection. Residue (default_name) missing connect1 atom.
-  total atoms in file: 4030
+  Added missing heavy atom: .R<CSER 232>.A<OXT 12>
+  total atoms in file: 4029
+  Leap added 1 missing atom according to residue templates:
+       1 Heavy
 Writing pdb file: vim2_ligand_11_dry.pdb
 
 /Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
@@ -172,7 +175,7 @@ Scaling up box by a factor of 1.236908 to meet diagonal cut criterion
   Total bounding box for atom centers:  81.263 81.263 81.263
       (box expansion for 'iso' is  30.8%)
   Solvent unit box:                     18.774 18.774 18.774
-  Volume: 278348.688 A^3 (oct)
+  Volume: 278348.696 A^3 (oct)
   Total mass 154353.954 amu,  Density 0.921 g/cc
   Added 6989 residues.
 12 Na+ ions required to neutralize.

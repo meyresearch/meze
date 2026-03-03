@@ -107,20 +107,20 @@ def _write_tleap_solvation_input(
     if workdir:
         os.chdir(workdir)
     lines = [
-        f"source oldff/leaprc.{protein_ff}\n",
+        f"source leaprc.protein.{protein_ff}\n",
         f"source leaprc.water.{water_model.lower()}\n",       
     ]
     if "tip3p" in water_model.lower():
         lines.append(
             "loadamberparams frcmod.ions1lm_126_tip3p\n"
         )
-
-    lines.extend([
-        f"source leaprc.{ligand_ff}\n",
-        f"loadamberparams {ligand.frcmod_file}\n",
-        f"lig = loadmol2 {ligand.file[0]}\n",
-        f"\n"
-    ])
+    if ligand:
+        lines.extend([
+            f"source leaprc.{ligand_ff}\n",
+            f"loadamberparams {ligand.frcmod_file}\n",
+            f"lig = loadmol2 {ligand.file[0]}\n",
+            f"\n"
+        ])
     if non_standard_residues:
         res_names = []
         for _, res in enumerate(non_standard_residues, start=1):

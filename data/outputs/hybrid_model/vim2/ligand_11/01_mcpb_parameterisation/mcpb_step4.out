@@ -14,7 +14,7 @@
 The input file you are using is : /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/mcpbpy.in
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 The following is the input variable you have:
-The variable ion_ids is :  [3450, 3451]
+The variable ion_ids is :  [3449, 3450]
 The variable ion_info is :  []
 The variable ion_mol2files is :  ['ZN1.mol2', 'ZN2.mol2']
 The variable original_pdb is :  /Users/af25016/projects/meze/data//outputs/hybrid_model/vim2/ligand_11/01_mcpb_parameterisation/vim2_ligand_11.amber.pdb

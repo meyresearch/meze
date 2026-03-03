@@ -5,7 +5,7 @@ ion_mol2files ZN1.mol2 ZN2.mol2
 naa_mol2files MOL.mol2 MOH.mol2
 frcmod_files MOL.frcmod MOH.frcmod
 software_version g16
-ion_ids 3450 3451
+ion_ids 3449 3450
 large_opt 1
 force_field ff14SB
 water_model tip3p
