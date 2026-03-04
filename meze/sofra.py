@@ -343,7 +343,7 @@ class Meze:
         restraints = {}
         for metal_id, ligating_atoms in ligand_residues.items():
             if metal_id in metal_atom_ids:
-                atom_group_1 = self.metals.select_atoms(f"index {metal_id}")
+                atom_group_1 = self.metals.select_atoms(f"id {metal_id}")
 
                 for ligating_atom in ligating_atoms:
                     if ligating_atom.resname.upper() != self.ligand.residue_name:
@@ -468,7 +468,7 @@ class Meze:
                 raise ValueError(f"No atoms found for metal: {self.recipe.metal}")
 
         self.metal_resids = self.metals.resids
-        self.metal_atomids = self.metals.atoms.indices
+        self.metal_atomids = self.metals.atoms.ids
         self.metal_resname = metal
         self.metal_element = metal.capitalize()
 
@@ -762,6 +762,8 @@ class Meze:
             if self.ligand:
                 parameterised_ligand = self.ligand.parameterise(directory)
                 ligand_name = parameterised_ligand.name 
+            else: 
+                parameterised_ligand = None
             if self.non_standard_residues:
                 parameterised_non_standard_residues = self.parameterise_non_standard_residues(
                     directory=directory,
@@ -1177,9 +1179,8 @@ class Meze:
                             harmonic_restraint_ligands.append(temp_dict)
 
         # build harmonic restraint for deleted bond(s):
-        # MDAnalysis atom indices are 0-based 
-        metal_ags = [self.universe.select_atoms(f"index {item['metal']-1}") for item in harmonic_restraint_ligands]
-        ligand_ags = [self.universe.select_atoms(f"index {item['atom_number']-1}") for item in harmonic_restraint_ligands]
+        metal_ags = [self.universe.select_atoms(f"id {item['metal']}") for item in harmonic_restraint_ligands]
+        ligand_ags = [self.universe.select_atoms(f"id {item['atom_number']}") for item in harmonic_restraint_ligands]
         distances = [np.round(MDAnalysis.analysis.distances.dist(
             atom_group_1, atom_group_2
         )[-1][0], 4) for atom_group_1, atom_group_2 in zip(metal_ags, ligand_ags)]
@@ -1190,7 +1191,7 @@ class Meze:
 
         restraints = []
         for metal_ag, ligand_ag, force_constant in zip(metal_ags, ligand_ags, force_constants):
-            temp_dict = {metal_ag.atoms[0].index: ligand_ag}
+            temp_dict = {metal_ag.atoms[0].id: ligand_ag}
             restraints.append(self.build_distance_restraints(
                 coordinating_residues=temp_dict,
                 force_constant=force_constant
@@ -2033,7 +2034,7 @@ class QuantumMeze(Meze):
 
         excluded_atoms = set()
         for metal_atom_idx, metal_ligands in self.coordinating_residues.items():
-            metal_resid = self.universe.select_atoms(f"index {metal_atom_idx}").resids[0]
+            metal_resid = self.universe.select_atoms(f"id {metal_atom_idx}").resids[0]
             if metal_resid in exclude_resids:
                 excluded_atoms.add(metal_atom_idx)
                 for residue in metal_ligands.residues:
@@ -2048,7 +2049,7 @@ class QuantumMeze(Meze):
             if metal_id in excluded_atoms:
                 continue 
 
-            metal_atom = self.universe.select_atoms(f"index {metal_id}")[0]
+            metal_atom = self.universe.select_atoms(f"id {metal_id}")[0]
             if metal_atom.resid not in exclude_resids:
                 qm_region_atom_ids.add(str(metal_id))
 
@@ -2098,7 +2099,7 @@ class QuantumMeze(Meze):
 
         for atom_selection in self.qm_region["atom_ids"]:
             atom_id = atom_selection.replace("-", " to ")
-            atoms = self.universe.select_atoms(f"index {atom_id}")
+            atoms = self.universe.select_atoms(f"id {atom_id}")
             charge += atoms.charges.sum()
         return int(np.round(charge))
 
@@ -2128,7 +2129,7 @@ class QuantumMeze(Meze):
     ) -> Optional[list[str]]:
         if not resids_for_distance_restraints:
             return None
-
+        
         if isinstance(resids_for_distance_restraints, int):
             resids_for_distance_restraints = [resids_for_distance_restraints]
 
