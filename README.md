@@ -35,3 +35,19 @@ mamba activate meze-env
 pip uninstall -y meze
 pip install --no-cache-dir git+https://github.com/meyresearch/meze.git@main
 ```
+
+If there are updates to the `environment.yml`:
+
+First, get the latest `environment.yml`:
+```
+curl -O https://raw.githubusercontent.com/meyresearch/meze/main/environment.yml
+```
+
+Then:
+
+```
+mamba env update -n meze-env -f environment.yml --prune
+mamba activate meze-env
+pip uninstall -y meze
+pip install --no-cache-dir git+https://github.com/meyresearch/meze.git@main
+```
