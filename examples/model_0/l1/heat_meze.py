@@ -36,7 +36,7 @@ minimised_meze = solvated_meze.minimise(
     workdir=equil_dir,
     position_restraints="solute",
     max_cycles=5000,
-    is_gpu=True
+    is_gpu=False
 )
 
 print("02 - Heating with restrained solute")

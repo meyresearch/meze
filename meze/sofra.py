@@ -379,6 +379,9 @@ class Meze:
         if isinstance(exclude, int):
             exclude = [exclude]
         
+        if not exclude:
+            exclude = []
+
         restraints = {}
         for metal_id, ligating_atoms in ligand_residues.items():
             if metal_id in metal_atom_ids:
@@ -430,18 +433,27 @@ class Meze:
             self,
             metal_atom_ids: Optional[list[int]] = None,
             force_constant: Optional[float] = 100.0,
-            flat_bottom_radius: Optional[float] = 1.00
+            flat_bottom_radius: Optional[float] = 1.00,
+            exclude_residues = Optional[Union[int, list[int]]] = None
     ) -> dict[tuple[int, int], tuple[float, float, float]]:
         """Enforce "angle" restraints through additional distance restraints between vertex atoms.
         """
         metal_atom_ids = metal_atom_ids or list(self.coordinating_residues.keys())
+        exclude = self.exclude_resids or exclude_residues
+        if isinstance(exclude, int):
+            exclude = [exclude]
+        
+        if not exclude:
+            exclude = []
 
         restraints = {}
         for metal_id, ligating_atoms in self.coordinating_residues.items():
             if metal_id in metal_atom_ids:
                 vertices = []
                 for ligating_atom in ligating_atoms:
-                    if ligating_atom.resname.upper() == self.ligand.residue_name:
+                    if ligating_atom.resid in exclude:
+                        continue
+                    if self.ligand and ligating_atom.resname.upper() == self.ligand.residue_name:
                         continue
                     if ligating_atom.id == metal_id:
                         continue
