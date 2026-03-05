@@ -12,6 +12,7 @@ Metalloenzyme parameterisation tool for alchemical free energy calculations.
 
 - Make sure you have `ambertools` (and `pmemd` if you want to use GPUs) installed. See [here](https://ambermd.org/Installation.php) for instructions.
 - Currently the packages `meze` depends on require `cuda=12.4` if you're on a Linux/Windows machine.
+- Ideally, you should have `miniforge3` so that you can install `meze` with `mamba`. The installation will work with `conda` as well, but will be significantly slower. See [here](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install) for installation instructions.
 
 3. Download `environment.yml` file:
 
@@ -23,14 +24,14 @@ curl -O https://raw.githubusercontent.com/meyresearch/meze/main/environment.yml
 3. Create enivronment
 
 ```
-conda env create -f environment.yml
-conda activate meze-env
+mamba env create -f environment.yml
+mamba activate meze-env
 ```
  
 # Updating environment after updates to `meze`
 
 ```
-conda activate meze-env
+mamba activate meze-env
 pip uninstall -y meze
 pip install --no-cache-dir git+https://github.com/meyresearch/meze.git@main
 ```
