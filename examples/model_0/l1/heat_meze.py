@@ -31,7 +31,6 @@ equil_dir = os.path.join(project_dir, "equilibration", "model_0", system_name, f
 os.makedirs(equil_dir, exist_ok=True)
 
 print("Minimising")
-
 minimised_meze = solvated_meze.minimise(
     process_name="01_min",
     workdir=equil_dir,

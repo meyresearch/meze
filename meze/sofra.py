@@ -335,9 +335,11 @@ class Meze:
             )
         
         self.ligand = Ligand(
-            ligand_file=self.coordinates,
+            file=[self.coordinates, self.topology],
             name=self.ligand_resname,
-            ligand_charge=ag.charges.sum()
+            charge=ag.charges.sum(),
+            parameterised=True,
+            residue_name=self.ligand_resname
         )
         
         
