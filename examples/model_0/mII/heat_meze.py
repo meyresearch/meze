@@ -12,7 +12,7 @@ with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.js
     json_recipe = json.load(file)
 
 json_recipe["path_to_engine"] = os.path.join(
-        os.environ["AMBERHOME"], "bin", "pmemd.cuda"
+        os.environ["AMBERHOME"], "bin", "sander"
     )
 
 input_dir = f"{project_dir}/inputs/model_0/protein/{system_name}/"
@@ -43,7 +43,7 @@ minimised_meze = solvated_meze.minimise(
     workdir=equil_dir,
     position_restraints="solute",
     max_cycles=5000,
-    is_gpu=True,
+    is_gpu=False,
     additional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
 )
 
