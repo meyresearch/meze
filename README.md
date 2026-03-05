@@ -8,14 +8,19 @@ Metalloenzyme parameterisation tool for alchemical free energy calculations.
 
 # Installation instructions
 
-1. Download `environment.yml` file:
+1. Prerequisites:
+
+- Make sure you have `ambertools` (and `pmemd` if you want to use GPUs) installed. See [here](https://ambermd.org/Installation.php) for instructions.
+- Currently the packages `meze` depends on require `cuda=12.4` if you're on a Linux/Windows machine.
+
+3. Download `environment.yml` file:
 
 ```
 curl -O https://raw.githubusercontent.com/meyresearch/meze/main/environment.yml
 
 ``` 
 
-2. Create enivronment
+3. Create enivronment
 
 ```
 conda env create -f environment.yml
