@@ -434,7 +434,7 @@ class Meze:
             metal_atom_ids: Optional[list[int]] = None,
             force_constant: Optional[float] = 100.0,
             flat_bottom_radius: Optional[float] = 1.00,
-            exclude_residues = Optional[Union[int, list[int]]] = None
+            exclude_residues: Optional[Union[int, list[int]]] = None
     ) -> dict[tuple[int, int], tuple[float, float, float]]:
         """Enforce "angle" restraints through additional distance restraints between vertex atoms.
         """
