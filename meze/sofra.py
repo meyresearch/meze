@@ -51,6 +51,20 @@ from .utils import (
     _edit_mcpbpy_tleap_input
 )
 import shutil
+from rich.logging import RichHandler
+from rich.console import Console
+
+console = Console(force_terminal=True, color_system="truecolor")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(console=console, rich_tracebacks=True, markup=True)],
+    force=True,
+)
+
+log = logging.getLogger("rich")
 
 class MezeRecipe(BaseModel):
     """Meze workflow recipe
@@ -232,15 +246,13 @@ class Meze:
         if self.ligand and self.ligand.parameterised and not self.ligand_resid:
             self.ligand_resid = self.get_ligand_resid()
         elif not self.ligand and self.ligand_resname:
-            warnings.warn(
-                "Ligand not set by user, inferring from ligand residue name",
-                UserWarning
+            log.warning(
+                "Ligand not set by user, inferring from ligand residue name"
             )
             self._set_ligand()
         else:
-            warnings.warn(
-                "Ligand not set by user. Are you sure you want to continue without a ligand?",
-                UserWarning
+            log.warning(
+                "Ligand not set by user. Are you sure you want to continue without a ligand?"
             )
 
 
@@ -279,8 +291,8 @@ class Meze:
                 try:
                     data = json.load(f)
                 except json.JSONDecodeError as e:
-                    logging.warning(f"Could not decode JSON from {filename}:"
-                                    f"{e}")
+                    log.warning(f"Could not decode JSON from {filename}:"
+                                f"{e}")
                     data = {}
         else:
             data = {}
@@ -327,11 +339,10 @@ class Meze:
 
         ag = self.universe.select_atoms(f"resname {self.ligand_resname}")
         if len(ag) == 0:
-            warnings.warn(
+            log.warning(
                 f"Could not find ligand with resname {self.ligand_resname}"
                 "Ligand not set for system. Consider adding a ligand with meze.add_ligand()"
-                "or use a pickle file to load in a meze object",
-                UserWarning
+                "or use a pickle file to load in a meze object"
             )
         
         self.ligand = Ligand(
@@ -504,12 +515,11 @@ class Meze:
             self.metals = self.universe.select_atoms(f"element {metal}")
         except AttributeError as e:
             if "elements" in str(e):
-                warnings.warn(
+                log.warning(
                     "\nNo element information found in PDB file.\n"
                     "Guessing element information from atom names.\n"
                     "This may lead to incorrect identification of metal atoms.\n"
-                    "Consider fixing your PDB file with e.g. pdb4amber.\n",
-                    UserWarning
+                    "Consider fixing your PDB file with e.g. pdb4amber.\n"
                 )
                 guessed_elements = guess_types(self.universe.atoms.names)
                 self.universe.add_TopologyAttr("elements", guessed_elements)
@@ -544,12 +554,11 @@ class Meze:
                 metal_ligands[key] = ligands
         except AttributeError as e:
             if "elements" in str(e):
-                warnings.warn(
+                log.warning(
                     "\nNo element information found in PDB file.\n"
                     "Guessing element information from atom names.\n"
                     "This may lead to incorrect identification of metal coordination.\n"
-                    "Consider fixing your PDB file with e.g. pdb4amber.\n",
-                    UserWarning
+                    "Consider fixing your PDB file with e.g. pdb4amber.\n"
                 )    
                 guessed_elements = guess_types(self.universe.atoms.names)
                 self.universe.add_TopologyAttr("elements", guessed_elements)
@@ -626,7 +635,7 @@ class Meze:
             
             for _, ids in conect_lines.items():
                 if sg1.ids[0] in ids or sg2.ids[0] in ids:
-                    warnings.warn(
+                    log.warning(
                         f"Residues {r1} and {r2} appear to already have a disulfide bond "
                         f"in the CONECT records."
                         f"No explicit bond will be added in tleap."
@@ -744,9 +753,8 @@ class Meze:
                     f"Non-standard residue '{residue}' has invalid 'charge': {properties['charge']}"
                 )
             if properties["atom_type"] not in ["amber", "gaff", "gaff2"]:
-                warnings.warn(
-                     f"Non-standard residue '{residue}' has potentially unsupported 'atom_type': {properties['atom_type']}",
-                     UserWarning
+                log.warning(
+                     f"Non-standard residue '{residue}' has potentially unsupported 'atom_type': {properties['atom_type']}"
                 )
                    
                 
@@ -770,7 +778,7 @@ class Meze:
                         residue = int(residue)
                         ag = self.universe.select_atoms(f"resid {residue}")
                     except ValueError as e:
-                        logging.error(
+                        log.error(
                             f"Could not convert residue id {residue} to integer:"
                             f"{e}"
                         )
@@ -870,8 +878,8 @@ class Meze:
         workdir = os.getcwd()
         os.chdir(directory)
         tleap_command = f"tleap -s -f {tleap_input_file} > {tleap_output_file}"
-        logging.info(f"Running tleap with command:")
-        logging.info(tleap_command)
+        log.info(f"Running tleap with command:")
+        log.info(tleap_command)
         os.system(tleap_command)
 
         try:
@@ -1009,7 +1017,7 @@ class Meze:
             self.parameterisation_directory, "mcpb_step1.out"
         )
         mcpb_command = f"MCPB.py -i {mcpb_input_file} -s 1 > {mcpb_output_file}"
-        logging.info(f"Running MCPB.py step 1 with command:\n{mcpb_command}")
+        log.info(f"Running MCPB.py step 1 with command:\n{mcpb_command}")
         os.system(mcpb_command)
 
         com_files = sorted(glob.glob(f"{self.parameterisation_directory}/*.com"))
@@ -1137,10 +1145,10 @@ class Meze:
         cat_command = "cat " + components_str + f" > {directory}/{ligand_name}_complex.pdb"
         pdb4amber_command = f"pdb4amber -i {directory}/{ligand_name}_complex.pdb -o {directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
 
-        logging.info(f"Combining complex files with command:\n{cat_command}")
+        log.info(f"Combining complex files with command:\n{cat_command}")
         os.system(cat_command)
 
-        logging.info(f"Running pdb4amber with command:\n{pdb4amber_command}")
+        log.info(f"Running pdb4amber with command:\n{pdb4amber_command}")
         os.system(pdb4amber_command)
 
         return {"coordinates": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
@@ -1160,7 +1168,7 @@ class Meze:
             self.parameterisation_directory, "mcpb_step2e.out"
         )
         step_2e_command = f"MCPB.py -i {mcpbpy_input_file} -s 2e > {step_2e_output_file}"
-        logging.info(f"Running MCPB.py step 2e with command:\n{step_2e_command}")
+        log.info(f"Running MCPB.py step 2e with command:\n{step_2e_command}")
         os.system(step_2e_command)
         os.chdir(workdir)
         return dataclasses.replace(
@@ -1259,7 +1267,7 @@ class Meze:
             with open(restraint_file, "w") as file:
                 for lines in restraint_lines:
                     file.writelines(lines)
-        logging.info(
+        log.info(
             f"Added harmonic restraints for deleted bonds between metal and oxygen ligand(s) to {restraint_file}."
         )
 
@@ -1305,7 +1313,7 @@ class Meze:
                         )
         
         if not ligand_linked_atoms:
-            logging.info(
+            log.info(
                 f"Did not find a bond between the ligand {self.ligand.residue_name} and the metal"
             )
         else:
@@ -1322,7 +1330,7 @@ class Meze:
                 ofile.writelines(new_lines)
             
             for line in ligand_links:
-                logging.info(
+                log.info(
                     "Succesfully removed bond: "
                     f"{line}"
                 )
@@ -1347,7 +1355,7 @@ class Meze:
         
         if fix_ligand_charge:
             if not directory:
-                warnings.warn(
+                log.warning(
                     f"parent directory not set, inferring from {self.parameterisation_directory}"
                 )
                 directory = str(pathlib.Path(self.parameterisation_directory).parent)
@@ -1357,7 +1365,7 @@ class Meze:
                 directory, "02_fixed_ligand_charge"
             )
             parameterisation_directory = parameterisation_directory
-            logging.info(f"Creating directory: {parameterisation_directory}")
+            log.info(f"Creating directory: {parameterisation_directory}")
             os.makedirs(parameterisation_directory, exist_ok=True)
 
             ligand_files = glob.glob(
@@ -1467,13 +1475,13 @@ class Meze:
             
 
         step_3_command = f"MCPB.py -i {mcpbpy_input_file} -s 3 > {step_3_output_file}"
-        logging.info(f"Running MCPB.py step 3 with command:\n{step_3_command}")
+        log.info(f"Running MCPB.py step 3 with command:\n{step_3_command}")
         workdir = os.getcwd()
         os.chdir(parameterisation_directory)
         os.system(step_3_command)
 
         step_4_command = f"MCPB.py -i {mcpbpy_input_file} -s 4 > {step_4_output_file}"
-        logging.info(f"Running MCPB.py step 4 with command:\n{step_4_command}")
+        log.info(f"Running MCPB.py step 4 with command:\n{step_4_command}")
         os.system(step_4_command)
         os.chdir(workdir)
 
@@ -1918,7 +1926,7 @@ class HotMeze(Meze):
                     f"Restraint file not found: {self.restraint_file}"
                 )
         elif not self.restraint_file and self.recipe.model == 0:
-            warnings.warn(
+            log.warning(
                 "No restraint file supplied while model is 0."
                 "Restraints will be determined from input files."
             )
