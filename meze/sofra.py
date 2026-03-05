@@ -186,6 +186,8 @@ class Meze:
     mcpbpy_input_file: Optional[str] = None
     tleap_input_file: Optional[str] = None
     restraint_file: Optional[str] = None
+    exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
+    ligand_resname: Optional[str] = None
 
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
@@ -229,6 +231,18 @@ class Meze:
         
         if self.ligand and self.ligand.parameterised and not self.ligand_resid:
             self.ligand_resid = self.get_ligand_resid()
+        elif not self.ligand and self.ligand_resname:
+            warnings.warn(
+                "Ligand not set by user, inferring from ligand residue name",
+                UserWarning
+            )
+            self._set_ligand()
+        else:
+            warnings.warn(
+                "Ligand not set by user. Are you sure you want to continue without a ligand?",
+                UserWarning
+            )
+
 
     def __str__(self) -> str:
         return _pretty(self)
@@ -309,6 +323,26 @@ class Meze:
             recipe=recipe
         )
 
+    def _set_ligand(self):
+
+        ag = self.universe.select_atoms(f"resname {self.ligand_resname}")
+        if len(ag) == 0:
+            warnings.warn(
+                f"Could not find ligand with resname {self.ligand_resname}"
+                "Ligand not set for system. Consider adding a ligand with meze.add_ligand()"
+                "or use a pickle file to load in a meze object",
+                UserWarning
+            )
+        
+        self.ligand = Ligand(
+            file=[self.coordinates, self.topology],
+            name=self.ligand_resname,
+            charge=ag.charges.sum(),
+            parameterised=True,
+            residue_name=self.ligand_resname
+        )
+        
+        
 
     def get_small_molecule_resname(self) -> str | None:
 
@@ -316,7 +350,7 @@ class Meze:
             "not protein and not water"
         )
         non_standard_residues = [
-            "MOH", "DOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ"
+            "MOH", "DOH", "Na+", "CL-", "ASZ", "GLZ", "HDZ", "HEZ", "CYZ", "CYM",
         ]
 
         resname = None
@@ -335,30 +369,39 @@ class Meze:
             metal_atom_ids: Optional[list[int]] = None,
             coordinating_residues: Optional[dict[int, mda.AtomGroup]] = None,
             force_constant: Optional[float] = 100.0,
-            flat_bottom_radius: Optional[float] = 1.00
+            flat_bottom_radius: Optional[float] = 1.00,
+            exclude_residues: Optional[Union[int, list[int]]] = None
     ) -> dict[tuple[int, int], tuple[float, float, float]]:
 
         metal_atom_ids = metal_atom_ids or list(self.coordinating_residues.keys())
         ligand_residues = coordinating_residues or self.coordinating_residues
+        exclude = self.exclude_resids or exclude_residues
+        if isinstance(exclude, int):
+            exclude = [exclude]
+        
         restraints = {}
         for metal_id, ligating_atoms in ligand_residues.items():
             if metal_id in metal_atom_ids:
-                atom_group_1 = self.metals.select_atoms(f"index {metal_id}")
+                atom_group_1 = self.metals.select_atoms(f"id {metal_id}")
 
                 for ligating_atom in ligating_atoms:
-                    if ligating_atom.resname.upper() != self.ligand.residue_name:
-                        key = (metal_id, ligating_atom.id)
-                        atom_group_2 = self.universe.select_atoms(
-                            f"resid {ligating_atom.resid} and name {ligating_atom.name}"
-                        )
-                        distance = MDAnalysis.analysis.distances.dist(
-                            atom_group_1, atom_group_2
-                        )[-1][0]
-                        restraints[key] = (
-                            np.round(distance, 2),
-                            np.round(force_constant, 2),
-                            np.round(flat_bottom_radius, 2)
-                        )
+                    if ligating_atom.resid in exclude:
+                        continue
+
+                    if self.ligand and ligating_atom.resname.upper() == self.ligand.residue_name:
+                        continue
+                    key = (metal_id, ligating_atom.id)
+                    atom_group_2 = self.universe.select_atoms(
+                        f"resid {ligating_atom.resid} and name {ligating_atom.name}"
+                    )
+                    distance = MDAnalysis.analysis.distances.dist(
+                        atom_group_1, atom_group_2
+                    )[-1][0]
+                    restraints[key] = (
+                        np.round(distance, 2),
+                        np.round(force_constant, 2),
+                        np.round(flat_bottom_radius, 2)
+                    )
         return restraints
     
     def _prepare_distance_restraints(
@@ -468,7 +511,7 @@ class Meze:
                 raise ValueError(f"No atoms found for metal: {self.recipe.metal}")
 
         self.metal_resids = self.metals.resids
-        self.metal_atomids = self.metals.atoms.indices
+        self.metal_atomids = self.metals.atoms.ids
         self.metal_resname = metal
         self.metal_element = metal.capitalize()
 
@@ -762,6 +805,8 @@ class Meze:
             if self.ligand:
                 parameterised_ligand = self.ligand.parameterise(directory)
                 ligand_name = parameterised_ligand.name 
+            else: 
+                parameterised_ligand = None
             if self.non_standard_residues:
                 parameterised_non_standard_residues = self.parameterise_non_standard_residues(
                     directory=directory,
@@ -1177,9 +1222,8 @@ class Meze:
                             harmonic_restraint_ligands.append(temp_dict)
 
         # build harmonic restraint for deleted bond(s):
-        # MDAnalysis atom indices are 0-based 
-        metal_ags = [self.universe.select_atoms(f"index {item['metal']-1}") for item in harmonic_restraint_ligands]
-        ligand_ags = [self.universe.select_atoms(f"index {item['atom_number']-1}") for item in harmonic_restraint_ligands]
+        metal_ags = [self.universe.select_atoms(f"id {item['metal']}") for item in harmonic_restraint_ligands]
+        ligand_ags = [self.universe.select_atoms(f"id {item['atom_number']}") for item in harmonic_restraint_ligands]
         distances = [np.round(MDAnalysis.analysis.distances.dist(
             atom_group_1, atom_group_2
         )[-1][0], 4) for atom_group_1, atom_group_2 in zip(metal_ags, ligand_ags)]
@@ -1190,7 +1234,7 @@ class Meze:
 
         restraints = []
         for metal_ag, ligand_ag, force_constant in zip(metal_ags, ligand_ags, force_constants):
-            temp_dict = {metal_ag.atoms[0].index: ligand_ag}
+            temp_dict = {metal_ag.atoms[0].id: ligand_ag}
             restraints.append(self.build_distance_restraints(
                 coordinating_residues=temp_dict,
                 force_constant=force_constant
@@ -1491,6 +1535,7 @@ class Meze:
 class ColdMeze(Meze):
     recipe: ColdMezeRecipe
     exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
+    ligand_resname: Optional[str] = None
 
     def __post_init__(self):
         super().__post_init__()
@@ -1512,6 +1557,7 @@ class ColdMeze(Meze):
         parameterisation_directory: Optional[str] = None,
         mcpbpy_input_file: Optional[str] = None,
         tleap_input_file: Optional[str] = None,
+        ligand_resname: Optional[str] = None,
         **kwargs
     ) -> "ColdMeze":
         """
@@ -1546,7 +1592,8 @@ class ColdMeze(Meze):
             non_standard_residues=non_standard_residues,
             parameterisation_directory=parameterisation_directory,
             mcpbpy_input_file=mcpbpy_input_file,
-            tleap_input_file=tleap_input_file
+            tleap_input_file=tleap_input_file,
+            ligand_resname=ligand_resname
         )
 
     def _build_restraint_mask(
@@ -1848,6 +1895,7 @@ class ColdMeze(Meze):
 class HotMeze(Meze):
     recipe: HotMezeRecipe
     restraint_file: Optional[str] = None
+    ligand_resname: Optional[str] = None
 
     def __post_init__(self):
         super().__post_init__()
@@ -1878,6 +1926,7 @@ class HotMeze(Meze):
         parameterisation_directory: Optional[str] = None,
         mcpbpy_input_file: Optional[str] = None,
         tleap_input_file: Optional[str] = None,
+        ligand_resname: Optional[str] = None,
         **kwargs
     ) -> "HotMeze":
         """
@@ -1912,7 +1961,8 @@ class HotMeze(Meze):
             parameterisation_directory=parameterisation_directory,
             mcpbpy_input_file=mcpbpy_input_file,
             tleap_input_file=tleap_input_file,
-            exclude_resids=exclude_resids
+            exclude_resids=exclude_resids,
+            ligand_resname=ligand_resname
         )
 
     def run(
@@ -2033,7 +2083,7 @@ class QuantumMeze(Meze):
 
         excluded_atoms = set()
         for metal_atom_idx, metal_ligands in self.coordinating_residues.items():
-            metal_resid = self.universe.select_atoms(f"index {metal_atom_idx}").resids[0]
+            metal_resid = self.universe.select_atoms(f"id {metal_atom_idx}").resids[0]
             if metal_resid in exclude_resids:
                 excluded_atoms.add(metal_atom_idx)
                 for residue in metal_ligands.residues:
@@ -2048,7 +2098,7 @@ class QuantumMeze(Meze):
             if metal_id in excluded_atoms:
                 continue 
 
-            metal_atom = self.universe.select_atoms(f"index {metal_id}")[0]
+            metal_atom = self.universe.select_atoms(f"id {metal_id}")[0]
             if metal_atom.resid not in exclude_resids:
                 qm_region_atom_ids.add(str(metal_id))
 
@@ -2098,7 +2148,7 @@ class QuantumMeze(Meze):
 
         for atom_selection in self.qm_region["atom_ids"]:
             atom_id = atom_selection.replace("-", " to ")
-            atoms = self.universe.select_atoms(f"index {atom_id}")
+            atoms = self.universe.select_atoms(f"id {atom_id}")
             charge += atoms.charges.sum()
         return int(np.round(charge))
 
@@ -2128,7 +2178,7 @@ class QuantumMeze(Meze):
     ) -> Optional[list[str]]:
         if not resids_for_distance_restraints:
             return None
-
+        
         if isinstance(resids_for_distance_restraints, int):
             resids_for_distance_restraints = [resids_for_distance_restraints]
 
