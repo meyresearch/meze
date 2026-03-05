@@ -13,7 +13,7 @@ with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.js
     json_recipe = json.load(file)
 
 json_recipe["path_to_engine"] = os.path.join(
-        os.environ["AMBERHOME"], "bin", "pmemd.cuda"
+        os.environ["AMBERHOME"], "bin", "sander"
     )
 
 input_dir = f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{ligand_name}_bound/"
@@ -21,7 +21,9 @@ input_dir = f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{ligand
 solvated_meze = ColdMeze.from_files(
     topology=f"{input_dir}/{ligand_name}_complex_solv.prmtop",
     coordinates=f"{input_dir}/{ligand_name}_complex_solv.inpcrd",
-    recipe=ColdMezeRecipe(**json_recipe)
+    recipe=ColdMezeRecipe(**json_recipe),
+    exclude_resids=801,
+    ligand_resname="MOL"
 )
 
 equil_dir = os.path.join(project_dir, "equilibration", "model_0", system_name, f"{ligand_name}", f"repeat_{repeat}")
