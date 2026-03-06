@@ -2,15 +2,15 @@ from meze import ColdMeze
 import sys
 import json
 
-project_dir = sys.argv[1] 
-system_name = sys.argv[2]
-
+project_dir = "/Users/af25016/projects/meze/data/" 
+system_name = "vim2"
+ligand_name = "ligand_11"
 # ligands 
 
-with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_recipe.json", "r") as file:
+with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json", "r") as file:
      json_recipe = json.load(file)
 
-parameterisation_directory = json_recipe["parameterisation_directory"]
+parameterisation_directory = json_recipe["ligand_11"]["parameterisation_directory"]
 
 
 prepared_meze = ColdMeze.load(
