@@ -52,7 +52,7 @@ pip uninstall -y meze
 pip install --no-cache-dir git+https://github.com/meyresearch/meze.git@main
 ```
 
-# Developing
+# Developing
 
 Get the developer environment.yml file:
 ```
