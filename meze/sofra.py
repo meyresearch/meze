@@ -29,7 +29,6 @@ import pickle
 import pathlib
 from .ligand import Ligand
 import os
-from pymsmt.mcpb.gene_final_frcmod_file import fcfit_ep_bond
 import MDAnalysis as mda
 import MDAnalysis.analysis.distances
 from MDAnalysis.topology.guessers import guess_types
@@ -50,6 +49,7 @@ from .utils import (
     _get_mol2_charge,
     _edit_mcpbpy_tleap_input
 )
+from .helpers import _check_ambertools
 import shutil
 from rich.logging import RichHandler
 from rich.console import Console
@@ -218,7 +218,7 @@ class Meze:
                         message=r"Unknown element.*empty element record",
                         category=UserWarning,
                         module=r"MDAnalysis\.topology\.PDBParser",
-                    )
+                    ) 
                     self.universe = mda.Universe(
                         self.topology,
                     )   
@@ -816,6 +816,7 @@ class Meze:
             mcpbpy_tleap_file: str | None = None, 
             non_standard_parameterisation_method: Literal["antechamber", "tleap"] = "antechamber"
     ) -> Self:
+        _check_ambertools()
         if directory:
             os.makedirs(directory, exist_ok=True)
         
@@ -991,7 +992,7 @@ class Meze:
                                  split_large_files: bool = True,
                                  sbatch_options: Optional[dict] = None,
                                  additional_lines: Optional[list[str]] = None):
-        
+        _check_ambertools()
         #TODO check prepare mcpb files exist
         if not self.parameterisation_directory:
             raise ValueError("MCPB parameterisation directory not set.")
@@ -1117,7 +1118,7 @@ class Meze:
                 file.writelines(new_lines)
 
     def prepare_metals_for_ezaff(self, directory: str) -> List[str]:
-
+        _check_ambertools()
         metals = []
         for i, metal in enumerate(self.metals):
             metal_atomgroup = self.universe.select_atoms(f"resid {metal.resid}")
@@ -1136,7 +1137,7 @@ class Meze:
     def write_complex(self, 
                       directory: str,
                       ligand_name: str = "ligand") -> dict[str, str]:
-        
+        _check_ambertools()
         ligand_file = os.path.join(directory, f"{self.ligand.name}.pdb")
 
         components = [self.coordinates, ligand_file]
@@ -1156,7 +1157,7 @@ class Meze:
 
 
     def build_empirical_bonds(self):
-
+        _check_ambertools()
         mcpbpy_input_file = self.mcpbpy_input_file
 
         self._remove_ligand_bond()
@@ -1178,6 +1179,14 @@ class Meze:
 
 
     def _remove_double_oxygen_bond(self):
+        _check_ambertools()
+        try:
+            from pymsmt.mcpb.gene_final_frcmod_file import fcfit_ep_bond
+        except ModuleNotFoundError:
+            raise RuntimeError(
+                "AmberTools/pymsmt is required for this operation. "
+                "Make sure AmberTools is installed."
+            )
 
         standard_fingerprint_file = glob.glob(
             f"{self.parameterisation_directory}/*standard.fingerprint"
@@ -1339,7 +1348,7 @@ class Meze:
     def build_resp_charges(self, 
                            fix_ligand_charge: bool = True, 
                            directory: Optional[str] = None):
-        
+        _check_ambertools()
         mcpbpy_input_file = self.mcpbpy_input_file
 
         mcpb_input_options = _parse_mcpbpy_input(
