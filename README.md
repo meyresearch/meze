@@ -51,3 +51,28 @@ mamba activate meze-env
 pip uninstall -y meze
 pip install --no-cache-dir git+https://github.com/meyresearch/meze.git@main
 ```
+
+# Developing
+
+Get the developer environment.yml file:
+```
+curl -O https://raw.githubusercontent.com/meyresearch/meze/main/dev-environment.yml
+```
+
+Create a developer environment: 
+```
+conda env create -f environment.yml
+conda activate meze-dev
+```
+
+Clone the repository:
+```
+git clone https://github.com/meyresearch/meze.git
+cd meze
+```
+
+Install an editable version:
+
+```
+pip install -e .
+```
