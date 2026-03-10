@@ -13,6 +13,7 @@ from typing import (
     List
 )
 import os
+from .helpers import _check_ambertools
 
 @dataclass
 class Ligand():
@@ -130,7 +131,7 @@ class Ligand():
                          atom_type: str = "gaff2",
                          charge_method: str = "bcc", 
                          residue_name: str = "MOL",):
-        
+        _check_ambertools()
         charge = int(self.charge)
         workdir = os.getcwd()
         antechamber_cmd = (
@@ -171,6 +172,7 @@ class Ligand():
                       input_file: str, 
                       output_file: str, 
                       atom_type: str = "gaff2"):
+        _check_ambertools()
         workdir = os.getcwd()
         parmcheck_cmd = (
             f"parmchk2 -i {input_file} -o {output_file} "
@@ -195,6 +197,7 @@ class Ligand():
                          force_field: str,
                          residue_name: str = "MAN",
                          atom_type: Literal["default", "amber"] = "default"):
+        _check_ambertools()
         workdir = os.getcwd()
         if atom_type == "default":
             atom_type = "0"
