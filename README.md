@@ -61,8 +61,8 @@ curl -O https://raw.githubusercontent.com/meyresearch/meze/main/dev-environment.
 
 Create a developer environment: 
 ```
-conda env create -f environment.yml
-conda activate meze-dev
+mamba env create -f environment.yml
+mamba activate meze-dev
 ```
 
 Clone the repository:
