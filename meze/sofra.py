@@ -422,21 +422,39 @@ class Meze:
         self
     ) -> Optional[list[str]]:
 
-        metal_atom_ids = [
-            self.universe.select_atoms(f"resid {resid}").ids[0]
-            for resid in self.metal_resids
-        ]
+        metal_atom_ids = list(self.metal_atomids)
         distance_restraints_dict = self.build_distance_restraints(metal_atom_ids)
         return _write_distance_restraints(distance_restraints_dict)
+
+    def write_restrained_atoms_pdb(
+        self,
+        output_path: str,
+        restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None
+    ) -> None:
+        """Write a PDB file containing all atoms involved in distance restraints.
+
+        Args:
+            output_path (str): Path for the output PDB file.
+            restraints (dict, optional): Restraints dict from build_distance_restraints().
+                If None, calls build_distance_restraints() using defaults.
+        """
+        if restraints is None:
+            restraints = self.build_distance_restraints()
+
+        atom_ids = set()
+        for metal_id, ligating_atom_id in restraints.keys():
+            atom_ids.add(metal_id)
+            atom_ids.add(ligating_atom_id)
+
+        id_selection = " or ".join(f"id {aid}" for aid in sorted(atom_ids))
+        restrained_atoms = self.universe.select_atoms(id_selection)
+        restrained_atoms.write(output_path)
 
     def _prepare_angle_restraints(
         self
     ) -> Optional[list[str]]:
 
-        metal_atom_ids = [
-            self.universe.select_atoms(f"resid {resid}").ids[0]
-            for resid in self.metal_resids
-        ]
+        metal_atom_ids = list(self.metal_atomids)
         angle_restraints_dict = self.build_angle_restraints(metal_atom_ids)
         return _write_distance_restraints(angle_restraints_dict)
     
