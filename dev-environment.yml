@@ -8,3 +8,6 @@ dependencies:
   - numpy<2.3
   - mdanalysis
   - rich
+  - pip
+  - pip:
+    - -e .
