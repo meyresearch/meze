@@ -2065,8 +2065,7 @@ class HotMeze(Meze):
             system=system,
             process_name=process_name,
             config_options=config_options,
-            distance_write_frequency=distance_write_frequency,
-            additional_restraints=additional_restraints
+            distance_write_frequency=distance_write_frequency
         )
         
 @dataclass
