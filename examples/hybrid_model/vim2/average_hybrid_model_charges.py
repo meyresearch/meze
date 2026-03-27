@@ -1,14 +1,19 @@
 from meze import ColdMeze
 import sys
 import json
+from pathlib import Path
 
-project_dir = "/Users/af25016/projects/meze/data/" 
-project_dir = "/Users/af25016/projects/hybrid_model/"
+"""UNCOMMENT BEFORE COMMIT !!!"""
+# REPO_ROOT = Path().resolve()
+# EXAMPLES_DIR = REPO_ROOT / "examples"
+# DATA_DIR = REPO_ROOT / "data"
+
+# project_dir = DATA_DIR
+
+project_dir = "/group/chem/oliveira2t/af25016/hybrid_model/"
+
+
 system_name = "vim2"
-
-
-# replace with reading in all ligands in the sofra!!
-# ligands 
 
 with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json", "r") as file:
      json_recipe = json.load(file)
