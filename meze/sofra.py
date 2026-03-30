@@ -1534,12 +1534,16 @@ class Meze:
             f"{parameterisation_directory}/{self.ligand.residue_name[0] + self.ligand.residue_name[-1]}*.mol2"
         )[0]
 
+        new_ligand_frcmod_file = glob.glob(
+            f"{parameterisation_directory}/{self.ligand.residue_name}.frcmod"
+        )[0]
+
         new_ligand_resname = pathlib.Path(new_ligand_file).stem
         new_ligand = Ligand(new_ligand_file, 
                             charge=_get_mol2_charge(new_ligand_file),
                             parameterised=True,
                             residue_name=new_ligand_resname,
-                            frcmod_file=self.ligand.frcmod_file)
+                            frcmod_file=new_ligand_frcmod_file)
 
         new_non_standard_files = [glob.glob(
             f"{parameterisation_directory}/{residue.residue_name[0] + residue.residue_name[-1]}*.mol2"
