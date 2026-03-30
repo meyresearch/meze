@@ -7,7 +7,8 @@ from .sofra import (
     HotMeze,
     QuantumMeze,
     ColdQuantumMeze,
-    HotQuantumMeze
+    HotQuantumMeze,
+    build_average_charges
 )
 __all__ = [
     "MezeRecipe", 
@@ -18,5 +19,6 @@ __all__ = [
     "HotMeze",
     "QuantumMeze",
     "ColdQuantumMeze",
-    "HotQuantumMeze"
+    "HotQuantumMeze",
+    "build_average_charges"
 ]  

@@ -2607,3 +2607,24 @@ class HotQuantumMeze(QuantumMeze):
             is_gpu=False,
             additional_restraints=additional_restraints
         )
+
+def build_average_charges(meze_sofra: List[Meze], directory: Optional[str] = None)-> list[Meze]:
+
+    for i, meze in enumerate(meze_sofra):
+        if not directory:
+            log.warning(
+                f"parent directory not set, inferring from {meze.parameterisation_directory}"
+            )
+            directory = str(pathlib.Path(meze.parameterisation_directory).parent)
+
+        parameterisation_directory = os.path.join(
+            directory, "03_averaged_charges"
+        )
+        parameterisation_directory = parameterisation_directory
+        log.info(f"Creating directory: {parameterisation_directory}")
+        os.makedirs(parameterisation_directory, exist_ok=True)       
+
+        residues_to_be_averaged = []
+        for residue in meze.coordinating_residues.values():
+            pass
+            # if not meze.ligand_resname in residue
