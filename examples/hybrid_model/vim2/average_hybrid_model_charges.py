@@ -27,4 +27,4 @@ for i, ligand in enumerate(json_recipe.keys()):
         filename=f"{parameterisation_directory}/{ligand_name}_fixed_charges_solvated.pkl"
     )
 
-
+    print(prepared_meze)
