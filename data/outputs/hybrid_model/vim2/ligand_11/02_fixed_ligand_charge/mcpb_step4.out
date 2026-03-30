@@ -1,0 +1,75 @@
+******************************************************************
+*               Welcome to use the MCPB.py program               *
+*                          Version 2024                          *
+*                       Author: Pengfei Li                       *
+*                      Merz Research Group                       *
+*                   Michigan State University                    *
+*                              AND                               *
+*                 Hammes-Schiffer Research Group                 *
+*                        Yale University                         *
+*                              AND                               *
+*                       Li Research Group                        *
+*                   Loyola University Chicago                    *
+******************************************************************
+The input file you are using is : /Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/mcpbpy.in
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+The following is the input variable you have:
+The variable ion_ids is :  [3449, 3450]
+The variable ion_info is :  []
+The variable ion_mol2files is :  ['ZN1.mol2', 'ZN2.mol2']
+The variable original_pdb is :  /Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/vim2_ligand_11.amber.pdb
+The variable add_bonded_pairs is :  []
+The variable add_redcrd is :  0
+The variable additional_resids is :  []
+The variable anglefc_avg is :  0
+The variable bondfc_avg is :  0
+The variable chgfix_resids is :  [235]
+The variable cut_off is :  2.8
+The variable force_field is :  ff14SB
+The variable frcmod_files is :  ['MOL.frcmod', 'MOH.frcmod']
+The variable gaff is :  2
+The variable group_name is :  vim2_ligand_11
+The variable ion_paraset is :  12_6 (Only for the ions using the nonbonded model).
+The variable large_opt is :  1
+The variable lgmodel_chg is :  -99
+The variable lgmodel_spin is :  -99
+             -99 means program will assign a charge automatically.
+The variable naa_mol2files is :  ['MOL.mol2', 'MOH.mol2']
+The variable scale_factor is :  1.0
+             ATTENTION: This is the scale factor of frequency. The 
+             force constants will be scaled by multiplying the square
+             of scale_factor.
+The variable smmodel_chg is :  -99
+The variable smmodel_spin is :  -99
+             -99 means program will assign a charge automatically.
+The variable software_version is :  g16
+The variable sqm_opt is :  0
+The variable water_model is :  TIP3P
+The variable xstru is :  0
+******************************************************************
+*                                                                *
+*=================Generating input file for leap=================*
+*                                                                *
+******************************************************************
+Generating the leap input file...
+source leaprc.gaff2
+Renamed residues includes: 83-HID
+Renamed residues includes: 85-HIE
+Renamed residues includes: 87-ASP
+Renamed residues includes: 148-HID
+Renamed residues includes: 167-CYM
+Renamed residues includes: 209-HID
+Renamed residues includes: 233-ZN
+Renamed residues includes: 234-ZN
+Renamed residues includes: 235-MOL
+Renamed residues includes: 236-MOH
+Finish generating the leap input file.
+==================================================================
+To cite MCPB.py please use the following reference:
+  Pengfei Li and Kenneth M. Merz, Jr., "MCPB.py: A Python Based
+  Metal Center Parameter Builder", J. Chem. Inf. Model., 2016,
+  56, 599-604.
+Helpful tips can be found in the following book chapter:
+  Pengfei Li and Kenneth M. Merz, Jr., "Parameterization of a Dioxygen
+  Binding Metal Site Using the MCPB.py Program", Methods Mol. Biol.,
+  2021, 2199, 257-275.
