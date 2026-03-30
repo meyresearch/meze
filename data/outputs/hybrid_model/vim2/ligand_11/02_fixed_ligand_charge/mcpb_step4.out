@@ -23,7 +23,7 @@ The variable add_redcrd is :  0
 The variable additional_resids is :  []
 The variable anglefc_avg is :  0
 The variable bondfc_avg is :  0
-The variable chgfix_resids is :  [418]
+The variable chgfix_resids is :  [235]
 The variable cut_off is :  2.8
 The variable force_field is :  ff14SB
 The variable frcmod_files is :  ['MOL.frcmod', 'MOH.frcmod']
@@ -61,8 +61,8 @@ Renamed residues includes: 167-CYM
 Renamed residues includes: 209-HID
 Renamed residues includes: 233-ZN
 Renamed residues includes: 234-ZN
-Renamed residues includes: 235-MOH
-Renamed residues includes: 418-MOL
+Renamed residues includes: 235-MOL
+Renamed residues includes: 236-MOH
 Finish generating the leap input file.
 ==================================================================
 To cite MCPB.py please use the following reference:

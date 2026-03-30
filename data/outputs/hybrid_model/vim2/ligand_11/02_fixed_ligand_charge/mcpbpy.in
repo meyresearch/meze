@@ -11,4 +11,4 @@ force_field ff14SB
 water_model tip3p
 gaff 2
 
-chgfix_resids 418
+chgfix_resids 235

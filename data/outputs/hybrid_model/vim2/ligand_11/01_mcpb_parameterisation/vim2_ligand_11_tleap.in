@@ -20,8 +20,8 @@ CM1 = loadmol2 CM1.mol2
 HD3 = loadmol2 HD3.mol2
 ZN1 = loadmol2 ZN1.mol2
 ZN2 = loadmol2 ZN2.mol2
-MH1 = loadmol2 MH1.mol2
 ML1 = loadmol2 ML1.mol2
+MH1 = loadmol2 MH1.mol2
 loadamberparams MOL.frcmod
 loadamberparams MOH.frcmod
 loadamberparams frcmod.ions1lm_126_tip3p
@@ -29,10 +29,12 @@ loadamberparams vim2_ligand_11_mcpbpy.frcmod
 mol = loadpdb vim2_ligand_11_mcpbpy.pdb
 bond mol.83.NE2 mol.233.ZN
 bond mol.85.ND1 mol.233.ZN
+bond mol.87.OD2 mol.234.ZN
 bond mol.148.NE2 mol.233.ZN
 bond mol.167.SG mol.234.ZN
 bond mol.209.NE2 mol.234.ZN
-bond mol.233.ZN mol.235.OH
+bond mol.233.ZN mol.236.OH
+bond mol.234.ZN mol.236.OH
 bond mol.82.C mol.83.N
 bond mol.83.C mol.84.N
 bond mol.84.C mol.85.N

@@ -56,11 +56,11 @@ The variable xstru is :  0
 83-HID@NE2 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
 85-HIE@ND1 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
 148-HID@NE2 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
-235-MOH@OH is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
+236-MOH@OH is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
 87-ASP@OD2 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
 167-CYM@SG is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
 209-HID@NE2 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
-418-MOL@O20 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
+235-MOL@O20 is in 2.8 Angstrom of or set bonded (in the input file) to (one of) these metal ions
 ***The following residues are in the Metal Site:
 Residue 83-HID
 Residue 85-HIE
@@ -70,12 +70,12 @@ Residue 167-CYM
 Residue 209-HID
 Residue 233-ZN
 Residue 234-ZN
-Residue 235-MOH
-Residue 418-MOL
+Residue 235-MOL
+Residue 236-MOH
 ***The small model contains the following residues: 
-[83, 85, 87, 148, 167, 209, 233, 234, 235, 418]
+[83, 85, 87, 148, 167, 209, 233, 234, 235, 236]
 ***The large model contains the following residues: 
-[82, 83, 84, 85, 86, 87, 88, 147, 148, 149, 166, 167, 168, 208, 209, 210, 233, 234, 235, 418]
+[82, 83, 84, 85, 86, 87, 88, 147, 148, 149, 166, 167, 168, 208, 209, 210, 233, 234, 235, 236]
 ******************************************************************
 *                                                                *
 *=======================Building models==========================*
@@ -90,8 +90,8 @@ It contains the residue 167-CYM as sidechain coordinated.
 It contains the residue 209-HID as sidechain coordinated.
 It contains the residue 233-ZN as normal.
 It contains the residue 234-ZN as normal.
-It contains the residue 235-MOH as normal.
-It contains the residue 418-MOL as normal.
+It contains the residue 235-MOL as normal.
+It contains the residue 236-MOH as normal.
 Totally there are 113 atoms in the small model.
 Totally there are 496 electrons in the small model.
 ***Creating the standard model...
@@ -103,8 +103,8 @@ It contains the residue 167-CYM as normal.
 It contains the residue 209-HID as normal.
 It contains the residue 233-ZN as normal.
 It contains the residue 234-ZN as normal.
-It contains the residue 235-MOH as normal.
-It contains the residue 418-MOL as normal.
+It contains the residue 235-MOL as normal.
+It contains the residue 236-MOH as normal.
 Totally there are 125 atoms in the standard model.
 ***Creating the large model...
 Creating the residue 82-THR into ACE...
@@ -125,8 +125,8 @@ It contains the residue 209-HID as normal.
 Creating the residue 210-GLY into NME...
 It contains the residue 233-ZN as normal.
 It contains the residue 234-ZN as normal.
-It contains the residue 235-MOH as normal.
-It contains the residue 418-MOL as normal.
+It contains the residue 235-MOL as normal.
+It contains the residue 236-MOH as normal.
 Totally there are 187 atoms in the large model.
 Totally there are 836 electrons in the large model.
 ==================================================================

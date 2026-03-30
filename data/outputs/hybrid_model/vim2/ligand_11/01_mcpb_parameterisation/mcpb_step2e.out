@@ -51,7 +51,7 @@ The variable xstru is :  0
 *===================Generate the Initial frcmod file=============*
 *                                                                *
 ******************************************************************
-Atoms which has changed the atom types: [1255, 1288, 1318, 2191, 2458, 3096, 3449, 3450, 3451, 4018]
+Atoms which has changed the atom types: [1255, 1288, 1318, 2191, 2458, 3096, 3449, 3450, 3470, 3482]
 83-HID@1255-NE2 : NB --> Y1
 85-HIE@1288-ND1 : NB --> Y2
 87-ASP@1318-OD2 : O2 --> Y5
@@ -60,8 +60,8 @@ Atoms which has changed the atom types: [1255, 1288, 1318, 2191, 2458, 3096, 344
 209-HID@3096-NE2 : NB --> Y7
 233-ZN@3449-ZN : ZN --> M1
 234-ZN@3450-ZN : ZN --> M2
-235-MOH@3451-OH : OH --> Y4
-418-MOL@4018-O20 : o  --> Y8
+235-MOL@3470-O20 : o  --> Y8
+236-MOH@3482-OH : OH --> Y4
 ******************************************************************
 *                                                                *
 *===========Using the empirical way to solve the problem=========*
@@ -71,37 +71,52 @@ Atoms which has changed the atom types: [1255, 1288, 1318, 2191, 2458, 3096, 344
 For bondtype: M1-Y4. There are 1 bond(s) in this type: 
   The bond length(s) is(are): [1.885]
   The average bond length is: 1.885 Angstrom.
-  The force constant(s) is(are): [np.float64(144.2)]
+  The force constant(s) is(are): [144.2]
   The average force constant is: 144.2 Kcal*mol^-1*A^-2.
+For bondtype: M2-Y4. There are 1 bond(s) in this type: 
+  The bond length(s) is(are): [2.08]
+  The average bond length is: 2.08 Angstrom.
+  The force constant(s) is(are): [48.5]
+  The average force constant is: 48.5 Kcal*mol^-1*A^-2.
 For bondtype: Y1-M1. There are 1 bond(s) in this type: 
   The bond length(s) is(are): [2.051]
   The average bond length is: 2.051 Angstrom.
-  The force constant(s) is(are): [np.float64(61.4)]
+  The force constant(s) is(are): [61.4]
   The average force constant is: 61.4 Kcal*mol^-1*A^-2.
 For bondtype: Y2-M1. There are 1 bond(s) in this type: 
   The bond length(s) is(are): [2.07]
   The average bond length is: 2.07 Angstrom.
-  The force constant(s) is(are): [np.float64(54.8)]
+  The force constant(s) is(are): [54.8]
   The average force constant is: 54.8 Kcal*mol^-1*A^-2.
 For bondtype: Y3-M1. There are 1 bond(s) in this type: 
   The bond length(s) is(are): [2.054]
   The average bond length is: 2.054 Angstrom.
-  The force constant(s) is(are): [np.float64(60.4)]
+  The force constant(s) is(are): [60.4]
   The average force constant is: 60.4 Kcal*mol^-1*A^-2.
+For bondtype: Y5-M2. There are 1 bond(s) in this type: 
+  The bond length(s) is(are): [2.354]
+  The average bond length is: 2.354 Angstrom.
+  The force constant(s) is(are): [20.0]
+  The average force constant is: 20.0 Kcal*mol^-1*A^-2.
 For bondtype: Y6-M2. There are 1 bond(s) in this type: 
   The bond length(s) is(are): [2.29]
   The average bond length is: 2.29 Angstrom.
-  The force constant(s) is(are): [np.float64(74.6)]
+  The force constant(s) is(are): [74.6]
   The average force constant is: 74.6 Kcal*mol^-1*A^-2.
 For bondtype: Y7-M2. There are 1 bond(s) in this type: 
   The bond length(s) is(are): [2.149]
   The average bond length is: 2.149 Angstrom.
-  The force constant(s) is(are): [np.float64(34.1)]
+  The force constant(s) is(are): [34.1]
   The average force constant is: 34.1 Kcal*mol^-1*A^-2.
 =======================Generate the angle parameters==============
 For angletype: CC-Y2-M1. There are 1 angle(s) in this type: 
   The angle value(s) is(are): [126.26]
   The average angle value is: 126.26 Degree.
+  The force constant(s) is(are): [50.0]
+  The average force constant is: 50.0 Kcal*mol^-1*Rad^-2.
+For angletype: CO-Y5-M2. There are 1 angle(s) in this type: 
+  The angle value(s) is(are): [135.38]
+  The average angle value is: 135.38 Degree.
   The force constant(s) is(are): [50.0]
   The average force constant is: 50.0 Kcal*mol^-1*Rad^-2.
 For angletype: CR-Y1-M1. There are 1 angle(s) in this type: 
@@ -140,8 +155,18 @@ For angletype: M1-Y3-CV. There are 1 angle(s) in this type:
   The force constant(s) is(are): [50.0]
   The average force constant is: 50.0 Kcal*mol^-1*Rad^-2.
 For angletype: M1-Y4-HO. There are 1 angle(s) in this type: 
-  The angle value(s) is(are): [180.0]
-  The average angle value is: 180.0 Degree.
+  The angle value(s) is(are): [115.1]
+  The average angle value is: 115.1 Degree.
+  The force constant(s) is(are): [50.0]
+  The average force constant is: 50.0 Kcal*mol^-1*Rad^-2.
+For angletype: M1-Y4-M2. There are 1 angle(s) in this type: 
+  The angle value(s) is(are): [122.92]
+  The average angle value is: 122.92 Degree.
+  The force constant(s) is(are): [50.0]
+  The average force constant is: 50.0 Kcal*mol^-1*Rad^-2.
+For angletype: M2-Y4-HO. There are 1 angle(s) in this type: 
+  The angle value(s) is(are): [118.04]
+  The average angle value is: 118.04 Degree.
   The force constant(s) is(are): [50.0]
   The average force constant is: 50.0 Kcal*mol^-1*Rad^-2.
 For angletype: M2-Y7-CV. There are 1 angle(s) in this type: 
@@ -179,9 +204,34 @@ For angletype: Y3-M1-Y4. There are 1 angle(s) in this type:
   The average angle value is: 118.14 Degree.
   The force constant(s) is(are): [35.0]
   The average force constant is: 35.0 Kcal*mol^-1*Rad^-2.
+For angletype: Y5-M2-Y4. There are 1 angle(s) in this type: 
+  The angle value(s) is(are): [80.26]
+  The average angle value is: 80.26 Degree.
+  The force constant(s) is(are): [35.0]
+  The average force constant is: 35.0 Kcal*mol^-1*Rad^-2.
+For angletype: Y5-M2-Y6. There are 1 angle(s) in this type: 
+  The angle value(s) is(are): [99.64]
+  The average angle value is: 99.64 Degree.
+  The force constant(s) is(are): [35.0]
+  The average force constant is: 35.0 Kcal*mol^-1*Rad^-2.
+For angletype: Y5-M2-Y7. There are 1 angle(s) in this type: 
+  The angle value(s) is(are): [82.05]
+  The average angle value is: 82.05 Degree.
+  The force constant(s) is(are): [35.0]
+  The average force constant is: 35.0 Kcal*mol^-1*Rad^-2.
+For angletype: Y6-M2-Y4. There are 1 angle(s) in this type: 
+  The angle value(s) is(are): [115.37]
+  The average angle value is: 115.37 Degree.
+  The force constant(s) is(are): [35.0]
+  The average force constant is: 35.0 Kcal*mol^-1*Rad^-2.
 For angletype: Y6-M2-Y7. There are 1 angle(s) in this type: 
   The angle value(s) is(are): [103.35]
   The average angle value is: 103.35 Degree.
+  The force constant(s) is(are): [35.0]
+  The average force constant is: 35.0 Kcal*mol^-1*Rad^-2.
+For angletype: Y7-M2-Y4. There are 1 angle(s) in this type: 
+  The angle value(s) is(are): [139.49]
+  The average angle value is: 139.49 Degree.
   The force constant(s) is(are): [35.0]
   The average force constant is: 35.0 Kcal*mol^-1*Rad^-2.
 ==================================================================

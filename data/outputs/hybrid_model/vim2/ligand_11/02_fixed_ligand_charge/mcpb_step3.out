@@ -23,7 +23,7 @@ The variable add_redcrd is :  0
 The variable additional_resids is :  []
 The variable anglefc_avg is :  0
 The variable bondfc_avg is :  0
-The variable chgfix_resids is :  [418]
+The variable chgfix_resids is :  [235]
 The variable cut_off is :  2.8
 The variable force_field is :  ff14SB
 The variable frcmod_files is :  ['MOL.frcmod', 'MOH.frcmod']
@@ -54,68 +54,6 @@ The variable xstru is :  0
 ***Generating the 1st stage resp charge fitting input file...
 ***Generating the 2nd stage resp charge fitting input file...
 ***Doing the RESP charge fiting...
-82-ACE-HH31 is not in the standard model!
-82-ACE-CH3 is not in the standard model!
-82-ACE-HH32 is not in the standard model!
-82-ACE-HH33 is not in the standard model!
-82-ACE-C is not in the standard model!
-82-ACE-O is not in the standard model!
-84-GLY-N is not in the standard model!
-84-GLY-H is not in the standard model!
-84-GLY-CA is not in the standard model!
-84-GLY-HA2 is not in the standard model!
-84-GLY-HA3 is not in the standard model!
-84-GLY-C is not in the standard model!
-84-GLY-O is not in the standard model!
-86-GLY-N is not in the standard model!
-86-GLY-H is not in the standard model!
-86-GLY-CA is not in the standard model!
-86-GLY-HA2 is not in the standard model!
-86-GLY-HA3 is not in the standard model!
-86-GLY-C is not in the standard model!
-86-GLY-O is not in the standard model!
-88-NME-N is not in the standard model!
-88-NME-H is not in the standard model!
-88-NME-CH3 is not in the standard model!
-88-NME-HH31 is not in the standard model!
-88-NME-HH32 is not in the standard model!
-88-NME-HH33 is not in the standard model!
-147-ACE-HH31 is not in the standard model!
-147-ACE-CH3 is not in the standard model!
-147-ACE-HH32 is not in the standard model!
-147-ACE-HH33 is not in the standard model!
-147-ACE-C is not in the standard model!
-147-ACE-O is not in the standard model!
-149-NME-N is not in the standard model!
-149-NME-H is not in the standard model!
-149-NME-CH3 is not in the standard model!
-149-NME-HH31 is not in the standard model!
-149-NME-HH32 is not in the standard model!
-149-NME-HH33 is not in the standard model!
-166-ACE-HH31 is not in the standard model!
-166-ACE-CH3 is not in the standard model!
-166-ACE-HH32 is not in the standard model!
-166-ACE-HH33 is not in the standard model!
-166-ACE-C is not in the standard model!
-166-ACE-O is not in the standard model!
-168-NME-N is not in the standard model!
-168-NME-H is not in the standard model!
-168-NME-CH3 is not in the standard model!
-168-NME-HH31 is not in the standard model!
-168-NME-HH32 is not in the standard model!
-168-NME-HH33 is not in the standard model!
-208-ACE-HH31 is not in the standard model!
-208-ACE-CH3 is not in the standard model!
-208-ACE-HH32 is not in the standard model!
-208-ACE-HH33 is not in the standard model!
-208-ACE-C is not in the standard model!
-208-ACE-O is not in the standard model!
-210-NME-N is not in the standard model!
-210-NME-H is not in the standard model!
-210-NME-CH3 is not in the standard model!
-210-NME-HH31 is not in the standard model!
-210-NME-HH32 is not in the standard model!
-210-NME-HH33 is not in the standard model!
 =========================Checking models==========================
 ***Check the large model...
 Good. The charges and atom numbers are match for the large model.
@@ -134,8 +72,8 @@ Good. The number of the residue names given matches the database.
 ***Generating the HD3.mol2 file...
 ***Generating the ZN1.mol2 file...
 ***Generating the ZN2.mol2 file...
-***Generating the MH1.mol2 file...
 ***Generating the ML1.mol2 file...
+***Generating the MH1.mol2 file...
 ==================================================================
 To cite MCPB.py please use the following reference:
   Pengfei Li and Kenneth M. Merz, Jr., "MCPB.py: A Python Based

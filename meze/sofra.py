@@ -239,7 +239,9 @@ class Meze:
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
-        
+        self._set_waters()
+        self._set_protein()
+
         if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
             self._validate_non_standard_residues()
         
@@ -334,6 +336,9 @@ class Meze:
             coordinates=coordinates,
             recipe=recipe
         )
+
+    def _set_waters(self):
+        self.crystal_waters = self.universe.select_atoms("water")
 
     def _set_ligand(self):
 
@@ -514,6 +519,9 @@ class Meze:
                             np.round(flat_bottom_radius, 2)
                         )
         return restraints
+
+    def _set_protein(self):
+        self.protein = self.universe.select_atoms("protein")
 
     def _set_metal(self):
         """Set metal residue names and indices based on MDAnalysis Universe
@@ -952,13 +960,14 @@ class Meze:
         complex = self.write_complex(
             directory=parameterisation_directory,
             ligand_name=ligand_name,
+            parameterised_non_standard_residues=parameterised_non_standard_residues
         )
         
         return dataclasses.replace(
             self,
             parameterisation_directory=parameterisation_directory,
-            topology=complex["topology"],
-            coordinates=complex["coordinates"],
+            topology=complex.filename,
+            coordinates=complex.filename,
             ligand=parameterised_ligand,
             non_standard_residues=parameterised_non_standard_residues,
         )
@@ -992,7 +1001,7 @@ class Meze:
                 [residue.name + ".frcmod" for residue in parameterised_non_standard_residues]
             ),
             "software_version": self.recipe.gaussian_version,
-            "ion_ids": " ".join(str(atomid+1) for atomid in self.metal_atomids),
+            "ion_ids": " ".join(str(atomid) for atomid in self.metal_atomids),
             "large_opt": int(self.recipe.only_optimise_hydrogens),
             "force_field": self.recipe.protein_forcefield,
             "water_model": self.recipe.water_model,
@@ -1154,24 +1163,39 @@ class Meze:
 
     def write_complex(self, 
                       directory: str,
-                      ligand_name: str = "ligand") -> dict[str, str]:
+                      ligand_name: str = "ligand",
+                      parameterised_non_standard_residues: List[Ligand] = None) -> dict[str, str]:
         _check_ambertools()
+
         ligand_file = os.path.join(directory, f"{self.ligand.name}.pdb")
+        ligand_universe = mda.Universe(ligand_file)
+        ligand = ligand_universe.atoms
 
-        components = [self.coordinates, ligand_file]
-        components_str = " ".join(components)
+        non_standard_residues = list(self.non_standard_residues.keys()) if self.non_standard_residues else []
+        if 0 < len(non_standard_residues) <= 1:
+            non_standard_residues = self.universe.select_atoms(f"resname {non_standard_residues[0]}")
+        elif len(non_standard_residues) > 1:
+            non_standard_residues = self.universe.select_atoms(
+                " or ".join(f"resname {res}" for res in non_standard_residues)
+            )
+        else:            
+            non_standard_residues = None
 
-        cat_command = "cat " + components_str + f" > {directory}/{ligand_name}_complex.pdb"
+        components = [self.protein, self.metals, ligand]
+        if non_standard_residues is not None:
+            components.append(non_standard_residues)
+        components.append(self.crystal_waters)
+
+        merged = mda.Merge(*components)
+        merged.atoms.write(f"{directory}/{ligand_name}_complex.pdb")
+ 
         pdb4amber_command = f"pdb4amber -i {directory}/{ligand_name}_complex.pdb -o {directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
-
-        log.info(f"Combining complex files with command:\n{cat_command}")
-        os.system(cat_command)
 
         log.info(f"Running pdb4amber with command:\n{pdb4amber_command}")
         os.system(pdb4amber_command)
+        merged.filename = f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
 
-        return {"coordinates": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
-                "topology": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"}
+        return merged
 
 
     def build_empirical_bonds(self):
@@ -1534,12 +1558,16 @@ class Meze:
             f"{parameterisation_directory}/{self.ligand.residue_name[0] + self.ligand.residue_name[-1]}*.mol2"
         )[0]
 
+        new_ligand_frcmod_file = glob.glob(
+            f"{parameterisation_directory}/{self.ligand.residue_name}.frcmod"
+        )[0]
+
         new_ligand_resname = pathlib.Path(new_ligand_file).stem
         new_ligand = Ligand(new_ligand_file, 
                             charge=_get_mol2_charge(new_ligand_file),
                             parameterised=True,
                             residue_name=new_ligand_resname,
-                            frcmod_file=self.ligand.frcmod_file)
+                            frcmod_file=new_ligand_frcmod_file)
 
         new_non_standard_files = [glob.glob(
             f"{parameterisation_directory}/{residue.residue_name[0] + residue.residue_name[-1]}*.mol2"
@@ -2602,3 +2630,74 @@ class HotQuantumMeze(QuantumMeze):
             is_gpu=False,
             additional_restraints=additional_restraints
         )
+
+def build_average_charges(meze_sofra: List[Meze],
+                          directory: Optional[str] = None,
+                          ligand_names: Optional[List[str]] = None
+                          )-> list[Meze]:
+
+    all_charges = {}
+    resname_list = []
+    for meze in meze_sofra:
+        if not directory:
+            log.warning(
+                f"parent directory not set, inferring from {meze.parameterisation_directory}"
+            )
+            directory = str(pathlib.Path(meze.parameterisation_directory).parent)
+
+        parameterisation_directory = os.path.join(
+            directory, "03_averaged_charges"
+        )
+        parameterisation_directory = parameterisation_directory
+        log.info(f"Creating directory: {parameterisation_directory}")
+        os.makedirs(parameterisation_directory, exist_ok=True)       
+
+        
+        for metal, residue in meze.coordinating_residues.items():
+            resname_list.extend(residue.resnames)
+            
+            metal_ag = meze.universe.select_atoms(f"id {metal}")
+            if not metal_ag:
+                log.warning(
+                    f"Metal atom with id {metal} not found in universe. Skipping."
+                )
+            else:
+                resname_list.extend(metal_ag.resnames)
+        
+        resname_list = [resname for resname in resname_list if resname != meze.ligand_resname and resname != meze.ligand.residue_name]
+
+    resname_list = list(set(resname_list))
+    all_charges = {resname: [] for resname in resname_list}
+
+    for i, meze in enumerate(meze_sofra):
+        if ligand_names:
+            ligand_name = ligand_names[i]
+            log.info(f"Processing ligand: {ligand_name}")
+        else:
+            ligand_name = str(i)
+            log.info(f"Processing ligand at index {i}")  
+
+        for resname, charge_list in all_charges.items():
+            atoms = meze.universe.select_atoms(f"resname {resname}")
+            if not atoms:
+                log.warning(
+                    f"No atoms found with resname {resname} in universe. Skipping."
+                )
+                continue
+            charge_list = atoms.charges
+            if not charge_list.any():
+                log.warning(
+                    f"No charges found for resname {resname} in universe. Skipping."
+                )
+                continue
+            
+            all_charges[resname] = {}
+            all_charges[resname][ligand_name] = charge_list
+    
+    averaged_charges = {}
+
+    for residue, ligand_dict in all_charges.items():
+        all_charges = np.vstack(list(ligand_dict.values()))
+        averaged_charges[residue] = all_charges.mean(axis=0)
+    
+

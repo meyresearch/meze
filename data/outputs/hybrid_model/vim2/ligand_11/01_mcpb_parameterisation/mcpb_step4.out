@@ -61,8 +61,8 @@ Renamed residues includes: 167-CYM
 Renamed residues includes: 209-HID
 Renamed residues includes: 233-ZN
 Renamed residues includes: 234-ZN
-Renamed residues includes: 235-MOH
-Renamed residues includes: 418-MOL
+Renamed residues includes: 235-MOL
+Renamed residues includes: 236-MOH
 Finish generating the leap input file.
 ==================================================================
 To cite MCPB.py please use the following reference:

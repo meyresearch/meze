@@ -195,7 +195,7 @@ def _edit_mcpbpy_tleap_input(
     if not f"source leaprc.{ligand_ff}\n" in tleap_lines:
         tleap_lines.insert(0, f"source leaprc.{ligand_ff}\n")
 
-    old_solvate_line = [line for line in tleap_lines if "solvatebox" in line.lower()][0]
+    old_solvate_line = [line for line in tleap_lines if "solvate" in line.lower()][0]
     pdb_line = [line for line in tleap_lines if "loadpdb" in line.lower()][0]
     variable_name = pdb_line.split("=")[0].strip()
     if "oct" in box_shape.lower():
