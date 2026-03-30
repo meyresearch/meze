@@ -239,7 +239,9 @@ class Meze:
         self._set_metal()
         self.coordinating_residues = self._get_metal_coordinating_residues()
         self._setup_bss_system()
-        
+        self._set_waters()
+        self._set_protein()
+
         if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
             self._validate_non_standard_residues()
         
@@ -334,6 +336,9 @@ class Meze:
             coordinates=coordinates,
             recipe=recipe
         )
+
+    def _set_waters(self):
+        self.crystal_waters = self.universe.select_atoms("water")
 
     def _set_ligand(self):
 
@@ -514,6 +519,9 @@ class Meze:
                             np.round(flat_bottom_radius, 2)
                         )
         return restraints
+
+    def _set_protein(self):
+        self.protein = self.universe.select_atoms("protein")
 
     def _set_metal(self):
         """Set metal residue names and indices based on MDAnalysis Universe
@@ -952,13 +960,14 @@ class Meze:
         complex = self.write_complex(
             directory=parameterisation_directory,
             ligand_name=ligand_name,
+            parameterised_non_standard_residues=parameterised_non_standard_residues
         )
         
         return dataclasses.replace(
             self,
             parameterisation_directory=parameterisation_directory,
-            topology=complex["topology"],
-            coordinates=complex["coordinates"],
+            topology=complex.filename,
+            coordinates=complex.filename,
             ligand=parameterised_ligand,
             non_standard_residues=parameterised_non_standard_residues,
         )
@@ -1154,24 +1163,39 @@ class Meze:
 
     def write_complex(self, 
                       directory: str,
-                      ligand_name: str = "ligand") -> dict[str, str]:
+                      ligand_name: str = "ligand",
+                      parameterised_non_standard_residues: List[Ligand] = None) -> dict[str, str]:
         _check_ambertools()
+
         ligand_file = os.path.join(directory, f"{self.ligand.name}.pdb")
+        ligand_universe = mda.Universe(ligand_file)
+        ligand = ligand_universe.atoms
 
-        components = [self.coordinates, ligand_file]
-        components_str = " ".join(components)
+        non_standard_residues = list(self.non_standard_residues.keys()) if self.non_standard_residues else []
+        if 0 < len(non_standard_residues) <= 1:
+            non_standard_residues = self.universe.select_atoms(f"resname {non_standard_residues[0]}")
+        elif len(non_standard_residues) > 1:
+            non_standard_residues = self.universe.select_atoms(
+                " or ".join(f"resname {res}" for res in non_standard_residues)
+            )
+        else:            
+            non_standard_residues = None
 
-        cat_command = "cat " + components_str + f" > {directory}/{ligand_name}_complex.pdb"
+        components = [self.protein, self.metals, ligand]
+        if non_standard_residues is not None:
+            components.append(non_standard_residues)
+        components.append(self.crystal_waters)
+
+        merged = mda.Merge(*components)
+        merged.atoms.write(f"{directory}/{ligand_name}_complex.pdb")
+ 
         pdb4amber_command = f"pdb4amber -i {directory}/{ligand_name}_complex.pdb -o {directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
-
-        log.info(f"Combining complex files with command:\n{cat_command}")
-        os.system(cat_command)
 
         log.info(f"Running pdb4amber with command:\n{pdb4amber_command}")
         os.system(pdb4amber_command)
+        merged.filename = f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"
 
-        return {"coordinates": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb",
-                "topology": f"{directory}/{self.recipe.group_name}_{ligand_name}.amber.pdb"}
+        return merged
 
 
     def build_empirical_bonds(self):
