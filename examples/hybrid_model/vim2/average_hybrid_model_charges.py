@@ -16,12 +16,13 @@ with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_
      json_recipe = json.load(file)
 
 prepared_meze_list = []
+ligand_names = []
 for i, ligand in enumerate(json_recipe.keys()):
-    ligand_name = ligand
-    parameterisation_directory = json_recipe[ligand_name]["parameterisation_directory"]
+    ligand_names.append(ligand)
+    parameterisation_directory = json_recipe[ligand]["parameterisation_directory"]
 
     prepared_meze_list.append(ColdMeze.load(
-        filename=f"{parameterisation_directory}/{ligand_name}_fixed_charges_solvated.pkl"
+        filename=f"{parameterisation_directory}/{ligand}_fixed_charges_solvated.pkl"
     ))
 
-new_meze_list = build_average_charges(prepared_meze_list)
+new_meze_list = build_average_charges(prepared_meze_list, ligand_names=ligand_names)
