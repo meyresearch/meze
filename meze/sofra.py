@@ -2608,9 +2608,14 @@ class HotQuantumMeze(QuantumMeze):
             additional_restraints=additional_restraints
         )
 
-def build_average_charges(meze_sofra: List[Meze], directory: Optional[str] = None)-> list[Meze]:
+def build_average_charges(meze_sofra: List[Meze],
+                          directory: Optional[str] = None,
+                          ligand_names: Optional[List[str]] = None
+                          )-> list[Meze]:
 
-    for i, meze in enumerate(meze_sofra):
+    all_charges = {}
+    resname_list = []
+    for meze in meze_sofra:
         if not directory:
             log.warning(
                 f"parent directory not set, inferring from {meze.parameterisation_directory}"
@@ -2624,7 +2629,52 @@ def build_average_charges(meze_sofra: List[Meze], directory: Optional[str] = Non
         log.info(f"Creating directory: {parameterisation_directory}")
         os.makedirs(parameterisation_directory, exist_ok=True)       
 
-        residues_to_be_averaged = []
-        for residue in meze.coordinating_residues.values():
-            pass
-            # if not meze.ligand_resname in residue
+        
+        for metal, residue in meze.coordinating_residues.items():
+            resname_list.extend(residue.resnames)
+            
+            metal_ag = meze.universe.select_atoms(f"id {metal}")
+            if not metal_ag:
+                log.warning(
+                    f"Metal atom with id {metal} not found in universe. Skipping."
+                )
+            else:
+                resname_list.extend(metal_ag.resnames)
+        
+        resname_list = [resname for resname in resname_list if resname != meze.ligand_resname and resname != meze.ligand.residue_name]
+
+    resname_list = list(set(resname_list))
+    all_charges = {resname: [] for resname in resname_list}
+
+    for i, meze in enumerate(meze_sofra):
+        if ligand_names:
+            ligand_name = ligand_names[i]
+            log.info(f"Processing ligand: {ligand_name}")
+        else:
+            ligand_name = str(i)
+            log.info(f"Processing ligand at index {i}")  
+
+        for resname, charge_list in all_charges.items():
+            atoms = meze.universe.select_atoms(f"resname {resname}")
+            if not atoms:
+                log.warning(
+                    f"No atoms found with resname {resname} in universe. Skipping."
+                )
+                continue
+            charge_list = atoms.charges
+            if not charge_list.any():
+                log.warning(
+                    f"No charges found for resname {resname} in universe. Skipping."
+                )
+                continue
+            
+            all_charges[resname] = {}
+            all_charges[resname][ligand_name] = charge_list
+    
+    averaged_charges = {}
+
+    for residue, ligand_dict in all_charges.items():
+        all_charges = np.vstack(list(ligand_dict.values()))
+        averaged_charges[residue] = all_charges.mean(axis=0)
+    
+
