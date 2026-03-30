@@ -6,7 +6,6 @@ project_dir = sys.argv[1]
 system_name = sys.argv[2]
 ligand_name = sys.argv[3]
 
-
 with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json", "r") as file:
      json_recipe = json.load(file)
 
