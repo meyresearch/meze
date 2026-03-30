@@ -3,14 +3,13 @@ import sys
 import json
 from pathlib import Path
 
-"""UNCOMMENT BEFORE COMMIT !!!"""
-# REPO_ROOT = Path().resolve()
-# EXAMPLES_DIR = REPO_ROOT / "examples"
-# DATA_DIR = REPO_ROOT / "data"
 
-# project_dir = DATA_DIR
+REPO_ROOT = Path().resolve()
+EXAMPLES_DIR = REPO_ROOT / "examples"
+DATA_DIR = REPO_ROOT / "data"
 
-project_dir = "/group/chem/oliveira2t/af25016/hybrid_model/"
+project_dir = DATA_DIR
+
 
 
 system_name = "vim2"

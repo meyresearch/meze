@@ -1,51 +1,51 @@
--I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/prep to search path.
--I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/lib to search path.
--I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/parm to search path.
--I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/cmd to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/prep to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/lib to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/parm to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/cmd to search path.
 -s: Ignoring all leaprc startup files.
 -f: Source /Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/vim2_ligand_11_tleap.in.
 
 Welcome to LEaP!
 Sourcing: /Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/vim2_ligand_11_tleap.in
------ Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.gaff2
------ Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.gaff2 done
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.gaff2
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.gaff2 done
 Log file: ./leap.log
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/gaff2.dat
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/gaff2.dat
 Reading title:
 AMBER General Force Field for organic molecules (Version 2.2.20, March 2021)
------ Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/oldff/leaprc.ff14SB
------ Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/oldff/leaprc.ff14SB done
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/oldff/leaprc.ff14SB
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/oldff/leaprc.ff14SB done
 Log file: ./leap.log
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/parm10.dat
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/parm10.dat
 Reading title:
 PARM99 + frcmod.ff99SB + frcmod.parmbsc0 + OL3 for RNA
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ff14SB
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ff14SB
 Reading force field modification type file (frcmod)
 Reading title:
 ff14SB protein backbone and sidechain parameters
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/amino12.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/aminoct12.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/aminont12.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/nucleic12.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/atomic_ions.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/solvents.lib
------ Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.water.tip3p
------ Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.water.tip3p done
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/atomic_ions.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/solvents.lib
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.tip3p
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/amino12.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/aminoct12.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/aminont12.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/nucleic12.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/atomic_ions.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/solvents.lib
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.water.tip3p
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.water.tip3p done
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/atomic_ions.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/solvents.lib
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.tip3p
 Reading force field modification type file (frcmod)
 Reading title:
 This is the additional/replacement parameter set for TIP3P water
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions1lm_126_tip3p
 Reading force field modification type file (frcmod)
 Reading title:
 Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ionsjc_tip3p
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ionsjc_tip3p
 Reading force field modification type file (frcmod)
 Reading title:
 Monovalent ion parameters for Ewald and TIP3P water from Joung & Cheatham JPCB (2008)
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ions234lm_126_tip3p
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions234lm_126_tip3p
 Reading force field modification type file (frcmod)
 Reading title:
 Li/Merz ion parameters of divalent to tetravalent ions for TIP3P water model (12-6 normal usage set)
@@ -77,7 +77,7 @@ Loading parameters: ./MOH.frcmod
 Reading force field modification type file (frcmod)
 Reading title:
 Remark line goes here
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions1lm_126_tip3p
 Reading force field modification type file (frcmod)
 Reading title:
 Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
@@ -87,40 +87,40 @@ Reading title:
 REMARK GOES HERE, THIS FILE IS GENERATED BY MCPB.PY
 Loading PDB file: ./vim2_ligand_11_mcpbpy.pdb
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (HD1) missing connect0 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (default_name) missing connect1 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (HE1) missing connect0 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (default_name) missing connect1 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (AP1) missing connect0 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (default_name) missing connect1 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (HD2) missing connect0 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (default_name) missing connect1 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (CM1) missing connect0 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (default_name) missing connect1 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (HD3) missing connect0 atom.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 One sided connection. Residue (default_name) missing connect1 atom.
   Added missing heavy atom: .R<CSER 232>.A<OXT 12>
   total atoms in file: 4029
@@ -128,17 +128,17 @@ One sided connection. Residue (default_name) missing connect1 atom.
        1 Heavy
 Writing pdb file: vim2_ligand_11_dry.pdb
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
  Converting N-terminal residue name to PDB format: NGLU -> GLU
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
  Converting C-terminal residue name to PDB format: CSER -> SER
 Checking Unit.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 The unperturbed charge of the unit (-11.999999) is not zero.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Note.
+/Users/af25016/Software/ambertools25/bin/teLeap: Note.
 Ignoring the warning from Unit Checking.
 
 Building topology.
@@ -217,10 +217,10 @@ Adding 0 counter ions to "mol" using 1A grid
 Writing pdb file: vim2_ligand_11_solv.pdb
    printing CRYST1 record to PDB file with box info
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
  Converting N-terminal residue name to PDB format: NGLU -> GLU
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
  Converting C-terminal residue name to PDB format: CSER -> SER
 Checking Unit.
 Building topology.
