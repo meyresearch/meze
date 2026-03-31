@@ -26,3 +26,22 @@ for i, ligand in enumerate(json_recipe.keys()):
     ))
 
 new_meze_list = build_average_charges(prepared_meze_list, ligand_names=ligand_names)
+
+for i, meze in enumerate(new_meze_list):
+    meze.save(
+        filename=f"{meze.parameterisation_directory}/{ligand_names[i]}_avg_charges"
+    )
+
+    solvated = meze.add_water(
+        directory=meze.parameterisation_directory,
+        mcpbpy_tleap_file=meze.tleap_input_file
+    )
+
+    solvated.save(
+        filename=f"{meze.parameterisation_directory}/{ligand_names[i]}_avg_charges_solv"
+    )
+
+    solvated.add_to_sofra(
+        key=ligand_names[i],
+        filename=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json"
+    )
