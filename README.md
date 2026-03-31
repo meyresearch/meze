@@ -54,25 +54,19 @@ pip install --no-cache-dir git+https://github.com/meyresearch/meze.git@main
 
 # Developing
 
-Get the developer environment.yml file:
-```
-curl -O https://raw.githubusercontent.com/meyresearch/meze/main/dev-environment.yml
-```
-
-Create a developer environment: 
-```
-mamba env create -f environment.yml
-mamba activate meze-dev
-```
-
 Clone the repository:
 ```
 git clone https://github.com/meyresearch/meze.git
 cd meze
 ```
 
-Install an editable version:
-
+Create a developer environment: 
 ```
+mamba env create -f dev-environment.yml
+mamba activate meze-dev
 pip install -e .
+git pull
 ```
+> [!IMPORTANT]
+> Make sure to `git pull` after new updates to the code!
+
