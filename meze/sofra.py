@@ -2856,19 +2856,22 @@ def build_average_charges(meze_sofra: List[Meze],
             else:
                 new_non_standard_residues.append(residue)
         new_restraints = meze.restraint_file
+        tleap_input_file = tleap_input_files[0]
         for old_file in files_to_copy:
             file = os.path.basename(old_file)
             new_file = os.path.join(parameterisation_directories[i], file)
             shutil.copy(old_file, new_file)
             if ".RST" in os.path.splitext(file):
                 new_restraints = new_file
+            if "tleap" in file:
+                tleap_input_file = new_file
 
         updated_mezes.append(dataclasses.replace(
             meze,
             non_standard_residues=new_non_standard_residues,
             parameterisation_directory=parameterisation_directories[i],
-            restraint_file=new_restraints
-
+            restraint_file=new_restraints,
+            tleap_input_file=tleap_input_file
         ))
 
     return updated_mezes

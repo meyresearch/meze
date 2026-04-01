@@ -3,10 +3,10 @@
 -I: Adding /Users/af25016/Software/ambertools25/dat/leap/parm to search path.
 -I: Adding /Users/af25016/Software/ambertools25/dat/leap/cmd to search path.
 -s: Ignoring all leaprc startup files.
--f: Source /Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/vim2_ligand_11_tleap.in.
+-f: Source /Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/03_averaged_charges/vim2_ligand_11_tleap.in.
 
 Welcome to LEaP!
-Sourcing: /Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/vim2_ligand_11_tleap.in
+Sourcing: /Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/03_averaged_charges/vim2_ligand_11_tleap.in
 ----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.gaff2
 ----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.gaff2 done
 Log file: ./leap.log
