@@ -2715,14 +2715,15 @@ def build_average_charges(meze_sofra: List[Meze],
                           ) -> list[Meze]:
     parameterisation_directories = []
     for i, meze in enumerate(meze_sofra):
-        if not directory:
+        ligand_directory = directory
+        if not ligand_directory:
             log.warning(
                 f"parent directory not set, inferring from {meze.parameterisation_directory}"
             )
-            directory = str(pathlib.Path(meze.parameterisation_directory).parent)
+            ligand_directory = str(pathlib.Path(meze.parameterisation_directory).parent)
 
         parameterisation_directory = os.path.join(
-            directory, "03_averaged_charges"
+            ligand_directory, "03_averaged_charges"
         )
         parameterisation_directory = parameterisation_directory
         log.info(f"Creating directory: {parameterisation_directory}")
