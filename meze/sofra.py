@@ -1252,11 +1252,10 @@ class Meze:
         
         oxygen_ligands = {}
         for metal, ligands in self.coordinating_residues.items():
-            metal_corrected = metal + 1
-            oxygen_ligands[metal_corrected] = []
+            oxygen_ligands[metal] = []
             for atom in ligands:
                 if atom.element == "O":
-                    oxygen_ligands[metal_corrected].append(atom)
+                    oxygen_ligands[metal].append(atom)
 
         oxygen_ids = []
         metals_with_multiple_oxygens = []
@@ -1314,7 +1313,15 @@ class Meze:
 
         restraint_lines = [_write_distance_restraints(restraint) for restraint in restraints]
         restraint_file = os.path.join(self.parameterisation_directory, "double_oxygen_restraints.RST")
-        if not os.path.isfile(restraint_file):
+        if os.path.isfile(restraint_file):
+            with open(restraint_file, "r") as file:
+                read_lines = file.readlines()
+            if not read_lines:
+                with open(restraint_file, "w") as file:
+                    for lines in restraint_lines:
+                        file.writelines(lines)  
+
+        else:
             with open(restraint_file, "w") as file:
                 for lines in restraint_lines:
                     file.writelines(lines)
@@ -1461,12 +1468,15 @@ class Meze:
                           [original_pdb_file, standard_fingerprint, mcpbpy_input_file, self.restraint_file]
             
             new_zn_files = []
+            new_restraints = self.restraint_file
             for old_file in param_files: 
                 file = os.path.basename(old_file)
                 new_file = os.path.join(parameterisation_directory, file)
                 shutil.copy(old_file, new_file)
                 if "ZN" in file:
                     new_zn_files.append(new_file)
+                if ".RST" in os.path.splitext(file):
+                    new_restraints = new_file
 
             for file in new_zn_files:
 
@@ -1523,6 +1533,7 @@ class Meze:
             step_4_output_file = os.path.join(
                 self.parameterisation_directory, "mcpb_step4.out"
             )
+            new_restraints = self.restraint_file
             
 
         step_3_command = f"MCPB.py -i {mcpbpy_input_file} -s 3 > {step_3_output_file}"
@@ -1596,14 +1607,10 @@ class Meze:
             coordinates=new_coordinates,
             topology=new_coordinates,
             ligand=new_ligand,
-            non_standard_residues=new_non_standard_residues
+            non_standard_residues=new_non_standard_residues,
+            restraint_file=new_restraints
         )
 
-    def build_averaged_charges(self):
-
-
-
-        pass
 
 
 @dataclass
@@ -2810,12 +2817,13 @@ def build_average_charges(meze_sofra: List[Meze],
         )
 
         frcmod_files = glob.glob(f"{meze.parameterisation_directory}/*.frcmod")
-        mcpbp_pdb_file = glob.glob(f"{meze.parameterisation_directory}/*_mcpbpy.pdb")
-        mcpbpy_input_files = glob.glob(f"{meze.parameterisation_directory}/*_tleap.in")
+        mcpbp_pdb_files = glob.glob(f"{meze.parameterisation_directory}/*_mcpbpy.pdb")
+        tleap_input_files = glob.glob(f"{meze.parameterisation_directory}/*_tleap*.in")
+
         restraint_files = [meze.restraint_file] if meze.restraint_file and os.path.isfile(meze.restraint_file) else []
 
         files_to_copy = (
-            ligand_mol2 + frcmod_files + mcpbp_pdb_file + mcpbpy_input_files + restraint_files
+            ligand_mol2 + frcmod_files + mcpbp_pdb_files + restraint_files + tleap_input_files
         )
 
         for input_file in glob.glob(f"{parameterisation_directories[i]}/*.in"):
@@ -2847,16 +2855,23 @@ def build_average_charges(meze_sofra: List[Meze],
                 ))
             else:
                 new_non_standard_residues.append(residue)
-        
+        new_restraints = meze.restraint_file
+        tleap_input_file = tleap_input_files[0]
         for old_file in files_to_copy:
             file = os.path.basename(old_file)
             new_file = os.path.join(parameterisation_directories[i], file)
             shutil.copy(old_file, new_file)
+            if ".RST" in os.path.splitext(file):
+                new_restraints = new_file
+            if "tleap" in file:
+                tleap_input_file = new_file
 
         updated_mezes.append(dataclasses.replace(
             meze,
             non_standard_residues=new_non_standard_residues,
-            parameterisation_directory=parameterisation_directories[i]
+            parameterisation_directory=parameterisation_directories[i],
+            restraint_file=new_restraints,
+            tleap_input_file=tleap_input_file
         ))
 
     return updated_mezes
