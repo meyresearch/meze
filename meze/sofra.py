@@ -701,6 +701,11 @@ class Meze:
             coordination_restraints = self._prepare_distance_restraints()
             angle_restraints = self._prepare_angle_restraints()
             distance_restraints = coordination_restraints + angle_restraints
+        
+        if self.restraint_file and os.path.isfile(self.restraint_file):
+            with open(self.restraint_file, "r") as file:
+                added_distance_restraints = file.readlines()
+            distance_restraints = (distance_restraints or []) + added_distance_restraints
 
         if distance_restraints:
             config_file = process._config_file
@@ -1811,7 +1816,7 @@ class ColdMeze(Meze):
                 additional_restraints=additional_restraints
             )
         
-        if self.recipe.model == 0:
+        if self.recipe.model == 0 or self.restraint_file:
             config_options["nmropt"] = 1
 
         allowed = ["minimisation", "nvt", "npt"]
@@ -2081,7 +2086,7 @@ class HotMeze(Meze):
                           "ntx": 5, 
                           "iwrap": 0}
 
-        if self.recipe.model == 0:
+        if self.recipe.model == 0 or self.restraint_file:
             config_options["nmropt"] = 1
 
         protocol = bss.Protocol.Production(
