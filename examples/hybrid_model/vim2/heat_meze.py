@@ -25,13 +25,6 @@ json_recipe["path_to_engine"] = os.path.join(
 
 input_dir = json_recipe[ligand_name]["parameterisation_directory"]
 
-# solvated_meze = ColdMeze.from_files(
-#     topology=f"{input_dir}/{system_name}_{ligand_name}_solv.prmtop",
-#     coordinates=f"{input_dir}/{system_name}_{ligand_name}_solv.inpcrd",
-#     recipe=ColdMezeRecipe(**json_recipe),
-#     additional_restraints=json_recipe[ligand_name]["restraint_file"]
-# )
-
 solvated_meze = ColdMeze.load(
     filename=f"{input_dir}/{ligand_name}_avg_charges_solv.pkl"
 )
@@ -48,7 +41,7 @@ minimised_meze = solvated_meze.minimise(
     workdir=equil_dir,
     position_restraints="solute",
     max_cycles=5000,
-    is_gpu=True
+    is_gpu=False
 )
 
 print("02 - Heating with restrained solute")
