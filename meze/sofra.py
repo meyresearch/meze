@@ -701,6 +701,11 @@ class Meze:
             coordination_restraints = self._prepare_distance_restraints()
             angle_restraints = self._prepare_angle_restraints()
             distance_restraints = coordination_restraints + angle_restraints
+        
+        if self.restraint_file and os.path.isfile(self.restraint_file):
+            with open(self.restraint_file, "r") as file:
+                added_distance_restraints = file.readlines()
+            distance_restraints = (distance_restraints or []) + added_distance_restraints
 
         if distance_restraints:
             config_file = process._config_file
@@ -1811,7 +1816,7 @@ class ColdMeze(Meze):
                 additional_restraints=additional_restraints
             )
         
-        if self.recipe.model == 0:
+        if self.recipe.model == 0 or self.restraint_file:
             config_options["nmropt"] = 1
 
         allowed = ["minimisation", "nvt", "npt"]
@@ -2081,7 +2086,7 @@ class HotMeze(Meze):
                           "ntx": 5, 
                           "iwrap": 0}
 
-        if self.recipe.model == 0:
+        if self.recipe.model == 0 or self.restraint_file:
             config_options["nmropt"] = 1
 
         protocol = bss.Protocol.Production(
@@ -2856,6 +2861,26 @@ def build_average_charges(meze_sofra: List[Meze],
                 ))
             else:
                 new_non_standard_residues.append(residue)
+
+        old_ligand = meze.ligand
+        new_ligand_mol2 = os.path.join(parameterisation_directories[i], os.path.basename(old_ligand.file[0]))
+        if not os.path.isfile(new_ligand_mol2):
+            message = f"Expected ligand mol2 not found: {new_ligand_mol2}."
+            log.error(message)
+            raise FileNotFoundError(message)
+        new_frcmod = os.path.join(parameterisation_directories[i], os.path.basename(old_ligand.frcmod_file))
+        if not os.path.isfile(new_frcmod):
+            message = f"Expected ligand frcmod not found: {new_frcmod}."
+            log.error(message)
+            raise FileNotFoundError(message)            
+        new_ligand = Ligand(
+            file=[new_ligand_mol2],
+            charge=old_ligand.charge,
+            parameterised=True,
+            frcmod_file=new_frcmod,
+            residue_name=old_ligand.residue_name
+        )
+        
         new_restraints = meze.restraint_file
         tleap_input_file = tleap_input_files[0]
         for old_file in files_to_copy:
@@ -2872,7 +2897,9 @@ def build_average_charges(meze_sofra: List[Meze],
             non_standard_residues=new_non_standard_residues,
             parameterisation_directory=parameterisation_directories[i],
             restraint_file=new_restraints,
-            tleap_input_file=tleap_input_file
+            tleap_input_file=tleap_input_file,
+            ligand=new_ligand,
+            ligand_resname=new_ligand.residue_name
         ))
 
     return updated_mezes
