@@ -37,11 +37,12 @@ for i, meze in enumerate(new_meze_list):
         mcpbpy_tleap_file=meze.tleap_input_file
     )
 
-    solvated.save(
+    pickled_file = solvated.save(
         filename=f"{meze.parameterisation_directory}/{ligand_names[i]}_avg_charges_solv"
     )
 
     solvated.add_to_sofra(
         key=ligand_names[i],
-        filename=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json"
+        filename=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json",
+        pickle_file=pickled_file
     )

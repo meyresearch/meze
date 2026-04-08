@@ -261,21 +261,24 @@ class Meze:
     def __str__(self) -> str:
         return _pretty(self)
 
-    def save(self, filename: str):
+    def save(self, filename: str) -> str:
         suffix = pathlib.Path(filename).suffix
         if not suffix:
             filename += ".pkl"
         with open(filename, "wb") as file:
             pickle.dump(self, file)
+        return filename
     
     def add_to_sofra(self, 
                      filename: str, 
                      key: str, 
+                     pickle_file: Optional[srt] = None,
                      extra_fields: Optional[dict] = None):
         new_entry = {
             key: {}
         }
-
+        if pickle_file is not None:
+            new_entry[key]["pickle_file"] = pickle_file
         if self.parameterisation_directory is not None:
             new_entry[key]["parameterisation_directory"] = self.parameterisation_directory
         if self.mcpbpy_input_file is not None:
