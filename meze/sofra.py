@@ -933,7 +933,9 @@ class Meze:
                 topology=solvated_topology, 
                 coordinates=solvated_coordinates, 
                 ligand=parameterised_ligand,
-                non_standard_residues=parameterised_non_standard_residues
+                non_standard_residues=parameterised_non_standard_residues,
+                tleap_input_file=tleap_input_file,
+                parameterisation_directory=directory
             )
         
         except FileNotFoundError:
