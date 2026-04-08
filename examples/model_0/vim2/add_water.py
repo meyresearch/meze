@@ -41,9 +41,14 @@ solvate_dir = f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{liga
 
 solvated_meze = cold_system.add_water(directory=solvate_dir)
 
+pickle_file = solvated_meze.save(
+    filename=f"{solvate_dir}/{ligand_name}_solvated.pkl"
+)
+
 solvated_meze.add_to_sofra(
     f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json",
-    key=ligand_name
+    key=ligand_name,
+    pickle_file=pickle_file
 )
 
 print(solvated_meze)
