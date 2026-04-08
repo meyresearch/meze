@@ -254,7 +254,7 @@ class Meze:
             self._set_ligand()
         else:
             log.warning(
-                "Ligand not set by user. Are you sure you want to continue without a ligand?"
+                "Ligand not set by user in meze construction."
             )
 
 
@@ -272,7 +272,7 @@ class Meze:
     def add_to_sofra(self, 
                      filename: str, 
                      key: str, 
-                     pickle_file: Optional[srt] = None,
+                     pickle_file: Optional[str] = None,
                      extra_fields: Optional[dict] = None):
         new_entry = {
             key: {}
@@ -2671,264 +2671,277 @@ class Sofra:
         return cls(mezes=mezes, sofra_file=sofra_file, sofra_contents=sofra_contents)
 
 
+    def average_charges(self, 
+                        new_parameterisation_directories: List[str])-> dict[str, dict[str, float]]:
 
-def average_charges(meze_sofra: List[Meze],
-                    parameterisation_directories: List[str],
-                    ligand_names: Optional[List[str]] = None
-                    )-> dict[str, dict[str, float]]:
+        all_charges = {}
+        resname_list = []
+        for meze in self.mezes.values():
 
-    all_charges = {}
-    resname_list = []
-    for meze in meze_sofra:
-
-        for metal, residue in meze.coordinating_residues.items():
-            resname_list.extend(residue.resnames)
-            
-            metal_ag = meze.universe.select_atoms(f"id {metal}")
-            if not metal_ag:
-                log.warning(
-                    f"Metal atom with id {metal} not found in universe. Skipping."
-                )
-            else:
-                resname_list.extend(metal_ag.resnames)
-        
-        resname_list = [resname for resname in resname_list if resname != meze.ligand_resname and resname != meze.ligand.residue_name]
-
-    resname_list = list(set(resname_list))
-    all_charges = {resname: {} for resname in resname_list}
-
-    for i, meze in enumerate(meze_sofra):
-        if ligand_names:
-            ligand_name = ligand_names[i]
-            log.info(f"Processing ligand: {ligand_name}")
-        else:
-            ligand_name = str(i)
-            log.info(f"Processing ligand at index {i}")  
-
-        for resname, charge_list in all_charges.items():
-            atoms = meze.universe.select_atoms(f"resname {resname}")
-            if not atoms:
-                log.warning(
-                    f"No atoms found with resname {resname} in universe. Skipping."
-                )
-                continue
-            charge_list = atoms.charges
-            if not charge_list.any():
-                log.warning(
-                    f"No charges found for resname {resname} in universe. Skipping."
-                )
-                continue
-            
-            all_charges[resname][ligand_name] = {atom.name: charge for atom, charge in zip(atoms, charge_list)}
-        
-        charges_file = os.path.join(parameterisation_directories[i], f"{ligand_name}_raw_charges.json")
-        with open(charges_file, "w") as f:
-            json.dump({"all_charges": all_charges}, f, indent=2)
-        log.info(f"Raw charges for {ligand_name} written to: {charges_file}")
-
-    averaged_charges = {}
-
-    for resname, ligand_dict in all_charges.items():
-        atom_names = list(next(iter(ligand_dict.values())).keys())
-        averaged_charges[resname] = {
-            atom_name: np.mean([charges[atom_name] for charges in ligand_dict.values()])
-            for atom_name in atom_names
-        }
-
-    for resname, atom_dict in averaged_charges.items():
-        log.info(f"{resname}:")
-        for atom_name, charge in atom_dict.items():
-            log.info(f"  {atom_name:6s}  {charge:+.6f}")
-    
-    return averaged_charges
-
-
-def build_average_charges(meze_sofra: List[Meze], 
-                          directory: Optional[str] = None, 
-                          ligand_names: Optional[List[str]] = None
-                          ) -> list[Meze]:
-    parameterisation_directories = []
-    for i, meze in enumerate(meze_sofra):
-        ligand_directory = directory
-        if not ligand_directory:
-            log.warning(
-                f"parent directory not set, inferring from {meze.parameterisation_directory}"
-            )
-            ligand_directory = str(pathlib.Path(meze.parameterisation_directory).parent)
-
-        parameterisation_directory = os.path.join(
-            ligand_directory, "03_averaged_charges"
-        )
-        parameterisation_directory = parameterisation_directory
-        log.info(f"Creating directory: {parameterisation_directory}")
-        os.makedirs(parameterisation_directory, exist_ok=True)       
-        parameterisation_directories.append(parameterisation_directory)
-
-    averaged_charges = average_charges(meze_sofra, parameterisation_directories, ligand_names)
-    updated_mezes = []
-    for i, meze in enumerate(meze_sofra):
-        if ligand_names:
-            ligand_name = ligand_names[i]
-            log.info(f"Processing ligand: {ligand_name}")
-        else:
-            ligand_name = str(i)
-            log.info(f"Processing ligand at index {i}")  
-
-        all_residue_names = []
-
-        for metal, residue in meze.coordinating_residues.items():
-            all_residue_names.extend(residue.resnames)
-            
-            metal_ag = meze.universe.select_atoms(f"id {metal}")
-            if not metal_ag:
-                log.warning(
-                    f"Metal atom with id {metal} not found in universe. Skipping."
-                )
-            else:
-                all_residue_names.extend(metal_ag.resnames)
-        
-        residue_names = list(set([resname for resname in all_residue_names if resname != meze.ligand_resname and resname != meze.ligand.residue_name]))
-
-        old_mol2_files = [os.path.join(meze.parameterisation_directory, f"{resname}.mol2") for resname in residue_names]
-
-        new_mol2_files = [os.path.join(parameterisation_directories[i], f"{resname}.mol2") for resname in residue_names]
-
-        for j, old_file in enumerate(old_mol2_files):
-            if not os.path.isfile((old_file)):
-                log.warning(
-                    f"Mol2 file not found: {old_file}. Skipping."
-                )
-                continue
-            with open(old_file, "r") as f:
-                data = f.readlines()   
-            
-            for k, line in enumerate(data):
-                if line.startswith("@<TRIPOS>ATOM"):
-                    start_index = k + 1
-                if line.startswith("@<TRIPOS>BOND"):
-                    end_index = k
-                    break
-            
-            atoms = data[start_index:end_index]
-
-            new_atoms = []
-            for k, atom_line in enumerate(atoms):
-
-                atom_name = atom_line.split()[1]
-                old_charge = atom_line.split()[8]
-                resname = atom_line.split()[7]
-
-                new_charge = averaged_charges[resname][atom_name]
-
-                if not new_charge:
+            for metal, residue in meze.coordinating_residues.items():
+                resname_list.extend(residue.resnames)
+                
+                metal_ag = meze.universe.select_atoms(f"id {metal}")
+                if not metal_ag:
                     log.warning(
-                        f"Could not find new charge for {resname},{atom_name}. Skipping."
+                        f"Metal atom with id {metal} not found in universe. Skipping."
+                    )
+                else:
+                    resname_list.extend(metal_ag.resnames)
+            
+            resname_list = [resname for resname in resname_list if resname != meze.ligand_resname and resname != meze.ligand.residue_name]
+
+        resname_list = list(set(resname_list))
+        all_charges = {resname: {} for resname in resname_list}
+
+        for i, (ligand_name, meze) in enumerate(self.mezes.items()):
+
+            log.info(f"Processing ligand: {ligand_name}")
+            parameterisation_directory = new_parameterisation_directories[i]
+
+            for resname, charge_list in all_charges.items():
+                atoms = meze.universe.select_atoms(f"resname {resname}")
+                if not atoms:
+                    log.warning(
+                        f"No atoms found with resname {resname} in universe. Skipping."
                     )
                     continue
-
-                formatted_charge = f"{new_charge:.6f}"
-                new_atom_line = atom_line.replace(old_charge, formatted_charge)
-
-                log.info(
-                    f"Replaced {resname}-{atom_name} charge: "
-                    f"{old_charge} changed to {new_charge}"
-                )
-                new_atoms.append(new_atom_line)
-            
-            with open(new_mol2_files[j], "w") as f:
-                f.writelines(data[:start_index] + new_atoms + data[end_index:])
-                log.info(
-                    f"New charges written to: "
-                    f"{new_mol2_files[j]}"
-                )
-        
-        if meze.ligand_resname:
-            ligand_resname = meze.ligand_resname
-        else:
-            ligand_resname = meze.ligand.residue_name
-        
-        ligand_mol2 = glob.glob(
-            f"{meze.parameterisation_directory}/{ligand_resname}.*"
-        )
-
-        frcmod_files = glob.glob(f"{meze.parameterisation_directory}/*.frcmod")
-        mcpbp_pdb_files = glob.glob(f"{meze.parameterisation_directory}/*_mcpbpy.pdb")
-        tleap_input_files = glob.glob(f"{meze.parameterisation_directory}/*_tleap*.in")
-
-        restraint_files = [meze.restraint_file] if meze.restraint_file and os.path.isfile(meze.restraint_file) else []
-
-        files_to_copy = (
-            ligand_mol2 + frcmod_files + mcpbp_pdb_files + restraint_files + tleap_input_files
-        )
-
-        for input_file in glob.glob(f"{parameterisation_directories[i]}/*.in"):
-            with open(input_file, "r") as f:
-                contents = f.read()
-            if meze.parameterisation_directory in contents:
-                updated = contents.replace(meze.parameterisation_directory, parameterisation_directories[i])
-                with open(input_file, "w") as f:
-                    f.write(updated)
-
-        new_non_standard_residues = []
-        for residue in meze.non_standard_residues:
-            if residue.residue_name in residue_names:
-                new_mol2 = os.path.join(parameterisation_directories[i], f"{residue.residue_name}.mol2")
-                if not os.path.isfile(new_mol2):
-                    log.warning(f"Expected averaged mol2 not found: {new_mol2}. Keeping original.")
-                    new_non_standard_residues.append(residue)
+                charge_list = atoms.charges
+                if not charge_list.any():
+                    log.warning(
+                        f"No charges found for resname {resname} in universe. Skipping."
+                    )
                     continue
-                frcmod_src = residue.frcmod_file
-                if frcmod_src and os.path.isfile(frcmod_src):
-                    frcmod_dst = os.path.join(parameterisation_directories[i], os.path.basename(frcmod_src))
-                else:
-                    frcmod_dst = residue.frcmod_file
-                new_non_standard_residues.append(dataclasses.replace(
-                    residue,
-                    file=[new_mol2],
-                    charge=_get_mol2_charge(new_mol2),
-                    frcmod_file=frcmod_dst
-                ))
-            else:
-                new_non_standard_residues.append(residue)
+                
+                all_charges[resname][ligand_name] = {atom.name: charge for atom, charge in zip(atoms, charge_list)}
+            
+            charges_file = os.path.join(parameterisation_directory, f"{ligand_name}_raw_charges.json")
+            with open(charges_file, "w") as f:
+                json.dump({"all_charges": all_charges}, f, indent=2)
+            log.info(f"Raw charges for {ligand_name} written to: {charges_file}")
 
-        old_ligand = meze.ligand
-        new_ligand_mol2 = os.path.join(parameterisation_directories[i], os.path.basename(old_ligand.file[0]))
-        if not os.path.isfile(new_ligand_mol2):
-            message = f"Expected ligand mol2 not found: {new_ligand_mol2}."
-            log.error(message)
-            raise FileNotFoundError(message)
-        new_frcmod = os.path.join(parameterisation_directories[i], os.path.basename(old_ligand.frcmod_file))
-        if not os.path.isfile(new_frcmod):
-            message = f"Expected ligand frcmod not found: {new_frcmod}."
-            log.error(message)
-            raise FileNotFoundError(message)            
-        new_ligand = Ligand(
-            file=[new_ligand_mol2],
-            charge=old_ligand.charge,
-            parameterised=True,
-            frcmod_file=new_frcmod,
-            residue_name=old_ligand.residue_name
-        )
+        averaged_charges = {}
+
+        for resname, ligand_dict in all_charges.items():
+            atom_names = list(next(iter(ligand_dict.values())).keys())
+            averaged_charges[resname] = {
+                atom_name: np.mean([charges[atom_name] for charges in ligand_dict.values()])
+                for atom_name in atom_names
+            }
+
+        for resname, atom_dict in averaged_charges.items():
+            log.info(f"{resname}:")
+            for atom_name, charge in atom_dict.items():
+                log.info(f"  {atom_name:6s}  {charge:+.6f}")
         
-        new_restraints = meze.restraint_file
-        tleap_input_file = tleap_input_files[0]
-        for old_file in files_to_copy:
-            file = os.path.basename(old_file)
-            new_file = os.path.join(parameterisation_directories[i], file)
-            shutil.copy(old_file, new_file)
-            if ".RST" in os.path.splitext(file):
-                new_restraints = new_file
-            if "tleap" in file:
-                tleap_input_file = new_file
+        return averaged_charges
 
-        updated_mezes.append(dataclasses.replace(
-            meze,
-            non_standard_residues=new_non_standard_residues,
-            parameterisation_directory=parameterisation_directories[i],
-            restraint_file=new_restraints,
-            tleap_input_file=tleap_input_file,
-            ligand=new_ligand,
-            ligand_resname=new_ligand.residue_name
-        ))
 
-    return updated_mezes
+    def build_average_charges(self, directory: Optional[str] = None) -> list[Meze]:
+
+        new_parameterisation_directories = []
+        for meze in self.mezes.values():
+            ligand_directory = directory
+            if not ligand_directory:
+                log.warning(
+                    f"parent directory not set, inferring from {meze.parameterisation_directory}"
+                )
+                ligand_directory = str(pathlib.Path(meze.parameterisation_directory).parent)
+
+            parameterisation_directory = os.path.join(
+                ligand_directory, "03_averaged_charges"
+            )
+            parameterisation_directory = parameterisation_directory
+            log.info(f"Creating directory: {parameterisation_directory}")
+            os.makedirs(parameterisation_directory, exist_ok=True)       
+            new_parameterisation_directories.append(parameterisation_directory)
+
+        averaged_charges = self.average_charges(new_parameterisation_directories)
+        updated_mezes = []
+        for i, (ligand_name, meze) in enumerate(self.mezes.items()):
+
+            log.info(f"Processing ligand: {ligand_name}")
+
+            all_residue_names = []
+
+            for metal, residue in meze.coordinating_residues.items():
+                all_residue_names.extend(residue.resnames)
+                
+                metal_ag = meze.universe.select_atoms(f"id {metal}")
+                if not metal_ag:
+                    log.warning(
+                        f"Metal atom with id {metal} not found in universe. Skipping."
+                    )
+                else:
+                    all_residue_names.extend(metal_ag.resnames)
+            
+            residue_names = list(set(
+                [resname for resname in all_residue_names if resname != meze.ligand_resname and resname != meze.ligand.residue_name]
+            ))
+
+            old_mol2_files = [os.path.join(meze.parameterisation_directory, f"{resname}.mol2") for resname in residue_names]
+
+            new_mol2_files = [os.path.join(new_parameterisation_directories[i], f"{resname}.mol2") for resname in residue_names]
+
+            for j, old_file in enumerate(old_mol2_files):
+                if not os.path.isfile((old_file)):
+                    log.warning(
+                        f"Mol2 file not found: {old_file}. Skipping."
+                    )
+                    continue
+                with open(old_file, "r") as f:
+                    data = f.readlines()   
+                start_index = 0
+                for k, line in enumerate(data):
+                    if line.startswith("@<TRIPOS>ATOM"):
+                        start_index = k + 1
+                    if line.startswith("@<TRIPOS>BOND"):
+                        end_index = k
+                        break
+                
+                atoms = data[start_index:end_index]
+
+                new_atoms = []
+                for k, atom_line in enumerate(atoms):
+
+                    atom_name = atom_line.split()[1]
+                    old_charge = atom_line.split()[8]
+                    resname = atom_line.split()[7]
+
+                    new_charge = averaged_charges[resname][atom_name]
+
+                    if not new_charge:
+                        log.warning(
+                            f"Could not find new charge for {resname},{atom_name}. Skipping."
+                        )
+                        continue
+
+                    formatted_charge = f"{new_charge:.6f}"
+                    new_atom_line = atom_line.replace(old_charge, formatted_charge)
+
+                    log.info(
+                        f"Replaced {resname}-{atom_name} charge: "
+                        f"{old_charge} changed to {new_charge}"
+                    )
+                    new_atoms.append(new_atom_line)
+                
+                with open(new_mol2_files[j], "w") as f:
+                    f.writelines(data[:start_index] + new_atoms + data[end_index:])
+                    log.info(
+                        f"New charges written to: "
+                        f"{new_mol2_files[j]}"
+                    )
+            
+            if meze.ligand_resname:
+                ligand_resname = meze.ligand_resname
+            else:
+                ligand_resname = meze.ligand.residue_name
+            
+            ligand_mol2 = glob.glob(
+                f"{meze.parameterisation_directory}/{ligand_resname}.*"
+            )
+
+            frcmod_files = glob.glob(f"{meze.parameterisation_directory}/*.frcmod")
+            mcpbp_pdb_files = glob.glob(f"{meze.parameterisation_directory}/*_mcpbpy.pdb")
+            tleap_input_files = glob.glob(f"{meze.parameterisation_directory}/*_tleap*.in")
+
+            restraint_files = [meze.restraint_file] if meze.restraint_file and os.path.isfile(meze.restraint_file) else []
+
+            files_to_copy = (
+                ligand_mol2 + frcmod_files + mcpbp_pdb_files + restraint_files + tleap_input_files
+            )
+
+            for input_file in glob.glob(f"{new_parameterisation_directories[i]}/*.in"):
+                with open(input_file, "r") as f:
+                    contents = f.read()
+                if meze.parameterisation_directory in contents:
+                    updated = contents.replace(meze.parameterisation_directory, new_parameterisation_directories[i])
+                    with open(input_file, "w") as f:
+                        f.write(updated)
+
+            new_non_standard_residues = []
+            for residue in meze.non_standard_residues:
+                if residue.residue_name in residue_names:
+                    new_mol2 = os.path.join(new_parameterisation_directories[i], f"{residue.residue_name}.mol2")
+                    if not os.path.isfile(new_mol2):
+                        log.warning(f"Expected averaged mol2 not found: {new_mol2}. Keeping original.")
+                        new_non_standard_residues.append(residue)
+                        continue
+                    frcmod_src = residue.frcmod_file
+                    if frcmod_src and os.path.isfile(frcmod_src):
+                        frcmod_dst = os.path.join(new_parameterisation_directories[i], os.path.basename(frcmod_src))
+                    else:
+                        frcmod_dst = residue.frcmod_file
+                    new_non_standard_residues.append(dataclasses.replace(
+                        residue,
+                        file=[new_mol2],
+                        charge=_get_mol2_charge(new_mol2),
+                        frcmod_file=frcmod_dst
+                    ))
+                else:
+                    new_non_standard_residues.append(residue)
+
+            old_ligand = meze.ligand
+            new_ligand_mol2 = os.path.join(new_parameterisation_directories[i], os.path.basename(old_ligand.file[0]))
+            if not os.path.isfile(new_ligand_mol2):
+                message = f"Expected ligand mol2 not found: {new_ligand_mol2}."
+                log.error(message)
+                raise FileNotFoundError(message)
+            new_frcmod = os.path.join(new_parameterisation_directories[i], os.path.basename(old_ligand.frcmod_file))
+            if not os.path.isfile(new_frcmod):
+                message = f"Expected ligand frcmod not found: {new_frcmod}."
+                log.error(message)
+                raise FileNotFoundError(message)            
+            new_ligand = Ligand(
+                file=[new_ligand_mol2],
+                charge=old_ligand.charge,
+                parameterised=True,
+                frcmod_file=new_frcmod,
+                residue_name=old_ligand.residue_name
+            )
+            
+            new_restraints = meze.restraint_file
+            tleap_input_file = tleap_input_files[0]
+            for old_file in files_to_copy:
+                file = os.path.basename(old_file)
+                new_file = os.path.join(new_parameterisation_directories[i], file)
+                shutil.copy(old_file, new_file)
+                if ".RST" in os.path.splitext(file):
+                    new_restraints = new_file
+                if "tleap" in file:
+                    tleap_input_file = new_file
+
+            updated_mezes.append(dataclasses.replace(
+                meze,
+                non_standard_residues=new_non_standard_residues,
+                parameterisation_directory=new_parameterisation_directories[i],
+                restraint_file=new_restraints,
+                tleap_input_file=tleap_input_file,
+                ligand=new_ligand,
+                ligand_resname=new_ligand.residue_name
+            ))
+        for ligand_name, updated_meze in zip(self.mezes.keys(), updated_mezes):                                                                           
+            solvated = updated_meze.add_water(                                                                                                            
+                directory=updated_meze.parameterisation_directory,
+                mcpbpy_tleap_file=updated_meze.tleap_input_file                                                                                           
+            )                                                                                                                                             
+            pickle_file = solvated.save(
+                filename=f"{solvated.parameterisation_directory}/{ligand_name}_avg_charges_solv"                                                          
+            )                                                                                                                                             
+            solvated.add_to_sofra(                                                                                                                        
+                key=ligand_name,                                                                                                                          
+                filename=self.sofra_file,
+                pickle_file=pickle_file,                                                                                                                  
+            )
+            self.mezes[ligand_name] = solvated                                                                                                            
+            self.sofra_contents[ligand_name]["parameterisation_directory"] = solvated.parameterisation_directory
+            self.sofra_contents[ligand_name]["pickle_file"] = pickle_file                                                                                 
+            if solvated.tleap_input_file:
+                self.sofra_contents[ligand_name]["tleap_input_file"] = solvated.tleap_input_file                                                          
+            if solvated.restraint_file:
+                self.sofra_contents[ligand_name]["restraint_file"] = solvated.restraint_file                                                              
+                                                                                                                                                            
+        with open(self.sofra_file, "w") as f:
+            json.dump(self.sofra_contents, f, indent=4)                                                                                         
+                                
+        return updated_mezes

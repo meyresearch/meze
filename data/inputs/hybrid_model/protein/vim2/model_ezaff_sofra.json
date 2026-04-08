@@ -1,8 +1,11 @@
 {
     "ligand_11": {
+        "pickle_file": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/03_averaged_charges/ligand_11_avg_charges_solv.pkl",
         "parameterisation_directory": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/03_averaged_charges",
         "mcpbpy_input_file": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/mcpbpy.in",
         "tleap_input_file": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/03_averaged_charges/vim2_ligand_11_tleap.in",
-        "restraint_file": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/03_averaged_charges/double_oxygen_restraints.RST"
+        "restraint_file": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/03_averaged_charges/double_oxygen_restraints.RST",
+        "topology": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/vim2_ligand_11_solv.prmtop",
+        "coordinates": "/Users/af25016/projects/meze/data/outputs/hybrid_model/vim2/ligand_11/02_fixed_ligand_charge/vim2_ligand_11_solv.inpcrd"
     }
 }
