@@ -287,6 +287,10 @@ class Meze:
             new_entry[key]["tleap_input_file"] = self.tleap_input_file
         if self.restraint_file is not None:
             new_entry[key]["restraint_file"] = self.restraint_file
+        if self.topology is not None:
+            new_entry[key]["topology"] = self.topology
+        if self.coordinates is not None:
+            new_entry[key]["coordinates"] = self.coordinates
 
         if extra_fields:
             new_entry[key].update(extra_fields)
@@ -2645,6 +2649,28 @@ class HotQuantumMeze(QuantumMeze):
             is_gpu=False,
             additional_restraints=additional_restraints
         )
+
+@dataclass
+class Sofra:
+    mezes: dict[str, Meze]
+    sofra_file: str
+    sofra_contents: dict = field(default_factory=dict) 
+
+    @classmethod
+    def from_file(cls, sofra_file: str) -> "Sofra":
+        if not os.path.isfile(sofra_file):
+            message = f"Sofra file not found: {sofra_file}."
+            log.error(message)
+            raise FileNotFoundError(message)
+        with open(sofra_file, "r") as file:
+            sofra_contents = json.load(file)
+        mezes = {
+            key: Meze.load(entry["pickle_file"])
+            for key, entry in sofra_contents.items()
+        }
+        return cls(mezes=mezes, sofra_file=sofra_file, sofra_contents=sofra_contents)
+
+
 
 def average_charges(meze_sofra: List[Meze],
                     parameterisation_directories: List[str],
