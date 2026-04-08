@@ -2664,10 +2664,15 @@ class Sofra:
             raise FileNotFoundError(message)
         with open(sofra_file, "r") as file:
             sofra_contents = json.load(file)
-        mezes = {
-            key: Meze.load(entry["pickle_file"])
-            for key, entry in sofra_contents.items()
-        }
+        for ligand_name, entry in sofra_contents.items():
+            
+            try:
+                mezes = {
+                    ligand_name: Meze.load(entry["pickle_file"])
+                }
+            except KeyError:
+                log.error(f"Could not find pickle file for {ligand_name}")
+
         return cls(mezes=mezes, sofra_file=sofra_file, sofra_contents=sofra_contents)
 
 
