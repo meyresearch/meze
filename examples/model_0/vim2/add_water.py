@@ -41,4 +41,9 @@ solvate_dir = f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{liga
 
 solvated_meze = cold_system.add_water(directory=solvate_dir)
 
+solvated_meze.add_to_sofra(
+    f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json",
+    key=ligand_name
+)
+
 print(solvated_meze)

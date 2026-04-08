@@ -1,0 +1,6 @@
+{
+    "ligand_11": {
+        "parameterisation_directory": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/",
+        "tleap_input_file": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/tleap_solvate.in"
+    }
+}
