@@ -2734,7 +2734,7 @@ class Sofra:
             except KeyError:
                 log.error(f"Could not find pickle file for {ligand_name}: ")
         if not mezes:
-            message = f"Could not find any mezes in {sofra_file}"
+            message = f"No pickle mezes found in {sofra_file}. Cannot construct Sofra object."
             log.error(message)
             raise RuntimeError
         if len(mezes) == 1:
