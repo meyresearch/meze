@@ -1,10 +1,16 @@
 from meze import ColdMeze
 import sys
 import json
+from pathlib import Path
 
-project_dir = sys.argv[1] 
-system_name = sys.argv[2]
-ligand_name = sys.argv[3]
+REPO_ROOT = Path().resolve()
+EXAMPLES_DIR = REPO_ROOT / "examples"
+DATA_DIR = REPO_ROOT / "data"
+
+project_dir = DATA_DIR
+
+system_name = "vim2"
+ligand_name = "ligand_11"
 
 with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json", "r") as file:
      json_recipe = json.load(file)
@@ -34,13 +40,14 @@ solvated_fixed_charges = fixed_ligand_charges_meze.add_water(
      directory=fixed_ligand_charges_meze.parameterisation_directory,
      mcpbpy_tleap_file=fixed_ligand_charges_meze.tleap_input_file
 )
-solvated_fixed_charges.save(
+pickled_file = solvated_fixed_charges.save(
      filename=f"{solvated_fixed_charges.parameterisation_directory}/{ligand_name}_fixed_charges_solvated"
 )
 
 solvated_fixed_charges.add_to_sofra(
     key=ligand_name,
-    filename=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json"
+    filename=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json",
+    pickle_file=pickled_file
 )
 
 

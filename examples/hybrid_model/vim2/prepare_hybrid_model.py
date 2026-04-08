@@ -53,7 +53,7 @@ prepared_complex = mcpb_system.prepare_resp_calculation(
     ]
 )
 
-prepared_complex.save(
+pickled_file = prepared_complex.save(
     filename=f"{prepared_complex.parameterisation_directory}/{ligand_name}_meze"
 )
 
@@ -64,7 +64,8 @@ prepared_complex.recipe.to_json(
 
 prepared_complex.add_to_sofra(
     key=ligand_name,
-    filename=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json"
+    filename=f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json",
+    pickle_file=pickled_file
 )
 
 
