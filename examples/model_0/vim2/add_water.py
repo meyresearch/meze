@@ -25,18 +25,12 @@ json_recipe["path_to_engine"] = os.path.join(
 cold_meze = ColdMeze.from_files(
     recipe=ColdMezeRecipe(**json_recipe),
     pdb_file=f"{project_dir}/inputs/model_0/protein/{system_name}/vim2.fixed.pdb",
+    non_standard_residues={"MOH": {"charge": -1, "atom_type": "amber"}}
 )
 
-cold_meze_with_lig = cold_meze.add_ligand(
+cold_system = cold_meze.add_ligand(
     ligand_file=f"{project_dir}/inputs/model_0/ligands/{system_name}/{ligand_name}.pdb",
     ligand_charge=-1
-)
-
-#TODO make non standard res a union of Ligand and List[Ligand]
-cold_system = cold_meze_with_lig.add_non_standard_residue(
-    file=f"{project_dir}/inputs/model_0/protein/{system_name}/MOH.pdb",
-    charge=-1,
-    atom_type="amber"
 )
 
 print(cold_system)
