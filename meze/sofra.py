@@ -2856,6 +2856,17 @@ class Sofra:
                 ligand_mol2 + frcmod_files + mcpbp_pdb_files + restraint_files + tleap_input_files
             )
 
+            new_restraints = meze.restraint_file
+            tleap_input_file = tleap_input_files[0]
+            for old_file in files_to_copy:
+                file = os.path.basename(old_file)
+                new_file = os.path.join(new_parameterisation_directories[i], file)
+                shutil.copy(old_file, new_file)
+                if ".RST" in os.path.splitext(file):
+                    new_restraints = new_file
+                if "tleap" in file:
+                    tleap_input_file = new_file
+
             for input_file in glob.glob(f"{new_parameterisation_directories[i]}/*.in"):
                 with open(input_file, "r") as f:
                     contents = f.read()
@@ -2905,17 +2916,6 @@ class Sofra:
                 residue_name=old_ligand.residue_name
             )
             
-            new_restraints = meze.restraint_file
-            tleap_input_file = tleap_input_files[0]
-            for old_file in files_to_copy:
-                file = os.path.basename(old_file)
-                new_file = os.path.join(new_parameterisation_directories[i], file)
-                shutil.copy(old_file, new_file)
-                if ".RST" in os.path.splitext(file):
-                    new_restraints = new_file
-                if "tleap" in file:
-                    tleap_input_file = new_file
-
             updated_mezes.append(dataclasses.replace(
                 meze,
                 non_standard_residues=new_non_standard_residues,
