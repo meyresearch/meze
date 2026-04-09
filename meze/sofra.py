@@ -2671,7 +2671,6 @@ class Sofra:
                 mezes[ligand_name] = Meze.load(entry["pickle_file"])
             except KeyError:
                 log.error(f"Could not find pickle file for {ligand_name}: ")
-                log.error(entry["pickle_file"])
         if not mezes:
             message = f"Could not find any mezes in {sofra_file}"
             log.error(message)
