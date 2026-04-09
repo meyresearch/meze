@@ -2664,15 +2664,20 @@ class Sofra:
             raise FileNotFoundError(message)
         with open(sofra_file, "r") as file:
             sofra_contents = json.load(file)
+        mezes = {}
         for ligand_name, entry in sofra_contents.items():
             
             try:
-                mezes = {
-                    ligand_name: Meze.load(entry["pickle_file"])
-                }
+                mezes[ligand_name] = Meze.load(entry["pickle_file"])
             except KeyError:
-                log.error(f"Could not find pickle file for {ligand_name}")
-
+                log.error(f"Could not find pickle file for {ligand_name}: ")
+        if not mezes:
+            message = f"Could not find any mezes in {sofra_file}"
+            log.error(message)
+            raise RuntimeError
+        if len(mezes) == 1:
+            message = f"Found only one meze in {sofra_file}. Are you sure you wish to continue?"
+            log.warning(message)
         return cls(mezes=mezes, sofra_file=sofra_file, sofra_contents=sofra_contents)
 
 
@@ -2861,7 +2866,12 @@ class Sofra:
             for old_file in files_to_copy:
                 file = os.path.basename(old_file)
                 new_file = os.path.join(new_parameterisation_directories[i], file)
-                shutil.copy(old_file, new_file)
+                try:
+                    shutil.copy(old_file, new_file)
+                except shutil.SameFileError as e:
+                    log.warning(e)
+                    log.info(f"Keeping {old_file}")
+                    
                 if ".RST" in os.path.splitext(file):
                     new_restraints = new_file
                 if "tleap" in file:
@@ -2946,7 +2956,11 @@ class Sofra:
             if solvated.tleap_input_file:
                 self.sofra_contents[ligand_name]["tleap_input_file"] = solvated.tleap_input_file                                                          
             if solvated.restraint_file:
-                self.sofra_contents[ligand_name]["restraint_file"] = solvated.restraint_file      
+                self.sofra_contents[ligand_name]["restraint_file"] = solvated.restraint_file 
+            if os.path.isfile(solvated.topology):
+                self.sofra_contents[ligand_name]["topology"] = solvated.topology
+            if os.path.isfile(solvated.coordinates):
+                self.sofra_contents[ligand_name]["coordinates"] = solvated.coordinates
 
             solvated_mezes.append(solvated)                                                        
                                                                                                                                                             
