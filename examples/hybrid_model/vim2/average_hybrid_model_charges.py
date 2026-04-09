@@ -9,6 +9,7 @@ EXAMPLES_DIR = REPO_ROOT / "examples"
 DATA_DIR = REPO_ROOT / "data"
 
 project_dir = DATA_DIR
+project_dir = "/Users/af25016/projects/hybrid_model/"
 
 system_name = "vim2"
 
