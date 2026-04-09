@@ -2925,6 +2925,8 @@ class Sofra:
                 ligand=new_ligand,
                 ligand_resname=new_ligand.residue_name
             ))
+        
+        solvated_mezes = []
         for ligand_name, updated_meze in zip(self.mezes.keys(), updated_mezes):                                                                           
             solvated = updated_meze.add_water(                                                                                                            
                 directory=updated_meze.parameterisation_directory,
@@ -2944,9 +2946,11 @@ class Sofra:
             if solvated.tleap_input_file:
                 self.sofra_contents[ligand_name]["tleap_input_file"] = solvated.tleap_input_file                                                          
             if solvated.restraint_file:
-                self.sofra_contents[ligand_name]["restraint_file"] = solvated.restraint_file                                                              
+                self.sofra_contents[ligand_name]["restraint_file"] = solvated.restraint_file      
+
+            solvated_mezes.append(solvated)                                                        
                                                                                                                                                             
         with open(self.sofra_file, "w") as f:
             json.dump(self.sofra_contents, f, indent=4)                                                                                         
                                 
-        return updated_mezes
+        return solvated_mezes
