@@ -18,14 +18,14 @@ project_dir = "/Users/af25016/projects/vim2-model-0/"
 
 model_0_sofra = Sofra.from_file(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json")
 
-with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json", "r") as file:
-     sofra_file = json.load(file)
+
+model_0_sofra.set_ligand_network()
 
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
 json_recipe["path_to_engine"] = os.path.join(
-        os.environ["AMBERHOME"], "bin", "pmemd.cuda"
+        os.environ["AMBERHOME"], "bin", "sander"
     )
 
 ligand_path = f"{project_dir}/inputs/model_0/ligands/{system_name}/"

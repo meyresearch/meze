@@ -253,7 +253,9 @@ class Meze:
             log.warning("Ligand not set by user, inferring from ligand residue name")
             self._set_ligand()
         else:
-            log.warning("Ligand residue name not set by user in meze construction.")
+            log.warning(
+                "Ligand residue name not set by user in meze construction."
+            )
 
 
     def __str__(self) -> str:
@@ -3030,3 +3032,10 @@ class Sofra:
             json.dump(self.sofra_contents, f, indent=4)                                                                                         
                                 
         return solvated_mezes
+    
+    def set_ligand_network(self):
+
+        bss_ligand_molecules = [meze.ligand.system.getMolecule(0) for meze in self.mezes.values()]
+        for ligand_name, meze in self.mezes.items():
+            pass
+            
