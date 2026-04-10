@@ -247,15 +247,13 @@ class Meze:
         
         if self.ligand and self.ligand.parameterised and not self.ligand_resid:
             self.ligand_resid = self.get_ligand_resid()
+        elif self.ligand and self.ligand.parameterised and self.ligand_resid:
+            pass  
         elif not self.ligand and self.ligand_resname:
-            log.warning(
-                "Ligand not set by user, inferring from ligand residue name"
-            )
+            log.warning("Ligand not set by user, inferring from ligand residue name")
             self._set_ligand()
         else:
-            log.warning(
-                "Ligand not set by user in meze construction."
-            )
+            log.warning("Ligand residue name not set by user in meze construction.")
 
 
     def __str__(self) -> str:
