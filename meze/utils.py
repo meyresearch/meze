@@ -10,6 +10,22 @@ import os
 from dataclasses import fields, is_dataclass
 from collections.abc import Mapping, Iterable
 import glob
+from pathlib import Path
+from rich.logging import RichHandler
+from rich.console import Console
+import logging
+
+console = Console(force_terminal=True, color_system="truecolor")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(console=console, rich_tracebacks=True, markup=True)],
+    force=True,
+)
+
+log = logging.getLogger("rich")
 
 
 def _list_rindex(list_to_search: list[str], word: str) -> int:
@@ -379,3 +395,35 @@ def _get_mol2_charge(file: str) -> int | float:
     atom_lines = lines[start:end]
     charges = [float(line.split()[-1].strip()) for line in atom_lines]
     return sum(charges)
+
+def pdb_to_sdf(files: str | list[str]):
+
+    if isinstance(files, str):
+        files = [files]
+    
+    output_files = []
+    for ligand_file in files:
+        name = Path(ligand_file).stem
+        _, extension = os.path.splitext(ligand_file)
+        log.info(f"Read in file: {ligand_file}")
+        log.info(f"Using name {name} for output")
+        output_file = os.path.join(
+            os.path.dirname(ligand_file), 
+            f"{name}.sdf"
+        )
+        obabel_command = f"obabel -i {extension.strip(".")} {ligand_file} -o sdf -O {output_file}"
+        log.info("Converting to sdf with obabel command: \n")
+        log.info(obabel_command)
+        os.system(obabel_command)
+        output_files.append(output_file)
+    
+    if not output_files:
+        message = f"Could not convert files to sdf"
+        log.error(message)
+        raise RuntimeError(message)
+    
+    return output_files
+
+    
+
+        

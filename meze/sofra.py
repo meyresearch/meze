@@ -47,12 +47,14 @@ from .utils import (
     _parse_mcpbpy_input,
     _check_log_files,
     _get_mol2_charge,
-    _edit_mcpbpy_tleap_input
+    _edit_mcpbpy_tleap_input,
+    pdb_to_sdf
 )
 from .helpers import _check_ambertools
 import shutil
 from rich.logging import RichHandler
 from rich.console import Console
+from rdkit import Chem
 
 console = Console(force_terminal=True, color_system="truecolor")
 
@@ -3044,13 +3046,18 @@ class Sofra:
                                 
         return solvated_mezes
     
-    def set_ligand_network(self, directory: Optional[str], plot: bool = True):
+    def set_ligand_network(self, 
+                           pdb_files: list[str],
+                           directory: Optional[str], plot: bool = True):
+        
+        sdf_files = pdb_to_sdf(pdb_files)
 
-        bss_ligand_molecules = [meze.ligand.system.getMolecule(0) for meze in self.mezes.values()]
+        bss_molecules = [bss.IO.readMolecules(sdf_file).getMolecule(0) for sdf_file in sdf_files]
+
         ligand_names = list(self.mezes.keys())
 
         self.transformations, self.lomap_scores = bss.Align.generateNetwork(
-            molecules=bss_ligand_molecules,
+            molecules=bss_molecules,
             names=ligand_names,
             plot_network=plot,
             work_dir=directory
