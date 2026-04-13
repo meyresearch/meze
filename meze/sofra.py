@@ -3052,15 +3052,25 @@ class Sofra:
         
         sdf_files = pdb_to_sdf(pdb_files)
 
-        bss_molecules = [bss.IO.readMolecules(sdf_file).getMolecule(0) for sdf_file in sdf_files]
+        # bss_molecules = [bss.IO.readMolecules(sdf_file).getMolecule(0) for sdf_file in sdf_files]
 
         ligand_names = list(self.mezes.keys())
 
-        self.transformations, self.lomap_scores = bss.Align.generateNetwork(
-            molecules=bss_molecules,
-            names=ligand_names,
-            plot_network=plot,
-            work_dir=directory
-        )
+        # self.transformations, self.lomap_scores = bss.Align.generateNetwork(
+        #     molecules=bss_molecules,
+        #     names=ligand_names,
+        #     plot_network=plot,
+        #     work_dir=directory
+        # )
+
+        # 1) use os.system(lomap sdf_files/) 
+        # 2) handle outputs: 
+            # out.txt
+            # out_score_with_connection.txt
+            # out.png
+            # out.eps
+            # out.pdf
+            # out.dot
+            # out.pickle
 
             
