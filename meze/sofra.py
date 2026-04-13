@@ -452,7 +452,7 @@ class Meze:
         if restraints is None:
             restraints = self.build_distance_restraints()
 
-        atom_ids = list[int] = []
+        atom_ids: list[int] = []
         if isinstance(restraints, dict):
             for metal_id, ligating_atom_id in restraints.keys():
                 atom_ids.append(metal_id)
@@ -728,9 +728,8 @@ class Meze:
             config_file = process._config_file
             restraint_file = os.path.join(recipe.workdir, "restraints.RST")
 
-            if not os.path.isfile(restraint_file):
-                with open(restraint_file, "w") as file:
-                    file.writelines(distance_restraints)
+            with open(restraint_file, "w") as file:
+                file.writelines(distance_restraints)
             
             step_restraint_file = os.path.join(run_directory, "restraints.RST")
             shutil.copyfile(restraint_file, step_restraint_file)
