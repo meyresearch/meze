@@ -247,15 +247,13 @@ class Meze:
         
         if self.ligand and self.ligand.parameterised and not self.ligand_resid:
             self.ligand_resid = self.get_ligand_resid()
+        elif self.ligand and self.ligand.parameterised and self.ligand_resid:
+            pass  
         elif not self.ligand and self.ligand_resname:
-            log.warning(
-                "Ligand not set by user, inferring from ligand residue name"
-            )
+            log.warning("Ligand not set by user, inferring from ligand residue name")
             self._set_ligand()
         else:
-            log.warning(
-                "Ligand not set by user in meze construction."
-            )
+            log.warning("Ligand residue name not set by user in meze construction.")
 
 
     def __str__(self) -> str:
@@ -943,7 +941,69 @@ class Meze:
             raise
 
         os.chdir(workdir)
+        
+        if self.restraint_file and os.path.isfile(self.restraint_file):                                                                       
+            remapped = self._remap_restraint_indices(solvated_meze)
+            solvated_meze = dataclasses.replace(solvated_meze, restraint_file=remapped)
+
         return solvated_meze
+
+
+    def _remap_restraint_indices(self, updated_meze: "Meze"):
+
+        with open(self.restraint_file, "r") as file:
+            lines = file.readlines()
+        
+        restraint_atom_ids: list[int] = []
+        for line in lines:
+            if "iat=" in line:
+                after_iat = line.split("iat=")[1]
+                raw_indices = after_iat.split(",")[:2]
+                restraint_atom_ids.extend(int(iat) for iat in raw_indices) 
+        
+        atom_index_map: dict[int, int] = {}
+        for old_id in restraint_atom_ids:
+            ag = self.universe.select_atoms(f"id {old_id}")
+            if len(ag) == 0:
+                log.warning(
+                    f"Atom id {old_id} from restraint file not found in pre-solvation universe."
+                )                                                                                                                                  
+                continue
+            resid, name = ag.atoms[0].resid, ag.atoms[0].name
+            new_ag = updated_meze.universe.select_atoms(f"resid {resid} and name {name}")
+            if len(new_ag) == 0:
+                log.warning(
+                    f"Could not find atom (resid={resid}, name={name}) in updated meze object."
+                    f"Restraint at index {old_id} will not be remapped."
+                )
+                continue
+            if old_id == new_ag.atoms[0].id:
+                log.info(
+                    "Index from restraint file matches current meze object.\n"
+                    "Will not perform remapping."
+                )
+                continue
+            atom_index_map[old_id] = new_ag.atoms[0].id
+
+        new_lines = []
+        for line in lines:
+            if "iat=" in line:
+                after_iat = line.split("iat=")[1]
+                raw_indices = after_iat.split(",")[:2]
+                old_a, old_b = int(raw_indices[0]), int(raw_indices[1])
+                new_a = atom_index_map.get(old_a, old_a)
+                new_b = atom_index_map.get(old_b, old_b)
+                line = line.replace(f"iat={old_a},{old_b},", f"iat={new_a},{new_b},")
+                if new_a != old_a or new_b != old_b:
+                    log.info(
+                        f"Replacing 'iat={old_a},{old_b}' with 'iat={new_a},{new_b}'"
+                    )
+            new_lines.append(line)
+        
+        with open(updated_meze.restraint_file, "w") as file:
+            file.writelines(new_lines)
+        
+        return updated_meze.restraint_file
 
 
     def prepare_mcpb_system(self,
