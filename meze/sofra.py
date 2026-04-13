@@ -441,22 +441,28 @@ class Meze:
     def write_restrained_atoms_pdb(
         self,
         output_path: str,
-        restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None
+        restraints: Optional[dict[tuple[int, int], tuple[float, float, float]] | list[str]]  = None
     ) -> None:
         """Write a PDB file containing all atoms involved in distance restraints.
 
         Args:
             output_path (str): Path for the output PDB file.
-            restraints (dict, optional): Restraints dict from build_distance_restraints().
-                If None, calls build_distance_restraints() using defaults.
+            restraints (dict, optional): Either a dict from build_distance_restraints(), a list of RST format strings, or None (calls build_distance_restraints() by default)
         """
         if restraints is None:
             restraints = self.build_distance_restraints()
 
-        atom_ids = set()
-        for metal_id, ligating_atom_id in restraints.keys():
-            atom_ids.add(metal_id)
-            atom_ids.add(ligating_atom_id)
+        atom_ids = list[int] = []
+        if isinstance(restraints, dict):
+            for metal_id, ligating_atom_id in restraints.keys():
+                atom_ids.append(metal_id)
+                atom_ids.append(ligating_atom_id)
+        else:
+            for line in restraints:
+                if "iat=" in line:
+                    after_iat = line.split("iat=")[1]
+                    raw_indices = after_iat.split(",")[:2]
+                    atom_ids.extend(int(iat) for iat in raw_indices)
 
         id_selection = " or ".join(f"id {aid}" for aid in sorted(atom_ids))
         restrained_atoms = self.universe.select_atoms(id_selection)
@@ -715,6 +721,10 @@ class Meze:
             distance_restraints = (distance_restraints or []) + added_distance_restraints
 
         if distance_restraints:
+            self.write_restrained_atoms_pdb(
+                output_path=recipe.workdir,
+                restraints=distance_restraints
+            )
             config_file = process._config_file
             restraint_file = os.path.join(recipe.workdir, "restraints.RST")
 
