@@ -979,7 +979,7 @@ class Meze:
                 continue
             if old_id == new_ag.atoms[0].id:
                 log.info(
-                    "Index from restraint file matches current meze object."
+                    "Index from restraint file matches current meze object.\n"
                     "Will not perform remapping."
                 )
                 continue
