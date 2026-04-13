@@ -2,18 +2,25 @@ from meze import ColdMeze, ColdMezeRecipe
 import os
 import json
 import sys
+from pathlib import Path
 
-project_dir = sys.argv[1]
-system_name = sys.argv[2]
-ligand_name = sys.argv[3]
-repeat = sys.argv[4]
+REPO_ROOT = Path().resolve()
+EXAMPLES_DIR = REPO_ROOT / "examples"
+DATA_DIR = REPO_ROOT / "data"
+
+system_name = "vim2"
+
+project_dir = DATA_DIR
+
+ligand_name = sys.argv[1]
+repeat = sys.argv[2]
 
 # set ColdMezeRecipe including model (i.e. metal params), ligand(?)
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
 json_recipe["path_to_engine"] = os.path.join(
-        os.environ["AMBERHOME"], "bin", "pmemd.cuda"
+        os.environ["AMBERHOME"], "bin", "sander"
     )
 
 input_dir = f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{ligand_name}_bound/"
