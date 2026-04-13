@@ -2728,6 +2728,8 @@ class Sofra:
     mezes: dict[str, Meze]
     sofra_file: str
     sofra_contents: dict = field(default_factory=dict) 
+    transformations: Optional[list] = field(default=None)                                                                                         
+    lomap_scores: Optional[list] = field(default=None) 
 
     @classmethod
     def from_file(cls, sofra_file: str) -> "Sofra":
@@ -3042,9 +3044,16 @@ class Sofra:
                                 
         return solvated_mezes
     
-    def set_ligand_network(self):
+    def set_ligand_network(self, directory: Optional[str], plot: bool = True):
 
         bss_ligand_molecules = [meze.ligand.system.getMolecule(0) for meze in self.mezes.values()]
-        for ligand_name, meze in self.mezes.items():
-            pass
+        ligand_names = list(self.mezes.keys())
+
+        self.transformations, self.lomap_scores = bss.Align.generateNetwork(
+            molecules=bss_ligand_molecules,
+            names=ligand_names,
+            plot_network=plot,
+            work_dir=directory
+        )
+
             

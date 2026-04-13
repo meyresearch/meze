@@ -18,8 +18,7 @@ project_dir = "/Users/af25016/projects/vim2-model-0/"
 
 model_0_sofra = Sofra.from_file(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json")
 
-
-model_0_sofra.set_ligand_network()
+model_0_sofra.set_ligand_network(directory=f"{project_dir}/inputs/model_0/protein/{system_name}/")
 
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)

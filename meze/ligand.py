@@ -115,11 +115,12 @@ class Ligand():
                 residue_name=residue_name,
                 force_field=force_field
             )
-
+        new_system = bss.IO.readMolecules(output_coordinate_file)
         return dataclasses.replace(
             self,
             file=output_coordinate_file,
             parameterised=True,
+            system=new_system,
             frcmod_file=output_frcmod_file,
             residue_name=residue_name
         )       
