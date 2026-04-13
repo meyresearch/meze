@@ -250,11 +250,11 @@ class Meze:
         elif self.ligand and self.ligand.parameterised and self.ligand_resid:
             pass  
         elif not self.ligand and self.ligand_resname:
-            log.warning("Ligand not set by user, inferring from ligand residue name")
+            log.info(f"Inferring ligand from ligand residue name: {self.ligand_resname}")
             self._set_ligand()
         else:
             log.warning(
-                "Ligand residue name not set by user in meze construction."
+                "Ligand not set by user in meze construction. Do you wish to continue without it?"
             )
 
 
@@ -722,7 +722,7 @@ class Meze:
 
         if distance_restraints:
             self.write_restrained_atoms_pdb(
-                output_path=recipe.workdir,
+                output_path=f"{run_directory}/{process_name}_restrained_atoms.pdb",
                 restraints=distance_restraints
             )
             config_file = process._config_file
