@@ -57,7 +57,8 @@ import shutil
 from rich.logging import RichHandler
 from rich.console import Console
 from rdkit import Chem
-from sire.legacy.IO import renumberConstituents
+import subprocess
+import csv
 
 console = Console(force_terminal=True, color_system="truecolor")
 
@@ -3136,9 +3137,16 @@ class Sofra:
     sofra_contents: dict = field(default_factory=dict) 
     transformations: Optional[list] = field(default=None)                                                                                         
     lomap_scores: Optional[list] = field(default=None) 
+    project_directory: str = field(default_factory=os.getcwd)
+    group_name: str = "meze"
 
     @classmethod
-    def from_file(cls, sofra_file: str) -> "Sofra":
+    def from_file(
+        cls, 
+        sofra_file: str, 
+        directory: Optional[str] = None,
+        group_name: Optional[str] = None
+    ) -> "Sofra":
         if not os.path.isfile(sofra_file):
             message = f"Sofra file not found: {sofra_file}."
             log.error(message)
@@ -3159,7 +3167,33 @@ class Sofra:
         if len(mezes) == 1:
             message = f"Found only one meze in {sofra_file}. Are you sure you wish to continue?"
             log.warning(message)
-        return cls(mezes=mezes, sofra_file=sofra_file, sofra_contents=sofra_contents)
+        if directory:
+            if not os.path.isdir(directory):
+                message = f"Project directory {directory} does not exist."
+                log.error(message)
+                raise FileNotFoundError
+            project_directory = directory
+        else:
+            project_directory = os.getcwd()
+            log.info(
+                "Project directory not set, using current working directory: \n"
+                f"{project_directory}"
+            )
+        
+        if group_name:
+            sofra_group_name = group_name
+        else:
+            sofra_group_name = list(mezes.values())[0].recipe.group_name
+        
+        log.info(
+            f"Using group name {sofra_group_name} for the sofra object"
+        )
+
+        return cls(mezes=mezes, 
+                   sofra_file=sofra_file, 
+                   sofra_contents=sofra_contents, 
+                   project_directory=project_directory,
+                   group_name=sofra_group_name)
 
 
     def average_charges(self, 
@@ -3455,29 +3489,107 @@ class Sofra:
     
     def set_ligand_network(self, 
                            pdb_files: list[str],
-                           directory: Optional[str], plot: bool = True):
-        
+                           directory: Optional[str] = None, 
+                           plot: bool = True,
+                           force_connected_ligands_file: Optional[str] = None):
+        #TODO
+        # have an option to input a network to allow users to use the same network accross models
         sdf_files = pdb_to_sdf(pdb_files)
-
-        # bss_molecules = [bss.IO.readMolecules(sdf_file).getMolecule(0) for sdf_file in sdf_files]
 
         ligand_names = list(self.mezes.keys())
 
-        # self.transformations, self.lomap_scores = bss.Align.generateNetwork(
-        #     molecules=bss_molecules,
-        #     names=ligand_names,
-        #     plot_network=plot,
-        #     work_dir=directory
-        # )
+        if directory:
+            lomap_directory = os.path.join(directory, "lomap")
+        else:
+            lomap_directory = "lomap"
+        
+        os.makedirs(lomap_directory, exist_ok=True)
+        log.info(
+            f"Created lomap directory at: \n"
+            f"{lomap_directory}"
+        )
+        for sdf_file in sdf_files:
+            shutil.copy(sdf_file, lomap_directory)
+        
+        workdir= os.getcwd()
+        os.chdir(lomap_directory)
+        lomap_command = f"lomap -d -n {self.group_name} "
+        if force_connected_ligands_file:
+            if not os.path.isfile(force_connected_ligands_file):
+                log.warning(
+                    f"Could not find links file: {force_connected_ligands_file}\n"
+                    "Continuing without it."
+                )
+            lomap_command += f"-l {force_connected_ligands_file} "
+        
+        lomap_command += ". "
+        log.info(
+            f"Running lomap with command: \n"
+            f"{lomap_command}"
+        )
 
-        # 1) use os.system(lomap sdf_files/) 
-        # 2) handle outputs: 
-            # out.txt
-            # out_score_with_connection.txt
-            # out.png
-            # out.eps
-            # out.pdf
-            # out.dot
-            # out.pickle
+        lomap_run_result = subprocess.run(
+            lomap_command,
+            shell=True,
+            capture_output=True,
+            text=True
+        )
+
+        if lomap_run_result.returncode != 0:
+            log.warning(f"Lomap exited with a non-zero exit code {lomap_run_result.returncode}:")
+            log.warning(lomap_run_result.stderr)
+            log.warning("It's likely that the network was still generated succesfully, checking... ")
+        
+        scores_file = os.path.join(lomap_directory, f"{self.group_name}_score_with_connection.txt")
+        png_file = os.path.join(lomap_directory, f"{self.group_name}.png")
+        if not os.path.isfile(scores_file):                   
+            message = f"Lomap did not produce {scores_file}. Check lomap output for errors."
+            log.error(message)
+            raise RuntimeError 
+        if not os.path.isfile(png_file):                   
+            message = f"Lomap did not produce {png_file}. Check lomap output for errors."
+            log.error(message)
+            raise RuntimeError 
+
+        log.info("Lomap finished succesfully. Parsing outputs.")
+        self.transformations, self.lomap_scores = self._parse_lomap_output(scores_file, lomap_directory)
+
+    def _parse_lomap_output(self, file: str, directory: str):
+        transformations, scores = [], []
+        cleaned_rows = []
+        row_i = 0
+        with open(file, "r") as ifile:
+            reader = csv.DictReader(ifile)
+            reader.fieldnames = [key.strip() for key in reader.fieldnames]
+            for row in reader:
+                name_1 = pathlib.Path(row["Filename_1"].strip()).stem
+                name_2 = pathlib.Path(row["Filename_2"].strip()).stem
+                score = float(row["Str_sim"].strip())
+                connect = pathlib.Path(row["Connect"].strip()).stem
+                
+                if connect.lower() == "yes":
+                    if row_i == 0:
+                        cleaned_rows.append("Name_1,Name_2,Score\n")
+                    transformations.append((name_1, name_2))
+                    scores.append(score)
+                    clean_row = f"{name_1},{name_2},{score}\n"
+                    cleaned_rows.append(clean_row)
+                    row_i += 1
+        
+        if not cleaned_rows:
+            message = "Lomap output did not contain any connected ligands. Check lomap outputs for any errors."
+            log.error(message)
+            raise RuntimeError
+        
+        connected_file = os.path.join(directory, f"{self.group_name}_lomap_network.csv")
+        with open(connected_file, "w") as ofile:
+            ofile.writelines(cleaned_rows)
+        log.info(f"Wrote lomap network to file:\n{connected_file}")
+
+        return transformations, scores
+        
+
+
+
 
             
