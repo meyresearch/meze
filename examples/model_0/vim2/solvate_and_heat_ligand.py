@@ -19,7 +19,11 @@ project_dir = DATA_DIR
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
+json_recipe["path_to_engine"] = os.path.join(
+        os.environ["AMBERHOME"], "bin", "sander"
+    )
 json_recipe["model"] = None
+json_recipe["nb_cutoff"] = 10.0
 
 cold_ligand = Ligand(
     file=f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{ligand_name}_bound/{ligand_name}.mol2",
@@ -51,8 +55,8 @@ print("Minimising")
 minimised_meze = ligand_meze.minimise(
     process_name="01_min",
     workdir=equil_dir,
-    position_restraints="solute",
-    max_cycles=5000,
+    # position_restraints="solute",
+    max_cycles=1000,
     is_gpu=True
 )
 
@@ -113,7 +117,7 @@ print("07 - No restraint")
 
 free = reduce_restraint.pressurise(
      restart=True,
-     process_name="08_free",
+     process_name="07_free",
      workdir=equil_dir,
      timestep=0.001,
 )
