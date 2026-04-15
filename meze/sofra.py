@@ -47,12 +47,15 @@ from .utils import (
     _parse_mcpbpy_input,
     _check_log_files,
     _get_mol2_charge,
-    _edit_mcpbpy_tleap_input
+    _edit_mcpbpy_tleap_input,
+    pdb_to_sdf
 )
 from .helpers import _check_ambertools
 import shutil
 from rich.logging import RichHandler
 from rich.console import Console
+from rdkit import Chem
+from sire.legacy.IO import renumberConstituents
 
 console = Console(force_terminal=True, color_system="truecolor")
 
@@ -250,10 +253,12 @@ class Meze:
         elif self.ligand and self.ligand.parameterised and self.ligand_resid:
             pass  
         elif not self.ligand and self.ligand_resname:
-            log.warning("Ligand not set by user, inferring from ligand residue name")
+            log.info(f"Inferring ligand from ligand residue name: {self.ligand_resname}")
             self._set_ligand()
         else:
-            log.warning("Ligand residue name not set by user in meze construction.")
+            log.warning(
+                "Ligand not set by user in meze construction. Do you wish to continue without it?"
+            )
 
 
     def __str__(self) -> str:
@@ -439,22 +444,28 @@ class Meze:
     def write_restrained_atoms_pdb(
         self,
         output_path: str,
-        restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None
+        restraints: Optional[dict[tuple[int, int], tuple[float, float, float]] | list[str]]  = None
     ) -> None:
         """Write a PDB file containing all atoms involved in distance restraints.
 
         Args:
             output_path (str): Path for the output PDB file.
-            restraints (dict, optional): Restraints dict from build_distance_restraints().
-                If None, calls build_distance_restraints() using defaults.
+            restraints (dict, optional): Either a dict from build_distance_restraints(), a list of RST format strings, or None (calls build_distance_restraints() by default)
         """
         if restraints is None:
             restraints = self.build_distance_restraints()
 
-        atom_ids = set()
-        for metal_id, ligating_atom_id in restraints.keys():
-            atom_ids.add(metal_id)
-            atom_ids.add(ligating_atom_id)
+        atom_ids: list[int] = []
+        if isinstance(restraints, dict):
+            for metal_id, ligating_atom_id in restraints.keys():
+                atom_ids.append(metal_id)
+                atom_ids.append(ligating_atom_id)
+        else:
+            for line in restraints:
+                if "iat=" in line:
+                    after_iat = line.split("iat=")[1]
+                    raw_indices = after_iat.split(",")[:2]
+                    atom_ids.extend(int(iat) for iat in raw_indices)
 
         id_selection = " or ".join(f"id {aid}" for aid in sorted(atom_ids))
         restrained_atoms = self.universe.select_atoms(id_selection)
@@ -685,10 +696,10 @@ class Meze:
             distance_restraints: Optional[list] = None,
             distance_write_frequency: Optional[int] = 100,
     ):
-        input_system = system or self.system
+        input_system = system or self.system        
         run_directory = os.path.join(recipe.workdir, process_name)
         os.makedirs(run_directory, exist_ok=True)
-        
+
         namelist_options = namelist_options or []
 
         process = bss.Process.Amber(
@@ -701,24 +712,54 @@ class Meze:
             is_gpu=is_gpu,
             exe=recipe.path_to_engine
         )
+        new_topology = os.path.join(
+            run_directory,
+            f"{process_name}.prm7"
+        )
+        new_coordinates = os.path.join(
+            run_directory,
+            f"{process_name}.rst7"
+        )
+
+        new_meze = dataclasses.replace(
+            self,
+            topology=new_topology,
+            coordinates=new_coordinates
+        )
+
+        if self.restraint_file and os.path.isfile(self.restraint_file):                         
+            new_restraints_file = os.path.join(
+                run_directory,
+                os.path.basename(self.restraint_file)
+            )
+            remapped = self._remap_restraint_indices(new_meze, outfile=new_restraints_file)
+            self.restraint_file = remapped
+            with open(self.restraint_file, "r") as file:
+                added_distance_restraints = file.readlines()
+            distance_restraints = (distance_restraints or []) + added_distance_restraints
+
+        self.universe = mda.Universe(
+            new_topology,
+            new_coordinates,
+            topology_format="PARM7",
+            format="RESTRT"
+        )
 
         if self.recipe.model == 0:
             coordination_restraints = self._prepare_distance_restraints()
             angle_restraints = self._prepare_angle_restraints()
             distance_restraints = coordination_restraints + angle_restraints
         
-        if self.restraint_file and os.path.isfile(self.restraint_file):
-            with open(self.restraint_file, "r") as file:
-                added_distance_restraints = file.readlines()
-            distance_restraints = (distance_restraints or []) + added_distance_restraints
-
         if distance_restraints:
+            self.write_restrained_atoms_pdb(
+                output_path=f"{run_directory}/{process_name}_restrained_atoms.pdb",
+                restraints=distance_restraints
+            )
             config_file = process._config_file
             restraint_file = os.path.join(recipe.workdir, "restraints.RST")
 
-            if not os.path.isfile(restraint_file):
-                with open(restraint_file, "w") as file:
-                    file.writelines(distance_restraints)
+            with open(restraint_file, "w") as file:
+                file.writelines(distance_restraints)
             
             step_restraint_file = os.path.join(run_directory, "restraints.RST")
             shutil.copyfile(restraint_file, step_restraint_file)
@@ -933,7 +974,9 @@ class Meze:
                 topology=solvated_topology, 
                 coordinates=solvated_coordinates, 
                 ligand=parameterised_ligand,
-                non_standard_residues=parameterised_non_standard_residues
+                non_standard_residues=parameterised_non_standard_residues,
+                tleap_input_file=tleap_input_file,
+                parameterisation_directory=directory
             )
         
         except FileNotFoundError:
@@ -949,7 +992,7 @@ class Meze:
         return solvated_meze
 
 
-    def _remap_restraint_indices(self, updated_meze: "Meze"):
+    def _remap_restraint_indices(self, updated_meze: "Meze", outfile: Optional[str] = None):
 
         with open(self.restraint_file, "r") as file:
             lines = file.readlines()
@@ -969,17 +1012,29 @@ class Meze:
                     f"Atom id {old_id} from restraint file not found in pre-solvation universe."
                 )                                                                                                                                  
                 continue
-            resid, name = ag.atoms[0].resid, ag.atoms[0].name
+            resid, resname, name = ag.atoms[0].resid, ag.atoms[0].resname, ag.atoms[0].name
             new_ag = updated_meze.universe.select_atoms(f"resid {resid} and name {name}")
             if len(new_ag) == 0:
                 log.warning(
-                    f"Could not find atom (resid={resid}, name={name}) in updated meze object."
-                    f"Restraint at index {old_id} will not be remapped."
+                    f"Could not find atom by resid={resid} and name={name} in updated meze object.\n"
+                    f"Falling back to resname={resname} and name={name}."
                 )
-                continue
+                new_ag = updated_meze.universe.select_atoms(f"resname {resname} and name {name}")
+                if len(new_ag) == 0:
+                    log.warning(
+                        f"Could not find atom (resname={resname}, name={name}) in updated meze object."
+                        f"Restraint at index {old_id} will not be remapped."
+                    )
+                    continue
+                if len(new_ag) > 1:
+                    log.warning(
+                        f"Multiple atoms found with resname={resname}, name={name} in updated meze object."
+                        f"Restraint at index {old_id} will not be remapped."
+                    )
+                    continue
             if old_id == new_ag.atoms[0].id:
                 log.info(
-                    "Index from restraint file matches current meze object.\n"
+                    f"Index {old_id} from restraint file matches current meze object.\n"
                     "Will not perform remapping."
                 )
                 continue
@@ -1000,10 +1055,15 @@ class Meze:
                     )
             new_lines.append(line)
         
-        with open(updated_meze.restraint_file, "w") as file:
+        if not outfile:
+            restraint_file = updated_meze.restraint_file
+        else:
+            restraint_file = outfile
+
+        with open(restraint_file, "w") as file:
             file.writelines(new_lines)
         
-        return updated_meze.restraint_file
+        return restraint_file
 
 
     def prepare_mcpb_system(self,
@@ -1848,6 +1908,11 @@ class ColdMeze(Meze):
             engine_executable: Optional["str"] = None,
             additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdMeze":
+
+        # if not system:
+        #     system = bss.IO.readMolecules([
+        #         self.coordinates, self.topology
+        #     ])
 
         recipe = ColdMezeRecipe(
             workdir=workdir or self.recipe.workdir,
@@ -2715,6 +2780,8 @@ class Sofra:
     mezes: dict[str, Meze]
     sofra_file: str
     sofra_contents: dict = field(default_factory=dict) 
+    transformations: Optional[list] = field(default=None)                                                                                         
+    lomap_scores: Optional[list] = field(default=None) 
 
     @classmethod
     def from_file(cls, sofra_file: str) -> "Sofra":
@@ -2732,7 +2799,7 @@ class Sofra:
             except KeyError:
                 log.error(f"Could not find pickle file for {ligand_name}: ")
         if not mezes:
-            message = f"Could not find any mezes in {sofra_file}"
+            message = f"No pickle mezes found in {sofra_file}. Cannot construct Sofra object."
             log.error(message)
             raise RuntimeError
         if len(mezes) == 1:
@@ -3028,3 +3095,32 @@ class Sofra:
             json.dump(self.sofra_contents, f, indent=4)                                                                                         
                                 
         return solvated_mezes
+    
+    def set_ligand_network(self, 
+                           pdb_files: list[str],
+                           directory: Optional[str], plot: bool = True):
+        
+        sdf_files = pdb_to_sdf(pdb_files)
+
+        # bss_molecules = [bss.IO.readMolecules(sdf_file).getMolecule(0) for sdf_file in sdf_files]
+
+        ligand_names = list(self.mezes.keys())
+
+        # self.transformations, self.lomap_scores = bss.Align.generateNetwork(
+        #     molecules=bss_molecules,
+        #     names=ligand_names,
+        #     plot_network=plot,
+        #     work_dir=directory
+        # )
+
+        # 1) use os.system(lomap sdf_files/) 
+        # 2) handle outputs: 
+            # out.txt
+            # out_score_with_connection.txt
+            # out.png
+            # out.eps
+            # out.pdf
+            # out.dot
+            # out.pickle
+
+            

@@ -1,377 +1,377 @@
--I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/prep to search path.
--I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/lib to search path.
--I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/parm to search path.
--I: Adding /Users/af25016/miniforge3/envs/obss/dat/leap/cmd to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/prep to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/lib to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/parm to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/cmd to search path.
 -s: Ignoring all leaprc startup files.
--f: Source /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/tleap_solvate.in.
+-f: Source /Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/tleap_solvate.in.
 
 Welcome to LEaP!
-Sourcing: /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/tleap_solvate.in
------ Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/oldff/leaprc.ff14SB
------ Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/oldff/leaprc.ff14SB done
+Sourcing: /Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/tleap_solvate.in
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.protein.ff14SB
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.protein.ff14SB done
 Log file: ./leap.log
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/parm10.dat
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/parm10.dat
 Reading title:
 PARM99 + frcmod.ff99SB + frcmod.parmbsc0 + OL3 for RNA
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ff14SB
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ff14SB
 Reading force field modification type file (frcmod)
 Reading title:
 ff14SB protein backbone and sidechain parameters
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/amino12.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/aminoct12.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/aminont12.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/nucleic12.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/atomic_ions.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/solvents.lib
------ Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.water.tip3p
------ Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.water.tip3p done
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/atomic_ions.lib
-Loading library: /Users/af25016/miniforge3/envs/obss/dat/leap/lib/solvents.lib
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.tip3p
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/amino12.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/aminoct12.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/aminont12.lib
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.water.tip3p
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.water.tip3p done
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/atomic_ions.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/solvents.lib
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.tip3p
 Reading force field modification type file (frcmod)
 Reading title:
 This is the additional/replacement parameter set for TIP3P water
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions1lm_126_tip3p
 Reading force field modification type file (frcmod)
 Reading title:
 Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ionsjc_tip3p
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ionsjc_tip3p
 Reading force field modification type file (frcmod)
 Reading title:
 Monovalent ion parameters for Ewald and TIP3P water from Joung & Cheatham JPCB (2008)
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ions234lm_126_tip3p
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions234lm_126_tip3p
 Reading force field modification type file (frcmod)
 Reading title:
 Li/Merz ion parameters of divalent to tetravalent ions for TIP3P water model (12-6 normal usage set)
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions1lm_126_tip3p
 Reading force field modification type file (frcmod)
 Reading title:
 Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
-Loading PDB file: /Users/af25016/projects/meze/data//inputs/model_0/protein/vim2.fixed.pdb
-  total atoms in file: 3997
------ Source: /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.gaff2
------ Source of /Users/af25016/miniforge3/envs/obss/dat/leap/cmd/leaprc.gaff2 done
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.gaff2
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.gaff2 done
 Log file: ./leap.log
-Loading parameters: /Users/af25016/miniforge3/envs/obss/dat/leap/parm/gaff2.dat
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/gaff2.dat
 Reading title:
 AMBER General Force Field for organic molecules (Version 2.2.20, March 2021)
-Loading parameters: /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/ligand_11.frcmod
+Loading parameters: /Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/ligand_11.frcmod
 Reading force field modification type file (frcmod)
 Reading title:
 Remark line goes here
-Loading Mol2 file: /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/ligand_11.mol2
+Loading Mol2 file: /Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/ligand_11.mol2
 Reading MOLECULE named MOL
-Loading parameters: /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/MOH.frcmod
+Loading parameters: /Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/MOH.frcmod
 Reading force field modification type file (frcmod)
 Reading title:
 Remark line goes here
-Loading Mol2 file: /Users/af25016/projects/meze/data//inputs/model_0/protein/solvate_ligand_11_bound/MOH.mol2
+Loading Mol2 file: /Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/MOH.mol2
 Reading MOLECULE named MOH
+Loading PDB file: /Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/vim2.fixed.pdb
+  Added missing heavy atom: .R<CSER 232>.A<OXT 12>
+  total atoms in file: 3998
+  Leap added 1 missing atom according to residue templates:
+       1 Heavy
 Writing pdb file: ligand_11_complex_dry.pdb
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
  Converting N-terminal residue name to PDB format: NGLU -> GLU
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
  Converting C-terminal residue name to PDB format: CSER -> SER
 Checking 'complex'....
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 The unperturbed charge of the unit (-11.999000) is not zero.
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.477 angstroms between nonbonded atoms H2 and H1
--------  .R<WAT 412>.A<H2 3> and .R<WAT 297>.A<H1 2>
+-------  .R<WAT 413>.A<H2 3> and .R<WAT 298>.A<H1 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 0.962 angstroms between nonbonded atoms O and HE
--------  .R<WAT 397>.A<O 1> and .R<ARG 14>.A<HE 15>
+-------  .R<WAT 398>.A<O 1> and .R<ARG 14>.A<HE 15>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.287 angstroms between nonbonded atoms O and HH21
--------  .R<WAT 397>.A<O 1> and .R<ARG 14>.A<HH21 21>
+-------  .R<WAT 398>.A<O 1> and .R<ARG 14>.A<HH21 21>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.283 angstroms between nonbonded atoms H1 and NE
--------  .R<WAT 397>.A<H1 2> and .R<ARG 14>.A<NE 14>
+-------  .R<WAT 398>.A<H1 2> and .R<ARG 14>.A<NE 14>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 0.445 angstroms between nonbonded atoms H1 and HE
--------  .R<WAT 397>.A<H1 2> and .R<ARG 14>.A<HE 15>
+-------  .R<WAT 398>.A<H1 2> and .R<ARG 14>.A<HE 15>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.064 angstroms between nonbonded atoms H2 and HH21
--------  .R<WAT 397>.A<H2 3> and .R<ARG 14>.A<HH21 21>
+-------  .R<WAT 398>.A<H2 3> and .R<ARG 14>.A<HH21 21>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.132 angstroms between nonbonded atoms H2 and H1
--------  .R<WAT 396>.A<H2 3> and .R<WAT 395>.A<H1 2>
+-------  .R<WAT 397>.A<H2 3> and .R<WAT 396>.A<H1 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.146 angstroms between nonbonded atoms H1 and H2
--------  .R<WAT 390>.A<H1 2> and .R<WAT 384>.A<H2 3>
+-------  .R<WAT 391>.A<H1 2> and .R<WAT 385>.A<H2 3>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 0.931 angstroms between nonbonded atoms H2 and H1
--------  .R<WAT 386>.A<H2 3> and .R<WAT 316>.A<H1 2>
+-------  .R<WAT 387>.A<H2 3> and .R<WAT 317>.A<H1 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.470 angstroms between nonbonded atoms H2 and H1
--------  .R<WAT 382>.A<H2 3> and .R<WAT 249>.A<H1 2>
+-------  .R<WAT 383>.A<H2 3> and .R<WAT 250>.A<H1 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.243 angstroms between nonbonded atoms H2 and H1
--------  .R<WAT 381>.A<H2 3> and .R<WAT 282>.A<H1 2>
+-------  .R<WAT 382>.A<H2 3> and .R<WAT 283>.A<H1 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.423 angstroms between nonbonded atoms H2 and HZ2
--------  .R<WAT 372>.A<H2 3> and .R<LYS 226>.A<HZ2 19>
+-------  .R<WAT 373>.A<H2 3> and .R<LYS 226>.A<HZ2 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.057 angstroms between nonbonded atoms H1 and H2
--------  .R<WAT 371>.A<H1 2> and .R<WAT 325>.A<H2 3>
+-------  .R<WAT 372>.A<H1 2> and .R<WAT 326>.A<H2 3>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.301 angstroms between nonbonded atoms H2 and H
--------  .R<WAT 365>.A<H2 3> and .R<SER 123>.A<H 2>
+-------  .R<WAT 366>.A<H2 3> and .R<SER 123>.A<H 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.287 angstroms between nonbonded atoms H2 and H
--------  .R<WAT 361>.A<H2 3> and .R<GLY 137>.A<H 2>
+-------  .R<WAT 362>.A<H2 3> and .R<GLY 137>.A<H 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.293 angstroms between nonbonded atoms H2 and H1
--------  .R<WAT 357>.A<H2 3> and .R<WAT 324>.A<H1 2>
+-------  .R<WAT 358>.A<H2 3> and .R<WAT 325>.A<H1 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.435 angstroms between nonbonded atoms H1 and H
--------  .R<WAT 349>.A<H1 2> and .R<LEU 15>.A<H 2>
+-------  .R<WAT 350>.A<H1 2> and .R<LEU 15>.A<H 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.435 angstroms between nonbonded atoms O and H1
--------  .R<WAT 338>.A<O 1> and .R<WAT 268>.A<H1 2>
+-------  .R<WAT 339>.A<O 1> and .R<WAT 269>.A<H1 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.453 angstroms between nonbonded atoms H1 and H
--------  .R<WAT 337>.A<H1 2> and .R<ILE 119>.A<H 2>
+-------  .R<WAT 338>.A<H1 2> and .R<ILE 119>.A<H 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms H1 and H
--------  .R<WAT 334>.A<H1 2> and .R<ALA 181>.A<H 2>
+-------  .R<WAT 335>.A<H1 2> and .R<ALA 181>.A<H 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.375 angstroms between nonbonded atoms H1 and HE1
--------  .R<WAT 331>.A<H1 2> and .R<TRP 23>.A<HE1 12>
+-------  .R<WAT 332>.A<H1 2> and .R<TRP 23>.A<HE1 12>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.424 angstroms between nonbonded atoms H1 and H
--------  .R<WAT 326>.A<H1 2> and .R<ASN 179>.A<H 2>
+-------  .R<WAT 327>.A<H1 2> and .R<ASN 179>.A<H 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.304 angstroms between nonbonded atoms H2 and H
--------  .R<WAT 319>.A<H2 3> and .R<CYM 167>.A<H 2>
+-------  .R<WAT 320>.A<H2 3> and .R<CYM 167>.A<H 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.444 angstroms between nonbonded atoms H2 and HE2
--------  .R<WAT 316>.A<H2 3> and .R<HIE 228>.A<HE2 13>
+-------  .R<WAT 317>.A<H2 3> and .R<HIE 228>.A<HE2 13>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.041 angstroms between nonbonded atoms H1 and HH11
--------  .R<WAT 309>.A<H1 2> and .R<ARG 96>.A<HH11 18>
+-------  .R<WAT 310>.A<H1 2> and .R<ARG 96>.A<HH11 18>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.456 angstroms between nonbonded atoms H2 and HD22
--------  .R<WAT 282>.A<H2 3> and .R<ASN 179>.A<HD22 12>
+-------  .R<WAT 283>.A<H2 3> and .R<ASN 179>.A<HD22 12>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.338 angstroms between nonbonded atoms H1 and H
--------  .R<WAT 265>.A<H1 2> and .R<GLY 33>.A<H 2>
+-------  .R<WAT 266>.A<H1 2> and .R<GLY 33>.A<H 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.395 angstroms between nonbonded atoms H1 and HG1
--------  .R<WAT 257>.A<H1 2> and .R<THR 190>.A<HG1 12>
+-------  .R<WAT 258>.A<H1 2> and .R<THR 190>.A<HG1 12>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.485 angstroms between nonbonded atoms H1 and H
--------  .R<WAT 256>.A<H1 2> and .R<GLY 210>.A<H 2>
+-------  .R<WAT 257>.A<H1 2> and .R<GLY 210>.A<H 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.275 angstroms between nonbonded atoms H1 and HH
--------  .R<WAT 255>.A<H1 2> and .R<TYR 103>.A<HH 15>
+-------  .R<WAT 256>.A<H1 2> and .R<TYR 103>.A<HH 15>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.351 angstroms between nonbonded atoms H1 and H
--------  .R<WAT 244>.A<H1 2> and .R<THR 28>.A<H 2>
+-------  .R<WAT 245>.A<H1 2> and .R<THR 28>.A<H 2>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.449 angstroms between nonbonded atoms H2 and HH
--------  .R<WAT 241>.A<H2 3> and .R<TYR 170>.A<HH 15>
+-------  .R<WAT 242>.A<H2 3> and .R<TYR 170>.A<HH 15>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH11 and HH12
 -------  .R<ARG 231>.A<HH11 18> and .R<ARG 231>.A<HH12 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
 -------  .R<ARG 231>.A<HH21 21> and .R<ARG 231>.A<HH22 22>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
 -------  .R<ASN 230>.A<HD21 11> and .R<ASN 230>.A<HD22 12>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ2
 -------  .R<LYS 226>.A<HZ1 18> and .R<LYS 226>.A<HZ2 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ3
 -------  .R<LYS 226>.A<HZ1 18> and .R<LYS 226>.A<HZ3 20>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.449 angstroms between nonbonded atoms HZ2 and HZ3
 -------  .R<LYS 226>.A<HZ2 19> and .R<LYS 226>.A<HZ3 20>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
 -------  .R<ASN 223>.A<HD21 11> and .R<ASN 223>.A<HD22 12>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ2
 -------  .R<LYS 219>.A<HZ1 18> and .R<LYS 219>.A<HZ2 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ3
 -------  .R<LYS 219>.A<HZ1 18> and .R<LYS 219>.A<HZ3 20>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.450 angstroms between nonbonded atoms HZ2 and HZ3
 -------  .R<LYS 219>.A<HZ2 19> and .R<LYS 219>.A<HZ3 20>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HE21 and HE22
 -------  .R<GLN 203>.A<HE21 14> and .R<GLN 203>.A<HE22 15>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HE21 and HE22
 -------  .R<GLN 196>.A<HE21 14> and .R<GLN 196>.A<HE22 15>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HH11 and HH12
 -------  .R<ARG 194>.A<HH11 18> and .R<ARG 194>.A<HH12 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HH21 and HH22
 -------  .R<ARG 194>.A<HH21 21> and .R<ARG 194>.A<HH22 22>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
 -------  .R<ASN 179>.A<HD21 11> and .R<ASN 179>.A<HD22 12>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HH11 and HH12
 -------  .R<ARG 174>.A<HH11 18> and .R<ARG 174>.A<HH12 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
 -------  .R<ARG 174>.A<HH21 21> and .R<ARG 174>.A<HH22 22>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
 -------  .R<ASN 152>.A<HD21 11> and .R<ASN 152>.A<HD22 12>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HH11 and HH12
 -------  .R<ARG 135>.A<HH11 18> and .R<ARG 135>.A<HH12 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
 -------  .R<ARG 135>.A<HH21 21> and .R<ARG 135>.A<HH22 22>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
 -------  .R<ASN 117>.A<HD21 11> and .R<ASN 117>.A<HD22 12>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH11 and HH12
 -------  .R<ARG 110>.A<HH11 18> and .R<ARG 110>.A<HH12 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HH21 and HH22
 -------  .R<ARG 110>.A<HH21 21> and .R<ARG 110>.A<HH22 22>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH11 and HH12
 -------  .R<ARG 109>.A<HH11 18> and .R<ARG 109>.A<HH12 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
 -------  .R<ARG 109>.A<HH21 21> and .R<ARG 109>.A<HH22 22>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH11 and HH12
 -------  .R<ARG 96>.A<HH11 18> and .R<ARG 96>.A<HH12 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
 -------  .R<ARG 96>.A<HH21 21> and .R<ARG 96>.A<HH22 22>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HH11 and HH12
 -------  .R<ARG 88>.A<HH11 18> and .R<ARG 88>.A<HH12 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HH21 and HH22
 -------  .R<ARG 88>.A<HH21 21> and .R<ARG 88>.A<HH22 22>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HH11 and HH12
 -------  .R<ARG 78>.A<HH11 18> and .R<ARG 78>.A<HH12 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HH21 and HH22
 -------  .R<ARG 78>.A<HH21 21> and .R<ARG 78>.A<HH22 22>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HE21 and HE22
 -------  .R<GLN 71>.A<HE21 14> and .R<GLN 71>.A<HE22 15>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HD21 and HD22
 -------  .R<ASN 60>.A<HD21 11> and .R<ASN 60>.A<HD22 12>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ2
 -------  .R<LYS 59>.A<HZ1 18> and .R<LYS 59>.A<HZ2 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ3
 -------  .R<LYS 59>.A<HZ1 18> and .R<LYS 59>.A<HZ3 20>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.449 angstroms between nonbonded atoms HZ2 and HZ3
 -------  .R<LYS 59>.A<HZ2 19> and .R<LYS 59>.A<HZ3 20>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH11 and HH12
 -------  .R<ARG 44>.A<HH11 18> and .R<ARG 44>.A<HH12 19>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
 -------  .R<ARG 44>.A<HH21 21> and .R<ARG 44>.A<HH22 22>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
 -------  .R<ASN 39>.A<HD21 11> and .R<ASN 39>.A<HD22 12>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HE21 and HE22
 -------  .R<GLN 29>.A<HE21 14> and .R<GLN 29>.A<HE22 15>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.490 angstroms between nonbonded atoms HE21 and HE22
 -------  .R<GLN 17>.A<HE21 14> and .R<GLN 17>.A<HE22 15>
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
 Close contact of 1.402 angstroms between nonbonded atoms OE2 and HG2
 -------  .R<GLU 12>.A<OE2 13> and .R<PRO 9>.A<HG2 6>
 Checking parameters for unit 'complex'.
@@ -384,7 +384,7 @@ Scaling up box by a factor of 1.236908 to meet diagonal cut criterion
   Total bounding box for atom centers:  81.263 81.263 81.263
       (box expansion for 'iso' is  30.8%)
   Solvent unit box:                     18.774 18.774 18.774
-  Volume: 278348.688 A^3 (oct)
+  Volume: 278348.696 A^3 (oct)
   Total mass 154353.954 amu,  Density 0.921 g/cc
   Added 6989 residues.
 12 Na+ ions required to neutralize.
@@ -412,10 +412,10 @@ Adding 0 counter ions to "complex" using 1A grid
 Writing pdb file: ligand_11_complex_solv.pdb
    printing CRYST1 record to PDB file with box info
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
  Converting N-terminal residue name to PDB format: NGLU -> GLU
 
-/Users/af25016/miniforge3/envs/obss/bin/teLeap: Warning!
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
  Converting C-terminal residue name to PDB format: CSER -> SER
 Checking Unit.
 Building topology.
