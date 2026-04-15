@@ -2060,14 +2060,17 @@ class ColdMeze(Meze):
             exclude_resids = [exclude_resids]
         exclude_resids = set(exclude_resids or [])
 
-        coordinating_atomgroups = next(iter(self.coordinating_residues.values()))
-        for atomgroup in list(self.coordinating_residues.values())[1:]:
-            coordinating_atomgroups += atomgroup
+        if self.coordinating_residues:
+            coordinating_atomgroups = next(iter(self.coordinating_residues.values()))
+            for atomgroup in list(self.coordinating_residues.values())[1:]:
+                coordinating_atomgroups += atomgroup
 
-        coordinating_resids = [
-            atom.resid for atom in coordinating_atomgroups
-            if atom.resid not in exclude_resids
-        ]
+            coordinating_resids = [
+                atom.resid for atom in coordinating_atomgroups
+                if atom.resid not in exclude_resids
+            ]
+        else:
+            coordinating_resids = []
         additional_resids = []
         if additional_restraints:
             if not {"resids"} <= additional_restraints.keys() and not {"resnames"} <= additional_restraints.keys():
@@ -2091,13 +2094,17 @@ class ColdMeze(Meze):
             additional_resids = list(additional_resids)
         if position_restraints == "solute":
             protein_resids = [atom.resid for atom in self.universe.select_atoms("protein")]
-            constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist() + additional_resids
+            if not protein_resids:
+                solute_resids = [atom.resid for atom in self.universe.select_atoms(f"resname {self.ligand_resname}")]
+            else:      
+                solute_resids = protein_resids 
+            constraint_resids = solute_resids + coordinating_resids + list(self.metal_resids) + additional_resids
             return f"':{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "backbone":
-            constraint_resids = coordinating_resids + self.metal_resids.tolist() + additional_resids
+            constraint_resids = coordinating_resids + list(self.metal_resids) + additional_resids
             return f"'(@N,CA,C,O & !:WAT)|:{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "metal-coordination":
-            constraint_resids = coordinating_resids + self.metal_resids.tolist() + additional_resids
+            constraint_resids = coordinating_resids + list(self.metal_resids) + additional_resids
             return f"':{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints is None and additional_resids:
             return f"':{_residue_restraint_mask(additional_resids)}'"
