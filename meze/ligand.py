@@ -39,6 +39,8 @@ class Ligand():
     parameterised: bool = False
     frcmod_file: Optional[str] = None
     residue_name: Optional[str] = None
+    topology: Optional[str] = None
+    coordinates: Optional[str] = None
 
     def __post_init__(self):
         if isinstance(self.file, str):
@@ -72,6 +74,15 @@ class Ligand():
             )
         
         self.system = bss.IO.readMolecules(self.file)
+
+        if not self.residue_name:
+            residues = self.system.getResidues()
+            if len(residues) > 1:
+                log.warning(f"Found multiple residues in ligand file {self.file}: \n{residues}")
+                log.warning(f"Choosing residue name based on first residue.")
+            residue = residues[0]
+            self.residue_name = residue.name()
+            log.info(f"Ligand residue name set to {self.residue_name}")
 
     def parameterise(self, 
                      directory: Optional[str] = None,
@@ -318,9 +329,13 @@ class Ligand():
                 solvated_coordinates
             )
             system = bss.IO.readMolecules([solvated_topology, solvated_coordinates])
+
             solvated_ligand = dataclasses.replace(
                 ligand,
-                file=[solvated_topology, solvated_coordinates],
+                file=ligand_mol2,
+                frcmod_file=ligand_frcmod,
+                topology=solvated_topology,
+                coordinates=solvated_coordinates,
                 system=system,
                 parameterised=True
             )

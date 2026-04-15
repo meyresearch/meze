@@ -308,11 +308,18 @@ class Meze:
         except FileNotFoundError:
             print("Could not create meze object:\n")
             raise            
+        
+        if self.recipe.model is not None:
+            self._set_metal()
+            self.coordinating_residues = self._get_metal_coordinating_residues()
+        else:
+            self.metals = None
+            self.metal_resids = []
+            self.metal_atomids = []
+            self.coordinating_residues = {}
 
-        self._set_metal()
-        self.coordinating_residues = self._get_metal_coordinating_residues()
-        self._setup_bss_system()
         self._set_waters()
+        self._setup_bss_system()
         self._set_protein()
 
         if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
@@ -320,6 +327,7 @@ class Meze:
         
         if self.ligand and self.ligand.parameterised and not self.ligand_resid:
             self.ligand_resid = self.get_ligand_resid()
+            self.ligand_resname = self.ligand.residue_name
         elif self.ligand and self.ligand.parameterised and self.ligand_resid:
             pass  
         elif not self.ligand and self.ligand_resname:
