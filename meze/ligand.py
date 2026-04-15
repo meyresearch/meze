@@ -329,9 +329,13 @@ class Ligand():
                 solvated_coordinates
             )
             system = bss.IO.readMolecules([solvated_topology, solvated_coordinates])
+
             solvated_ligand = dataclasses.replace(
                 ligand,
-                file=[solvated_topology, solvated_coordinates],
+                file=ligand_mol2,
+                frcmod_file=ligand_frcmod,
+                topology=solvated_topology,
+                coordinates=solvated_coordinates,
                 system=system,
                 parameterised=True
             )
