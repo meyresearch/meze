@@ -14,6 +14,20 @@ from typing import (
 )
 import os
 from .helpers import _check_ambertools
+from rich.logging import RichHandler
+from rich.console import Console
+import shutil
+console = Console(force_terminal=True, color_system="truecolor")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(console=console, rich_tracebacks=True, markup=True)],
+    force=True,
+)
+
+log = logging.getLogger("rich")
 
 @dataclass
 class Ligand():
@@ -223,3 +237,96 @@ class Ligand():
             )
         os.chdir(workdir)
         return output_file
+
+    def add_water(
+            self,
+            directory: Optional[str] = None,
+            force_field: Optional[str] = "gaff2",
+            water_model: Optional[str] = "tip3p",
+            box_shape: Optional[str] = "octahedral",
+            box_edges: Optional[float] = 10.0,
+            solvent_closeness: Optional[float] = 0.75,
+    ):
+        _check_ambertools()
+
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
+        ligand = self.parameterise(directory) if not self.parameterised else self
+
+        ligand_mol2 = os.path.join(directory, f"{ligand.name}.mol2")
+        ligand_frcmod = os.path.join(directory, f"{ligand.name}.frcmod")
+        if not os.path.isfile(ligand_mol2):
+            shutil.copy(ligand.file[0], ligand_mol2)
+        if not os.path.isfile(ligand_frcmod):
+            shutil.copy(ligand.frcmod_file, ligand_frcmod)
+
+        tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
+        tleap_output_file = os.path.join(directory, f"tleap_solvate.out")        
+
+        lines = [f"source leaprc.{force_field}\n",
+                 f"source leaprc.water.{water_model.lower()}\n"]
+        
+        if "tip3p" in water_model.lower():
+            lines.append(
+                "loadamberparams frcmod.ions1lm_126_tip3p\n"
+            )       
+        
+        lines.extend([
+            f"loadamberparams {ligand_frcmod}\n",
+            f"lig = loadmol2 {ligand_mol2}\n"
+            f"\n"  
+        ])
+
+        if "oct" in box_shape.lower():
+            lines.append(
+                f"solvate{box_shape[:3]} lig {water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
+            )
+        else:
+            lines.append(
+                f"solvate{box_shape[:3]} lig {water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
+            )
+
+        lines.extend([
+            "addions2 lig Na+ 0\n",
+            "addions2 lig Cl- 0\n",
+            "\n"
+            f"savepdb lig {ligand.name}_solv.pdb\n",
+            f"saveamberparm lig {ligand.name}_solv.prmtop {ligand.name}_solv.inpcrd\n",
+            "quit"
+        ])
+
+        with open(tleap_input_file, "w") as ifile:
+            ifile.writelines(lines)       
+        solvated_topology = f"{ligand.name}_solv.prmtop"
+        solvated_coordinates = f"{ligand.name}_solv.inpcrd"
+
+        workdir = os.getcwd()
+        os.chdir(directory)
+        tleap_command = f"tleap -s -f {tleap_input_file} > {tleap_output_file}"
+        log.info(f"Running tleap with command:")
+        log.info(tleap_command)
+        os.system(tleap_command)        
+
+        try:
+            solvated_topology = os.path.join(
+                directory, 
+                solvated_topology
+            )
+            solvated_coordinates = os.path.join(
+                directory, 
+                solvated_coordinates
+            )
+            system = bss.IO.readMolecules([solvated_topology, solvated_coordinates])
+            solvated_ligand = dataclasses.replace(
+                ligand,
+                file=[solvated_topology, solvated_coordinates],
+                system=system,
+                parameterised=True
+            )
+        except FileNotFoundError:
+            log.error(f"Failed to solvate ligand {ligand.name}")
+            raise RuntimeError
+        os.chdir(workdir)
+
+        return solvated_ligand

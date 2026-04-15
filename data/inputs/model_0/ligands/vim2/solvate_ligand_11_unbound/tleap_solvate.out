@@ -1,0 +1,90 @@
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/prep to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/lib to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/parm to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/cmd to search path.
+-s: Ignoring all leaprc startup files.
+-f: Source /Users/af25016/projects/meze/data/inputs/model_0/ligands/vim2/solvate_ligand_11_unbound/tleap_solvate.in.
+
+Welcome to LEaP!
+Sourcing: /Users/af25016/projects/meze/data/inputs/model_0/ligands/vim2/solvate_ligand_11_unbound/tleap_solvate.in
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.gaff2
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.gaff2 done
+Log file: ./leap.log
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/gaff2.dat
+Reading title:
+AMBER General Force Field for organic molecules (Version 2.2.20, March 2021)
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.water.tip3p
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.water.tip3p done
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/atomic_ions.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/solvents.lib
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+This is the additional/replacement parameter set for TIP3P water
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ionsjc_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Monovalent ion parameters for Ewald and TIP3P water from Joung & Cheatham JPCB (2008)
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions234lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of divalent to tetravalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /Users/af25016/projects/meze/data/inputs/model_0/ligands/vim2/solvate_ligand_11_unbound/ligand_11.frcmod
+Reading force field modification type file (frcmod)
+Reading title:
+Remark line goes here
+Loading Mol2 file: /Users/af25016/projects/meze/data/inputs/model_0/ligands/vim2/solvate_ligand_11_unbound/ligand_11.mol2
+Reading MOLECULE named MOL
+Scaling up box by a factor of 1.191751 to meet diagonal cut criterion
+  Solute vdw bounding box:              10.649 13.335 7.721
+  Total bounding box for atom centers:  37.170 37.170 37.170
+      (box expansion for 'iso' is  27.0%)
+  Solvent unit box:                     18.774 18.774 18.774
+  Volume: 27806.112 A^3 (oct)
+  Total mass 14157.028 amu,  Density 0.845 g/cc
+  Added 770 residues.
+1 Na+ ion required to neutralize.
+Adding 1 counter ions to "lig" using 1A grid
+Grid extends from solute vdw + 1.48  to  7.42
+Resolution:      1.00 Angstrom.
+Calculating grid charges
+Placed Na+ in lig at (10.36, -9.74, -13.57).
+
+Done adding ions.
+ 0.001000 0 1 0
+0 Cl- ion required to neutralize.
+Adding 0 counter ions to "lig" using 1A grid
+Writing pdb file: ligand_11_solv.pdb
+   printing CRYST1 record to PDB file with box info
+Checking Unit.
+Building topology.
+Building atom parameters.
+Building bond parameters.
+Building angle parameters.
+Building proper torsion parameters.
+Building improper torsion parameters.
+ total 16 improper torsions applied
+Building H-Bond parameters.
+Incorporating Non-Bonded adjustments.
+Not Marking per-residue atom chain types.
+Marking per-residue atom chain types.
+  (Residues lacking connect0/connect1 - 
+   these don't have chain types marked:
+
+	res	total affected
+
+	MOL	1
+	WAT	770
+  )
+ (no restraints)
+	Quit
+
+Exiting LEaP: Errors = 0; Warnings = 0; Notes = 0.

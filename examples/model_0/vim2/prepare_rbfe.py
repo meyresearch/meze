@@ -36,3 +36,5 @@ model_0_sofra.set_ligand_network(
     pdb_files=ligand_files,
     directory=f"{project_dir}/inputs/model_0/protein/{system_name}/"
 )
+
+
