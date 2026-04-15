@@ -1058,7 +1058,7 @@ class Meze:
 
     def add_water(
             self,
-            directory: str | None = None, 
+            directory: Optional[str] = None, 
             mcpbpy_tleap_file: str | None = None, 
             non_standard_parameterisation_method: Literal["antechamber", "tleap"] = "antechamber"
     ) -> Self:
@@ -1154,8 +1154,8 @@ class Meze:
             )
         
         except FileNotFoundError:
-            print("Failed to solvate meze.")
-            raise
+            log.error("Failed to solvate meze.")
+            raise RuntimeError
 
         os.chdir(workdir)
         
