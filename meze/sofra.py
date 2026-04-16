@@ -128,6 +128,12 @@ class MezeRecipe(BaseModel):
         """Print recipe information as JSON
         """
         return self.model_dump_json(indent=4, fallback=str, warnings="none")
+    
+    def __getitem__(self, key: str):
+        return getattr(self, key)
+                                                                        
+    def __setitem__(self, key: str, value):
+        setattr(self, key, value)
 
     def to_json(self, file: str):
         with open(file, "w") as ofile:
