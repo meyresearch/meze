@@ -55,7 +55,7 @@ print("Minimising")
 minimised_meze = ligand_meze.minimise(
     process_name="01_min",
     workdir=equil_dir,
-    # position_restraints="solute",
+    position_restraints="solute",
     max_cycles=1000,
     is_gpu=True
 )
@@ -102,24 +102,13 @@ lower_restraint = pressure_meze.pressurise(
      restraint_weight=10.0
 )
 
-print("06 - Reduce restraint")
+print("06 - No restraint")
 
 reduce_restraint = lower_restraint.pressurise(
      restart=True,
-     process_name="06_relax",
+     process_name="06_free",
      workdir=equil_dir,
-     position_restraints="solute",
-     timestep=0.001,
-     restraint_weight=1.0
-)
-
-print("07 - No restraint")
-
-free = reduce_restraint.pressurise(
-     restart=True,
-     process_name="07_free",
-     workdir=equil_dir,
-     timestep=0.001,
+     timestep=0.001
 )
 
 
