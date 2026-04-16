@@ -15,19 +15,18 @@ project_dir = DATA_DIR
 ligand_name = sys.argv[1]
 repeat = sys.argv[2]
 
-# set ColdMezeRecipe including model (i.e. metal params), ligand(?)
+# get Sofra which has the information about prepared mezes 
 with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_sofra.json", "r") as file:
-    json_recipe = json.load(file)
+    json_sofra = json.load(file)
 
-json_recipe["path_to_engine"] = os.path.join(
-        os.environ["AMBERHOME"], "bin", "sander"
-    )
-
-input_dir = json_recipe[ligand_name]["parameterisation_directory"]
+input_dir = json_sofra[ligand_name]["parameterisation_directory"]
 
 solvated_meze = ColdMeze.load(
     filename=f"{input_dir}/{ligand_name}_avg_charges_solv.pkl"
 )
+
+solvated_meze.recipe.path_to_engine = os.path.join("AMBERHOME", "bin", "sander")
+
 print(solvated_meze)
 
 equil_dir = os.path.join(project_dir, "equilibration", "hybrid_model", system_name, f"{ligand_name}", f"repeat_{repeat}")
