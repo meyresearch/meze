@@ -37,4 +37,10 @@ model_0_sofra.set_ligand_network(
     directory=f"{project_dir}/inputs/model_0/protein/{system_name}/"
 )
 
+# read in equilibrated bound and unbound systems
 
+# merge in both 
+
+# prep fep windows
+
+# write submission scripts
