@@ -1355,16 +1355,16 @@ class Meze:
         )
 
 
-    def _remove_double_oxygen_bond(self):
+    def _remove_double_oxygen_bond(self, parameterisation_directory: str) -> str | None:
         _check_ambertools()
 
         tleap_file = glob.glob(
-            f"{self.parameterisation_directory}/*tleap.in"
+            f"{parameterisation_directory}/*tleap.in"
         )
         if len(tleap_file) == 0:
             raise FileNotFoundError(
                 "Cannot find tleap input file: "
-                f"{self.parameterisation_directory}/*tleap.in"
+                f"{parameterisation_directory}/*tleap.in"
             )
 
         tleap_file = tleap_file[0]
@@ -1419,12 +1419,12 @@ class Meze:
         
     
         standard_fingerprint_file = glob.glob(
-            f"{self.parameterisation_directory}/*standard.fingerprint"
+            f"{parameterisation_directory}/*standard.fingerprint"
         )
         if len(standard_fingerprint_file) == 0:
             raise FileNotFoundError(
                 "Cannot find standard fingerprint file: "
-                f"{self.parameterisation_directory}/*standard.fingerprint"
+                f"{parameterisation_directory}/*standard.fingerprint"
             )
 
         standard_fingerprint_file = standard_fingerprint_file[0]
@@ -1442,12 +1442,12 @@ class Meze:
             return None
 
         frcmod_file = glob.glob(
-            f"{self.parameterisation_directory}/*mcpbpy.frcmod"
+            f"{parameterisation_directory}/*mcpbpy.frcmod"
         )
         if len(frcmod_file) == 0:
             raise FileNotFoundError(
                 "Cannot find MCPB.py frcmod file: "
-                f"{self.parameterisation_directory}/*mcpbpy.frcmod"
+                f"{parameterisation_directory}/*mcpbpy.frcmod"
             )
 
         frcmod_file = frcmod_file[0]
@@ -1481,7 +1481,7 @@ class Meze:
             restraints[(metal_id, o_id)] = (np.round(eq, 2), np.round(fc, 2), 1.0)
  
         restraint_lines = _write_distance_restraints(restraints)
-        restraint_file = os.path.join(self.parameterisation_directory, "double_oxygen_restraints.RST")
+        restraint_file = os.path.join(parameterisation_directory, "double_oxygen_restraints.RST")
         if os.path.isfile(restraint_file):
             with open(restraint_file, "r") as file:
                 read_lines = file.readlines()
@@ -1500,15 +1500,15 @@ class Meze:
 
 
 
-    def _remove_ligand_bond(self):
+    def _remove_ligand_bond(self, parameterisation_directory: str) -> None:
 
         tleap_file = glob.glob(
-            f"{self.parameterisation_directory}/*tleap.in"
+            f"{parameterisation_directory}/*tleap.in"
         )
         if len(tleap_file) == 0:
             raise FileNotFoundError(
                 "Cannot find tleap input file: "
-                f"{self.parameterisation_directory}/*tleap.in"
+                f"{parameterisation_directory}/*tleap.in"
             )
 
         tleap_file = tleap_file[0]
@@ -1711,10 +1711,9 @@ class Meze:
                 "No tleap input file found after MCPB.py step 4. "
                 f"Check log file: {step_4_output_file}"
             )
-        
 
-        self._remove_ligand_bond()
-        self.restraint_file = self._remove_double_oxygen_bond()        
+        self._remove_ligand_bond(parameterisation_directory)
+        self.restraint_file = self._remove_double_oxygen_bond(parameterisation_directory)        
         
         
         new_coordinates = glob.glob(f"{parameterisation_directory}/*_mcpbpy.pdb")
