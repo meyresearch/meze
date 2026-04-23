@@ -335,6 +335,16 @@ class Meze:
         cls, 
         topology: str, 
         coordinates: str, 
+        disulfide_bridges: Optional[List[dict[str, int]]] = None,
+        ligand: Optional[Ligand] = None,
+        ligand_resid: Optional[int] = None,
+        non_standard_residues: dict[dict] | List[Ligand] = None,   
+        parameterisation_directory: Optional[str] = None,
+        mcpbpy_input_file: Optional[str] = None,
+        tleap_input_file: Optional[str] = None,
+        restraint_file: Optional[str] = None,
+        exclude_resids: Optional[Union[int, list[int]]] = None,
+        ligand_resname: Optional[str] = None,
         **kwargs
     ):
         """Construct Meze from Amber topology and coordinates
@@ -350,6 +360,16 @@ class Meze:
         return cls(
             topology=topology, 
             coordinates=coordinates,
+            disulfide_bridges=disulfide_bridges,
+            ligand=ligand,
+            ligand_resid=ligand_resid,
+            non_standard_residues=non_standard_residues,   
+            parameterisation_directory=parameterisation_directory,
+            mcpbpy_input_file=mcpbpy_input_file,
+            tleap_input_file=tleap_input_file,
+            restraint_file=restraint_file,
+            exclude_resids=exclude_resids,
+            ligand_resname=ligand_resname,
             recipe=recipe
         )
 
@@ -1793,14 +1813,16 @@ class ColdMeze(Meze):
         pdb_file: Optional[str] = None,
         topology: Optional[str] = None, 
         coordinates: Optional[str] = None, 
-        exclude_resids: Optional[Union[int, list[int]]] = [],
-        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
-        ligand: Optional[Ligand] = None,
+        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,        
         disulfide_bridges: Optional[List[dict[str, int]]] = None,
-        non_standard_residues: Optional[dict[dict]] = None,
+        ligand: Optional[Ligand] = None,
+        ligand_resid: Optional[int] = None,
+        non_standard_residues: dict[dict] | List[Ligand] = None,   
         parameterisation_directory: Optional[str] = None,
         mcpbpy_input_file: Optional[str] = None,
         tleap_input_file: Optional[str] = None,
+        restraint_file: Optional[str] = None,
+        exclude_resids: Optional[Union[int, list[int]]] = None,
         ligand_resname: Optional[str] = None,
         **kwargs
     ) -> "ColdMeze":
@@ -1829,15 +1851,17 @@ class ColdMeze(Meze):
         return cls(
             topology=topology, 
             coordinates=coordinates, 
-            exclude_resids=exclude_resids,
-            recipe=recipe,
-            ligand=ligand,
             disulfide_bridges=disulfide_bridges,
-            non_standard_residues=non_standard_residues,
+            ligand=ligand,
+            ligand_resid=ligand_resid,
+            non_standard_residues=non_standard_residues,   
             parameterisation_directory=parameterisation_directory,
             mcpbpy_input_file=mcpbpy_input_file,
             tleap_input_file=tleap_input_file,
-            ligand_resname=ligand_resname
+            restraint_file=restraint_file,
+            exclude_resids=exclude_resids,
+            ligand_resname=ligand_resname,
+            recipe=recipe
         )
 
     def _build_restraint_mask(
@@ -2162,19 +2186,20 @@ class HotMeze(Meze):
 
     @classmethod
     def from_files(
-        cls, 
-        restraint_file: Optional[str] = "",
-        recipe: Optional[Union[dict, "HotMezeRecipe"]] = None,
+        cls,
         pdb_file: Optional[str] = None,
         topology: Optional[str] = None, 
         coordinates: Optional[str] = None, 
-        exclude_resids: Optional[Union[int, list[int]]] = [],
-        ligand: Optional[Ligand] = None,
+        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,        
         disulfide_bridges: Optional[List[dict[str, int]]] = None,
-        non_standard_residues: Optional[dict[dict]] = None,
+        ligand: Optional[Ligand] = None,
+        ligand_resid: Optional[int] = None,
+        non_standard_residues: dict[dict] | List[Ligand] = None,   
         parameterisation_directory: Optional[str] = None,
         mcpbpy_input_file: Optional[str] = None,
         tleap_input_file: Optional[str] = None,
+        restraint_file: Optional[str] = None,
+        exclude_resids: Optional[Union[int, list[int]]] = None,
         ligand_resname: Optional[str] = None,
         **kwargs
     ) -> "HotMeze":
@@ -2202,16 +2227,17 @@ class HotMeze(Meze):
         return cls(
             topology=topology, 
             coordinates=coordinates, 
-            recipe=recipe,
-            restraint_file=restraint_file,
-            ligand=ligand,
             disulfide_bridges=disulfide_bridges,
-            non_standard_residues=non_standard_residues,
+            ligand=ligand,
+            ligand_resid=ligand_resid,
+            non_standard_residues=non_standard_residues,   
             parameterisation_directory=parameterisation_directory,
             mcpbpy_input_file=mcpbpy_input_file,
             tleap_input_file=tleap_input_file,
+            restraint_file=restraint_file,
             exclude_resids=exclude_resids,
-            ligand_resname=ligand_resname
+            ligand_resname=ligand_resname,
+            recipe=recipe
         )
 
     def run(
