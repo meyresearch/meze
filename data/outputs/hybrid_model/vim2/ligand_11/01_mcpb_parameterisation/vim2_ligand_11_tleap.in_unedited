@@ -1,4 +1,3 @@
-source leaprc.gaff2
 source oldff/leaprc.ff14SB
 source leaprc.water.tip3p
 addAtomTypes {
@@ -51,7 +50,7 @@ bond mol.208.C mol.209.N
 bond mol.209.C mol.210.N
 savepdb mol vim2_ligand_11_dry.pdb
 saveamberparm mol vim2_ligand_11_dry.prmtop vim2_ligand_11_dry.inpcrd
-solvateoct mol TIP3PBOX 10.0 iso 0.75
+solvatebox mol TIP3PBOX 10.0
 addions mol Na+ 0
 addions mol Cl- 0
 savepdb mol vim2_ligand_11_solv.pdb

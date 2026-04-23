@@ -1339,9 +1339,6 @@ class Meze:
     def build_empirical_bonds(self):
         _check_ambertools()
         mcpbpy_input_file = self.mcpbpy_input_file
-
-        self._remove_ligand_bond()
-        self.restraint_file = self._remove_double_oxygen_bond()        
         
         workdir = os.getcwd()
         os.chdir(self.parameterisation_directory)
@@ -1360,14 +1357,67 @@ class Meze:
 
     def _remove_double_oxygen_bond(self):
         _check_ambertools()
-        try:
-            from pymsmt.mcpb.gene_final_frcmod_file import fcfit_ep_bond
-        except ModuleNotFoundError:
-            raise RuntimeError(
-                "AmberTools/pymsmt is required for this operation. "
-                "Make sure AmberTools is installed."
+
+        tleap_file = glob.glob(
+            f"{self.parameterisation_directory}/*tleap.in"
+        )
+        if len(tleap_file) == 0:
+            raise FileNotFoundError(
+                "Cannot find tleap input file: "
+                f"{self.parameterisation_directory}/*tleap.in"
             )
 
+        tleap_file = tleap_file[0]
+
+        if not os.path.isfile(tleap_file + "_unedited"):
+            shutil.copy(
+                tleap_file,
+                tleap_file + "_unedited"
+            )
+
+        with open(tleap_file, "r") as ifile:
+            all_lines = ifile.readlines()
+        
+        bond_lines = [line for line in all_lines if "bond" in line and f"{self.metal_element.upper()}" in line]
+
+        oxygen_ligands = {}
+        for metal, ligands in self.coordinating_residues.items():
+            metal_resid = self.universe.select_atoms(f"id {metal}")[0].resid
+            oxygens = [atom for atom in ligands if atom.element == "O"]
+            if len(oxygens) > 1: 
+                oxygen_ligands[metal_resid] = oxygens            
+        
+        if not oxygen_ligands:
+            log.info("No metals with multiple oxygen ligands found.")
+            return self.restraint_file
+        
+        oxygen_resids = {atom.resid for oxygens in oxygen_ligands.values() for atom in oxygens}
+        metal_resids = set(oxygen_ligands.keys())
+
+        def parse_bond(line):
+            parts = line.replace("bond", "").strip().split("mol.")
+            r1, a1 = parts[1].strip().split(".")[:2]
+            r2, a2 = parts[2].strip().split(".")[:2]
+            return int(r1), a1.strip(), int(r2), a2.strip()
+        
+        metal_bond_lines = [line for line in all_lines if "bond" in line and self.metal_element.upper() in line]
+        bonds_to_remove = []
+        for line in metal_bond_lines:
+            r1, a1, r2, a2 = parse_bond(line)
+            if (r1 in oxygen_resids or r2 in oxygen_resids) and \
+               (r1 in metal_resids or r2 in metal_resids):
+                bonds_to_remove.append((line, r1, a1, r2, a2))
+                log.info(f"Found metal-oxygen bond to remove:\n{line}")
+
+        if not bonds_to_remove:
+            log.info("No double oxygen bonds found to remove.")
+            return self.restraint_file
+        
+        lines_to_remove = {bond[0] for bond in bonds_to_remove}
+        with open(tleap_file, "w") as file:
+            file.writelines(line for line in all_lines if line not in lines_to_remove)
+        
+    
         standard_fingerprint_file = glob.glob(
             f"{self.parameterisation_directory}/*standard.fingerprint"
         )
@@ -1377,79 +1427,60 @@ class Meze:
                 f"{self.parameterisation_directory}/*standard.fingerprint"
             )
 
-        standard_fingerprint = standard_fingerprint_file[0]
+        standard_fingerprint_file = standard_fingerprint_file[0]
 
-        if not os.path.isfile(standard_fingerprint + "_unedited"):
-            shutil.copy(
-                standard_fingerprint,
-                standard_fingerprint + "_unedited"
+        with open(standard_fingerprint_file) as ifile:
+            fingerprint_lines = ifile.readlines()
+                      
+        def get_mcpb_atom_type(resid, atom_name):
+            for line in fingerprint_lines:
+                if "->" not in line:
+                    continue
+                parts = line.split()[0].split("-")
+                if parts[0] == str(resid) and parts[2] == atom_name:
+                    return line.strip().split("->")[-1].strip()
+            return None
+
+        frcmod_file = glob.glob(
+            f"{self.parameterisation_directory}/*mcpbpy.frcmod"
+        )
+        if len(frcmod_file) == 0:
+            raise FileNotFoundError(
+                "Cannot find MCPB.py frcmod file: "
+                f"{self.parameterisation_directory}/*mcpbpy.frcmod"
             )
 
-        with open(standard_fingerprint, "r") as ifile:
-            all_lines = ifile.readlines()
+        frcmod_file = frcmod_file[0]
+
+        with open(frcmod_file, "r") as ifile:
+            frcmod_lines = ifile.readlines()
+    
+        bond_start = [i for i, line in enumerate(frcmod_lines) if "BOND" in line][0] + 1
+        angle_start = [i for i, line in enumerate(frcmod_lines) if "ANGL" in line][0]
+
+        frcmod_bond_lines = frcmod_lines[bond_start:angle_start]
+
+        def get_bond_params(type1, type2):
+            for line in frcmod_bond_lines:
+                if not line.strip():
+                    continue
+                parts = line.split()
+                a, b = parts[0].split("-")
+                if {a, b} == {type1, type2}:
+                    return float(parts[1]), float(parts[2])
+            return None, None
         
-        oxygen_ligands = {}
-        for metal, ligands in self.coordinating_residues.items():
-            oxygen_ligands[metal] = []
-            for atom in ligands:
-                if atom.element == "O":
-                    oxygen_ligands[metal].append(atom)
-
-        oxygen_ids = []
-        metals_with_multiple_oxygens = []
-        for metal, oxygens in oxygen_ligands.items():
-            n_oxygens = len(oxygens)
-            if n_oxygens > 1:
-                for oxygen in oxygens:
-                    oxygen_ids.append(oxygen.id)
-                    metals_with_multiple_oxygens.append(metal)
-
-        atom_numbers = []
-        atoms = []
-        for line in all_lines:
-            words = line.split()
-            if "->" in words and int(words[1]) in oxygen_ids:
-                atom = words[0].split("-")[-1]
-                atoms.append(atom)
-                atom_number = words[1]
-                atom_numbers.append(int(atom_number))
-
-        new_lines = all_lines.copy()
-        harmonic_restraint_ligands = []
-        if atoms and atom_numbers:
-            for line in all_lines:
-                words = line.split()
-                if "LINK" in words:
-                    metal = int(words[1].split("-")[0])
-                    ligand = words[-1].split("-")
-                    for atom, atom_number in zip(atoms, atom_numbers):
-                        if atom in ligand and str(atom_number) in ligand and metal in metals_with_multiple_oxygens:
-                            ligand_line = line
-                            new_lines.remove(ligand_line)
-                            temp_dict = {"metal": metal, "atom_number": atom_number}
-                            harmonic_restraint_ligands.append(temp_dict)
-
-        # build harmonic restraint for deleted bond(s):
-        metal_ags = [self.universe.select_atoms(f"id {item['metal']}") for item in harmonic_restraint_ligands]
-        ligand_ags = [self.universe.select_atoms(f"id {item['atom_number']}") for item in harmonic_restraint_ligands]
-        distances = [np.round(MDAnalysis.analysis.distances.dist(
-            atom_group_1, atom_group_2
-        )[-1][0], 4) for atom_group_1, atom_group_2 in zip(metal_ags, ligand_ags)]
-
-        elements = [[self.metal_element, ligand_ag.atoms[0].element] for ligand_ag in ligand_ags]
-
-        force_constants = [fcfit_ep_bond(distance, element) for distance, element in zip(distances, elements)]
-
-        restraints = []
-        for metal_ag, ligand_ag, force_constant in zip(metal_ags, ligand_ags, force_constants):
-            temp_dict = {metal_ag.atoms[0].id: ligand_ag}
-            restraints.append(self.build_distance_restraints(
-                coordinating_residues=temp_dict,
-                force_constant=force_constant
-            ))
-
-
-        restraint_lines = [_write_distance_restraints(restraint) for restraint in restraints]
+        restraints = {}
+        for _, r1, a1, r2, a2 in bonds_to_remove:
+            type1 = get_mcpb_atom_type(r1, a1)
+            type2 = get_mcpb_atom_type(r2, a2)
+            fc, eq = get_bond_params(type1, type2)
+            id1 = self.universe.select_atoms(f"resid {r1} and name {a1}")[0].id
+            id2 = self.universe.select_atoms(f"resid {r2} and name {a2}")[0].id
+            metal_id, o_id = (id1, id2) if r1 in metal_resids else (id2, id1)
+            restraints[(metal_id, o_id)] = (np.round(eq, 2), np.round(fc, 2), 1.0)
+ 
+        restraint_lines = _write_distance_restraints(restraints)
         restraint_file = os.path.join(self.parameterisation_directory, "double_oxygen_restraints.RST")
         if os.path.isfile(restraint_file):
             with open(restraint_file, "r") as file:
@@ -1458,7 +1489,6 @@ class Meze:
                 with open(restraint_file, "w") as file:
                     for lines in restraint_lines:
                         file.writelines(lines)  
-
         else:
             with open(restraint_file, "w") as file:
                 for lines in restraint_lines:
@@ -1466,66 +1496,56 @@ class Meze:
         log.info(
             f"Added harmonic restraints for deleted bonds between metal and oxygen ligand(s) to {restraint_file}."
         )
-
-        with open(standard_fingerprint, "w") as ofile:
-            ofile.writelines(new_lines)
-        
         return restraint_file
 
 
 
     def _remove_ligand_bond(self):
 
-        standard_fingerprint_file = glob.glob(
-            f"{self.parameterisation_directory}/*standard.fingerprint"
+        tleap_file = glob.glob(
+            f"{self.parameterisation_directory}/*tleap.in"
         )
-        if len(standard_fingerprint_file) == 0:
+        if len(tleap_file) == 0:
             raise FileNotFoundError(
-                "Cannot find standard fingerprint file: "
-                f"{self.parameterisation_directory}/*standard.fingerprint"
+                "Cannot find tleap input file: "
+                f"{self.parameterisation_directory}/*tleap.in"
             )
 
-        standard_fingerprint = standard_fingerprint_file[0]
-        if not os.path.isfile(standard_fingerprint + "_unedited"):
+        tleap_file = tleap_file[0]
+        if not os.path.isfile(tleap_file + "_unedited"):
             shutil.copy(
-                standard_fingerprint,
-                standard_fingerprint + "_unedited"
+                tleap_file,
+                tleap_file + "_unedited"
             )
 
-        with open(standard_fingerprint, "r") as ifile:
+        with open(tleap_file, "r") as ifile:
             all_lines = ifile.readlines()
         
-        metal_linked_atoms = [line.split()[-1].split("-") for line in all_lines if "LINK" in line]
+        bond_lines = [line for line in all_lines if "bond" in line and f"{self.metal_element.upper()}" in line]
 
-        ligand_linked_atoms = []
-        for line in all_lines:
-            if "LINK" not in line:
-                atom_name = line.split()[0].split("-")[2]
-                atom_number = line.split()[1]
-                for link in metal_linked_atoms:
-                    if atom_name in link and atom_number in link and self.ligand.residue_name in line:
-                        ligand_linked_atoms.append(
-                            f"{atom_number}-{atom_name}"
-                        )
-        
-        if not ligand_linked_atoms:
+        ligand_metal_coordination_lines = []
+        for line in bond_lines:
+            parts = line.replace("bond", "").strip().split("mol.")
+            first_atom = parts[1].strip()
+            second_atom = parts[2].strip()
+            first_resid  = int(first_atom.split(".")[0])
+            second_resid  = int(second_atom.split(".")[0])
+
+            if self.ligand_resid == first_resid or self.ligand_resid == second_resid:
+                ligand_metal_coordination_lines.append(line)
+                log.info(f"Found metal-ligand bond:\n{line}")
+
+        if not ligand_metal_coordination_lines:
             log.info(
                 f"Did not find a bond between the ligand {self.ligand.residue_name} and the metal"
             )
         else:
-            ligand_links = []
-            for line in all_lines:
-                if "LINK" in line:
-                    link = line.split()[-1]
-                    if link in ligand_linked_atoms:
-                        ligand_links.append(line)
+            new_lines = [line for line in all_lines if line not in ligand_metal_coordination_lines]
 
-            new_lines = [line for line in all_lines if line not in ligand_links]
-
-            with open(standard_fingerprint, "w") as ofile:
+            with open(tleap_file, "w") as ofile:
                 ofile.writelines(new_lines)
             
-            for line in ligand_links:
+            for line in ligand_metal_coordination_lines:
                 log.info(
                     "Succesfully removed bond: "
                     f"{line}"
@@ -1691,6 +1711,11 @@ class Meze:
                 "No tleap input file found after MCPB.py step 4. "
                 f"Check log file: {step_4_output_file}"
             )
+        
+
+        self._remove_ligand_bond()
+        self.restraint_file = self._remove_double_oxygen_bond()        
+        
         
         new_coordinates = glob.glob(f"{parameterisation_directory}/*_mcpbpy.pdb")
         if not new_coordinates:
