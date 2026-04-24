@@ -7,6 +7,8 @@ for f in "${files[@]}"; do
   numbers+=( "${f#ligand_}" )  
 done
 
+#echo "${numbers[@]}"
+
 arr_str=$(IFS=,; echo "${numbers[*]}")
 
 module load apps/amber
