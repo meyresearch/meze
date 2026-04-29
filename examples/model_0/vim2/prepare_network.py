@@ -14,7 +14,7 @@ system_name = "vim2"
 project_dir = DATA_DIR
 
 #DEBUGGING
-project_dir = "/Users/af25016/projects/vim2-model-0/"
+project_dir = "/Volumes/external_harddrive/projects/vim2-model-0/"
 
 model_0_sofra = Sofra.from_file(
     sofra_file=f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json",
