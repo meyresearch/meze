@@ -2301,16 +2301,30 @@ class QuantumMeze(Meze):
     recipe: MezeRecipe
     exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
     metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
+    additional_qm_resids: Optional[Union[int, list[int]]] = None
+    additional_qm_resnames: Optional[Union[str, list[str]]] = None
 
     def __post_init__(self):
         super().__post_init__()
         if isinstance(self.exclude_resids, int):
             self.exclude_resids = [self.exclude_resids]
-        
+
         if isinstance(self.metal_resids_for_distance_restraints, int):
             self.metal_resids_for_distance_restraints = [self.metal_resids_for_distance_restraints]
-        
+
         self.exclude_resids = set(self.exclude_resids or [])
+
+        if isinstance(self.additional_qm_resids, int):
+            self.additional_qm_resids = [self.additional_qm_resids]
+        if isinstance(self.additional_qm_resnames, str):
+            self.additional_qm_resnames = [self.additional_qm_resnames]
+
+        self._additional_qm_resids = set(self.additional_qm_resids or [])
+        for resname in (self.additional_qm_resnames or []):
+            self._additional_qm_resids.update(
+                self.universe.select_atoms(f"resname {resname}").resids
+            )
+
         self.qm_region = self._define_qm_region()
         self.qm_charge = self._get_qm_charge()
         self.distance_restraints = self._prepare_distance_restraints(
@@ -2319,11 +2333,13 @@ class QuantumMeze(Meze):
 
     @classmethod
     def from_files(
-        cls, 
-        topology: str, 
-        coordinates: str, 
+        cls,
+        topology: str,
+        coordinates: str,
         exclude_resids: Optional[Union[int, list[int]]] = None,
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+        additional_qm_resids: Optional[Union[int, list[int]]] = None,
+        additional_qm_resnames: Optional[Union[str, list[str]]] = None,
         **kwargs
     ) -> "QuantumMeze":
         """
@@ -2332,10 +2348,12 @@ class QuantumMeze(Meze):
         """
         recipe = MezeRecipe(**kwargs)
         return cls(
-            topology=topology, 
-            coordinates=coordinates, 
+            topology=topology,
+            coordinates=coordinates,
             exclude_resids=exclude_resids,
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
+            additional_qm_resids=additional_qm_resids,
+            additional_qm_resnames=additional_qm_resnames,
             recipe=recipe
         )
 
@@ -2385,6 +2403,18 @@ class QuantumMeze(Meze):
                     qm_region_atom_ids.add(side_chain_atoms)
                 else:
                     qm_region_whole_residues.add(residue.resid)
+
+        for resid in getattr(self, "_additional_qm_resids", set()):
+            if resid in exclude_resids:
+                continue
+            residue_atoms = self.universe.select_atoms(f"resid {resid}")
+            if not len(residue_atoms):
+                continue
+            residue = residue_atoms.residues[0]
+            if residue in protein.residues:
+                qm_region_atom_ids.add(self._get_side_chain_selection(residue))
+            else:
+                qm_region_whole_residues.add(resid)
 
         qm_region = {
             "whole_residues": list(qm_region_whole_residues),
@@ -2541,20 +2571,22 @@ class ColdQuantumMeze(QuantumMeze):
 
     @classmethod
     def from_files(
-        cls, 
-        topology: Optional[str] = None, 
-        coordinates: Optional[str] = None, 
+        cls,
+        topology: Optional[str] = None,
+        coordinates: Optional[str] = None,
         exclude_resids: Optional[Union[int, list[int]]] = [],
         recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
         disulfide_bridges: Optional[List[dict[str, int]]] = None,
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+        additional_qm_resids: Optional[Union[int, list[int]]] = None,
+        additional_qm_resnames: Optional[Union[str, list[str]]] = None,
         **kwargs
     ) -> "ColdQuantumMeze":
         """
         Build a Meze object from topology and coordinates.
         Passes extra kwargs into MezeRecipe.
         """
-        
+
         if recipe is None:
             recipe = ColdMezeRecipe(**kwargs)
         elif isinstance(recipe, dict):
@@ -2564,10 +2596,12 @@ class ColdQuantumMeze(QuantumMeze):
                 f"Expected 'recipe' to be a ColdMezeRecipe, dict, or None, but got {type(recipe).__name__}"
             )
         return cls(
-            topology=topology, 
+            topology=topology,
             coordinates=coordinates,
             exclude_resids=exclude_resids,
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
+            additional_qm_resids=additional_qm_resids,
+            additional_qm_resnames=additional_qm_resnames,
             disulfide_bridges=disulfide_bridges,
             recipe=recipe
         )
@@ -2743,13 +2777,15 @@ class HotQuantumMeze(QuantumMeze):
 
     @classmethod
     def from_files(
-        cls, 
-        topology: Optional[str] = None, 
-        coordinates: Optional[str] = None, 
+        cls,
+        topology: Optional[str] = None,
+        coordinates: Optional[str] = None,
         exclude_resids: Optional[Union[int, list[int]]] = [],
-        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,
+        recipe: Optional[Union[dict, "HotMezeRecipe"]] = None,
         disulfide_bridges: Optional[List[dict[str, int]]] = None,
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+        additional_qm_resids: Optional[Union[int, list[int]]] = None,
+        additional_qm_resnames: Optional[Union[str, list[str]]] = None,
         **kwargs
     ) -> "HotQuantumMeze":
         """
@@ -2766,10 +2802,12 @@ class HotQuantumMeze(QuantumMeze):
                 f"Expected 'recipe' to be a HotMezeRecipe, dict, or None, but got {type(recipe).__name__}"
             )
         return cls(
-            topology=topology, 
-            coordinates=coordinates, 
+            topology=topology,
+            coordinates=coordinates,
             exclude_resids=exclude_resids,
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
+            additional_qm_resids=additional_qm_resids,
+            additional_qm_resnames=additional_qm_resnames,
             recipe=recipe,
             disulfide_bridges=disulfide_bridges
         )
