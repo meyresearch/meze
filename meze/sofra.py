@@ -128,6 +128,14 @@ class MezeRecipe(BaseModel):
     n_lambdas: int = Field(
         16, ge=3, description="Number of lambda windows"
     )
+    lambda_sampling_time: float = Field(
+        4.0, ge=0., description="Runtime for each lambda window"
+    )
+    n_repeats: int = Field(
+        3, ge=1, description="Number of repeats"
+    )
+    
+    
 
     @field_validator("model", mode="before")
     @classmethod

@@ -1,4 +1,4 @@
-from meze import ColdMeze, ColdMezeRecipe, Sofra
+from meze import HotMeze, HotMezeRecipe, Sofra
 import os
 import json
 import sys
@@ -31,6 +31,11 @@ json_recipe["path_to_engine"] = os.path.join(
 )
 
 # read in equilibrated bound and unbound systems
+ligand_1_meze = HotMeze.from_files(
+    recipe=HotMezeRecipe(**json_recipe),
+    
+)
+
 
 # merge in both 
 
