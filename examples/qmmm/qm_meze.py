@@ -12,7 +12,8 @@ cold_qm_meze = ColdQuantumMeze.from_files(
     topology=f"{input_dir}/06_relax/next.prm7",
     coordinates=f"{input_dir}/06_relax/next.rst7",
     group_name=f"qm_vim2_{system}",
-    path_to_engine=os.path.join(os.environ["AMBERHOME"], "bin", "sander")
+    path_to_engine=os.path.join(os.environ["AMBERHOME"], "bin", "sander"),
+    additional_qm_resnames=["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB"]
 )
 
 qmmm_dir = os.path.join(project_dir, "qmmm", system)
@@ -24,7 +25,7 @@ print("Minimising")
 minimised_qm_meze = cold_qm_meze.minimise(
     process_name="01_qm_min",
     workdir=qmmm_dir,
-    max_cycles=10000
+    max_cycles=10
 )
 
 print("Heating")
