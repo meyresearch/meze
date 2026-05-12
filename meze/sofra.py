@@ -125,6 +125,8 @@ class MezeRecipe(BaseModel):
     )
     nb_cutoff: Union[float, bssLength] = Field(
         12.0, description="Cut-off for electrostatics interactions"
+    n_lambdas: int = Field(
+        16, ge=3, description="Number of lambda windows"
     )
 
     @field_validator("model", mode="before")
