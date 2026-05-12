@@ -13,9 +13,6 @@ system_name = "vim2"
 
 project_dir = DATA_DIR
 
-#DEBUGGING
-project_dir = "/Volumes/external_harddrive/projects/vim2-model-0/"
-
 model_0_sofra = Sofra.from_file(
     sofra_file=f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json",
     directory=project_dir
@@ -37,10 +34,4 @@ model_0_sofra.set_ligand_network(
     directory=f"{project_dir}/inputs/model_0/protein/{system_name}/"
 )
 
-# read in equilibrated bound and unbound systems
-
-# merge in both 
-
-# prep fep windows
-
-# write submission scripts
+print(model_0_sofra)

@@ -3150,10 +3150,14 @@ class Sofra:
     mezes: dict[str, Meze]
     sofra_file: str
     sofra_contents: dict = field(default_factory=dict) 
-    transformations: Optional[list] = field(default=None)                                                                                         
+    transformations: Optional[list] = field(default=None)
     lomap_scores: Optional[list] = field(default=None) 
+    network_file: Optional[str] = field(default=None)
     project_directory: str = field(default_factory=os.getcwd)
     group_name: str = "meze"
+
+    def __str__(self) -> str:
+        return _pretty(self)
 
     @classmethod
     def from_file(
@@ -3170,7 +3174,8 @@ class Sofra:
             sofra_contents = json.load(file)
         mezes = {}
         for ligand_name, entry in sofra_contents.items():
-            
+            if not isinstance(entry, dict):
+                continue
             try:
                 mezes[ligand_name] = Meze.load(entry["pickle_file"])
             except KeyError:
@@ -3567,7 +3572,16 @@ class Sofra:
             raise RuntimeError 
 
         log.info("Lomap finished succesfully. Parsing outputs.")
-        self.transformations, self.lomap_scores = self._parse_lomap_output(scores_file, lomap_directory)
+        self.transformations, self.lomap_scores, network_file = self._parse_lomap_output(scores_file, lomap_directory)
+        self.save_network_file(network_file)
+
+    def save_network_file(self, network_file: str):
+        self.network_file = network_file
+        self.sofra_contents["network_file"] = network_file
+        with open(self.sofra_file, "w") as file:
+            json.dump(self.sofra_contents, file, indent=4)
+        log.info(f"Saved network file path to {self.sofra_file}:\n{network_file}")
+    
 
     def _parse_lomap_output(self, file: str, directory: str):
         transformations, scores = [], []
@@ -3601,7 +3615,7 @@ class Sofra:
             ofile.writelines(cleaned_rows)
         log.info(f"Wrote lomap network to file:\n{connected_file}")
 
-        return transformations, scores
+        return transformations, scores, connected_file
         
 
 
