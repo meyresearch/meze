@@ -32,25 +32,41 @@ json_recipe["path_to_engine"] = os.path.join(
         os.environ["AMBERHOME"], "bin", "sander"
 )
 
-lig_1_equil_dir = f"{project_dir}/equilibration/{ligand_1}/repeat_{repeat}/"
-
 # read in equilibrated bound and unbound systems
+
+bound_lig_1_equil_dir = f"{project_dir}/equilibration/bound/{ligand_1}/repeat_{repeat}/"
+
 bound_ligand_1_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
-    topology=f"{lig_1_equil_dir}/08_free/next.prm7",
-    coordinates=f"{lig_1_equil_dir}/08_free/next.rst7",
-    restraint_file=f"{lig_1_equil_dir}/08_free/restraints.RST"
+    topology=f"{bound_lig_1_equil_dir}/08_free/next.prm7",
+    coordinates=f"{bound_lig_1_equil_dir}/08_free/next.rst7",
+    restraint_file=f"{bound_lig_1_equil_dir}/08_free/restraints.RST"
 )
 
-lig_2_equil_dir = f"{project_dir}/equilibration/{ligand_2}/repeat_{repeat}/"
+bound_lig_2_equil_dir = f"{project_dir}/equilibration/bound/{ligand_2}/repeat_{repeat}/"
 
 bound_ligand_2_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
-    topology=f"{lig_2_equil_dir}/08_free/next.prm7",
-    coordinates=f"{lig_2_equil_dir}/08_free/next.rst7",
-    restraint_file=f"{lig_2_equil_dir}/08_free/restraints.RST"
+    topology=f"{bound_lig_2_equil_dir}/08_free/next.prm7",
+    coordinates=f"{bound_lig_2_equil_dir}/08_free/next.rst7",
+    restraint_file=f"{bound_lig_2_equil_dir}/08_free/restraints.RST"
 )
 
+unbound_lig_1_equil_dir = f"{project_dir}/equilibration/unbound/{ligand_1}/repeat_{repeat}/"
+
+unbound_ligand_1_meze = HotMeze.from_files(
+    recipe=HotMezeRecipe(**json_recipe),
+    topology=f"{unbound_lig_1_equil_dir}/06_free/next.prm7",
+    coordinates=f"{unbound_lig_1_equil_dir}/06_free/next.rst7"
+)
+
+unbound_lig_2_equil_dir = f"{project_dir}/equilibration/unbound/{ligand_2}/repeat_{repeat}/"
+
+unbound_ligand_2_meze = HotMeze.from_files(
+    recipe=HotMezeRecipe(**json_recipe),
+    topology=f"{unbound_lig_2_equil_dir}/06_free/next.prm7",
+    coordinates=f"{unbound_lig_2_equil_dir}/06_free/next.rst7"
+)
 
 
 # merge in both 
