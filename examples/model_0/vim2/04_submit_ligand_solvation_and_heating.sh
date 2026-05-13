@@ -22,5 +22,5 @@ do
 	sbatch --error=../logs/ligand_heat_%x_%a.err \
        	       --output=../logs/ligand_heat_%x_%a.out \
        	       --array="$arr_str" \
-       	       solvate_and_heat_ligand.sh $project_dir $i
+       	       scripts/solvate_and_heat_ligand.sh $project_dir $i
 done
