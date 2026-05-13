@@ -20,7 +20,7 @@ project_dir=$1
 for i in 1 2 3
 do
 	sbatch --error=../logs/production_${i}_%x_%a.err \
-       	       --output=../logs/production_${i}_%x_%a.out \
-       	       --array="$arr_str" \
-       	       production.sh $project_dir $i
+       	   --output=../logs/production_${i}_%x_%a.out \
+       	   --array="$arr_str" \
+       	   production.sh $project_dir $i
 done
