@@ -43,7 +43,8 @@ ligand_meze = ColdMeze.from_files(
     topology=solvated_ligand.topology,
     coordinates=solvated_ligand.coordinates,
     recipe=ColdMezeRecipe(**json_recipe),
-    ligand=solvated_ligand
+    ligand=solvated_ligand,
+    stage="unbound"
 )
 
 equil_dir = os.path.join(project_dir, "equilibration", "model_0", system_name, "unbound", f"{ligand_name}", f"repeat_{repeat}")

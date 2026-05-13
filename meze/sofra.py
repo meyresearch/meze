@@ -285,6 +285,7 @@ class Meze:
     restraint_file: Optional[str] = None
     exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
     ligand_resname: Optional[str] = None
+    stage: str = "bound"
 
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
@@ -319,14 +320,18 @@ class Meze:
             print("Could not create meze object:\n")
             raise            
         
-        if self.recipe.model is not None:
+        if self.stage == "bound":
             self._set_metal()
             self.coordinating_residues = self._get_metal_coordinating_residues()
-        else:
+        elif self.stage == "unbound":
             self.metals = None
             self.metal_resids = []
             self.metal_atomids = []
             self.coordinating_residues = {}
+        else:
+            raise ValueError(
+                f"Unrecognised stage set: {self.stage}"
+            )
 
         self._set_waters()
         self._setup_bss_system()

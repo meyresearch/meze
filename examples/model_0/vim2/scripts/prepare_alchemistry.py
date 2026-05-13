@@ -55,7 +55,8 @@ unbound_lig_1_equil_dir = f"{project_dir}/equilibration/unbound/{ligand_1}/repea
 unbound_ligand_1_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
     topology=f"{unbound_lig_1_equil_dir}/06_free/next.prm7",
-    coordinates=f"{unbound_lig_1_equil_dir}/06_free/next.rst7"
+    coordinates=f"{unbound_lig_1_equil_dir}/06_free/next.rst7",
+    stage="unbound"
 )
 
 unbound_lig_2_equil_dir = f"{project_dir}/equilibration/unbound/{ligand_2}/repeat_{repeat}/"
@@ -63,12 +64,12 @@ unbound_lig_2_equil_dir = f"{project_dir}/equilibration/unbound/{ligand_2}/repea
 unbound_ligand_2_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
     topology=f"{unbound_lig_2_equil_dir}/06_free/next.prm7",
-    coordinates=f"{unbound_lig_2_equil_dir}/06_free/next.rst7"
+    coordinates=f"{unbound_lig_2_equil_dir}/06_free/next.rst7",
+    stage="unbound"
 )
 
 # merge in both 
 print("merge")
-
 
 # prep fep windows
 
