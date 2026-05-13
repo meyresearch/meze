@@ -836,7 +836,51 @@ class Meze:
             coordinates=new_coordinates,
             recipe=recipe
         )
-    
+
+    def build_custom_distance_restraints(
+        self,
+        atom_pairs: list[tuple[str, str]], 
+        equilibrium_distances: Optional[Union[float, list[float]]] = None,   
+        force_constant: Optional[Union[float, list[float]]] = 100.0,
+        flat_bottom_radius: Optional[Union[float, list[float]]] = 1.0,
+    ) -> dict[tuple[int, int], tuple[float, float, float]]:
+        
+        n_atom_pairs = len(atom_pairs)
+        def _expand(val, name):
+            if isinstance(val, float):
+                return [val] * n_atom_pairs
+            if len(val) != n_atom_pairs:
+                raise ValueError(
+                    f"{name} has {len(val)} values but atom_pairs has {n_atom_pairs} pairs."
+                )
+            return val
+        
+        force_constant = _expand(force_constant, "force_constant")
+        flat_bottom_radii = _expand(flat_bottom_radius, "flat_bottom_radius")
+
+        if equilibrium_distances is not None:
+            eq_distances = _expand(equilibrium_distances, "equilibrium_distances")
+        
+        restraints = {}
+        for i, (sel1, sel2) in enumerate(atom_pairs):
+            ag1 = self.universe.select_atoms(sel1)
+            ag2 = self.universe.select_atoms(sel2)
+            if len(ag1) != 1 or len(ag2) != 1:
+                raise ValueError(
+                    f"Each selection must match exactly one atom. "
+                    f"'{sel1}' matched {len(ag1)}, '{sel2}' matched {len(ag2)}."
+                )
+            dist = eq_distances[i] if equilibrium_distances is not None else \
+                MDAnalysis.analysis.distances.dist(ag1, ag2)[-1][0]
+            
+            restraints[(ag1.ids[0], ag2.ids[0])] = (
+                round(dist, 2), 
+                round(force_constants[i], 2), 
+                round(flat_bottom_radii[i], 2)
+            )
+        return restraints
+
+
     def get_ligand_resid(self):
         return self.universe.select_atoms(f"resname {self.ligand.residue_name}").resids[0]
 
