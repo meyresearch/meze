@@ -29,7 +29,7 @@ solvated_meze.recipe.path_to_engine = os.path.join("AMBERHOME", "bin", "sander")
 
 print(solvated_meze)
 
-equil_dir = os.path.join(project_dir, "equilibration", "hybrid_model", system_name, f"{ligand_name}", f"repeat_{repeat}")
+equil_dir = os.path.join(project_dir, "equilibration", "hybrid_model", system_name, "bound", f"{ligand_name}", f"repeat_{repeat}")
 
 os.makedirs(equil_dir, exist_ok=True)
 

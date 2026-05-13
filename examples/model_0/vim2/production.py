@@ -21,7 +21,7 @@ json_recipe["path_to_engine"] = os.path.join(
 json_recipe["runtime"] = 150
 json_recipe["dt"] = 0.002
 
-equil_dir = f"{project_dir}/equilibration/model_0/{ligand_name}/repeat_{repeat}/"
+equil_dir = f"{project_dir}/equilibration/model_0/bound/{ligand_name}/repeat_{repeat}/"
 
 hot_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
