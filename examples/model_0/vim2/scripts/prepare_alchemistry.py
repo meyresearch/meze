@@ -32,8 +32,6 @@ json_recipe["path_to_engine"] = os.path.join(
         os.environ["AMBERHOME"], "bin", "sander"
 )
 
-# read in equilibrated bound and unbound systems
-
 bound_lig_1_equil_dir = f"{project_dir}/equilibration/bound/{ligand_1}/repeat_{repeat}/"
 
 bound_ligand_1_meze = HotMeze.from_files(
@@ -68,8 +66,9 @@ unbound_ligand_2_meze = HotMeze.from_files(
     coordinates=f"{unbound_lig_2_equil_dir}/06_free/next.rst7"
 )
 
-
 # merge in both 
+print("merge")
+
 
 # prep fep windows
 
