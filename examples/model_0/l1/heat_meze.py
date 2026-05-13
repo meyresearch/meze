@@ -26,7 +26,7 @@ solvated_meze = ColdMeze.from_files(
     ligand_resname="MOL"
 )
 
-equil_dir = os.path.join(project_dir, "equilibration", "model_0", system_name, f"{ligand_name}", f"repeat_{repeat}")
+equil_dir = os.path.join(project_dir, "equilibration", "model_0", system_name, "bound", f"{ligand_name}", f"repeat_{repeat}")
 
 os.makedirs(equil_dir, exist_ok=True)
 
