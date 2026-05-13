@@ -42,6 +42,10 @@ You should also create a `ligands.txt` file that has all the ligand names in a s
 ls -d */ | tr -d '/' > ligands.txt
 ```
 
+### Example data
+
+Example data can be found in [`data/inputs/model_0/protein/vim2/`](https://github.com/meyresearch/meze/blob/1923d9c3549e9f75d4f1a3c5ad327c5dd4001bbe/data/inputs/model_0/protein/vim2) and [`data/inputs/model_0/ligands/vim2/ligand_11.pdb`](https://github.com/meyresearch/meze/blob/213463264df740b518616943975278b9b22258ae/data/inputs/model_0/ligands/vim2/ligand_11.pdb)
+
 
 ### 1. Solvate bound complex
 
