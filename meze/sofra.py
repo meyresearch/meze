@@ -437,6 +437,7 @@ class Meze:
         restraint_file: Optional[str] = None,
         exclude_resids: Optional[Union[int, list[int]]] = None,
         ligand_resname: Optional[str] = None,
+        stage: Optional[str] = "bound",
         **kwargs
     ):
         """Construct Meze from Amber topology and coordinates
@@ -462,7 +463,8 @@ class Meze:
             restraint_file=restraint_file,
             exclude_resids=exclude_resids,
             ligand_resname=ligand_resname,
-            recipe=recipe
+            recipe=recipe,
+            stage=stage
         )
 
     def _set_waters(self):
@@ -2005,6 +2007,7 @@ class ColdMeze(Meze):
         restraint_file: Optional[str] = None,
         exclude_resids: Optional[Union[int, list[int]]] = None,
         ligand_resname: Optional[str] = None,
+        stage: Optional[str] = "bound",
         **kwargs
     ) -> "ColdMeze":
         """
@@ -2042,7 +2045,8 @@ class ColdMeze(Meze):
             restraint_file=restraint_file,
             exclude_resids=exclude_resids,
             ligand_resname=ligand_resname,
-            recipe=recipe
+            recipe=recipe,
+            stage=stage
         )
 
     def _build_restraint_mask(
@@ -2395,6 +2399,7 @@ class HotMeze(Meze):
         restraint_file: Optional[str] = None,
         exclude_resids: Optional[Union[int, list[int]]] = None,
         ligand_resname: Optional[str] = None,
+        stage: Optional[str] = "bound",
         **kwargs
     ) -> "HotMeze":
         """
@@ -2431,7 +2436,8 @@ class HotMeze(Meze):
             restraint_file=restraint_file,
             exclude_resids=exclude_resids,
             ligand_resname=ligand_resname,
-            recipe=recipe
+            recipe=recipe,
+            stage=stage
         )
 
     def run(
