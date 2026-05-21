@@ -72,6 +72,25 @@ logging.basicConfig(
 
 log = logging.getLogger("rich")
 
+def merge_ligands(ligand_1: bss._SireWrappers.Molecule, 
+                  ligand_2: bss._SireWrappers.Molecule, 
+                  flexible_align: bool = False, 
+                  ring_breaks: bool = True, 
+                  ring_size_changes: bool = True):
+
+    mapping = bss.Align.matchAtoms(ligand_1, ligand_2, complete_rings_only=True)
+    inverse_mapping = {value:key for key, value in mapping.items()}
+    if flexible_align:
+        aligned_ligand_2 = bss.Align.flexAlign(ligand_2, ligand_1, inverse_mapping)
+    else:
+        aligned_ligand_2 = bss.Align.rmsdAlign(ligand_2, ligand_1, inverse_mapping)
+    return bss.Align.merge(
+        ligand_1, 
+        aligned_ligand_2, 
+        mapping, allow_ring_breaking=ring_breaks, allow_ring_size_change=ring_size_changes
+    )
+
+
 class MezeRecipe(BaseModel):
     """Meze workflow recipe
     """
@@ -488,7 +507,22 @@ class Meze:
             residue_name=self.ligand_resname
         )
         
-        
+    def get_mutatable_ligand_molecule(self):
+
+        if not self.ligand_resname:
+            raise RuntimeError(f"Ligand residue name not set. Cannot determine mutatable ligand.")
+
+        residues = self.system.getResidues()
+        if len(residues) == 0:
+            raise RuntimeError(f"No residues found in BioSimSpace system for meze with file:\n{self.coordinates}")
+        residue_names = [residue.name() for residue in residues]
+        ligand_residues = [residue for residue in residues if residue.name.upper() == self.ligand_resname]
+        if not ligand_residues:
+            raise RuntimeError(f"Could not find any ligand residues for meze object with file:\n{self.coordinates}")
+        if len(ligand_residues) > 1:
+            raise NotImplementedError(f"Cannot extract ligand with multiple residues")
+        return ligand_residues[0].toMolecule()
+
 
     def get_small_molecule_resname(self) -> str | None:
 
@@ -3638,8 +3672,5 @@ class Sofra:
 
         return transformations, scores, connected_file
         
-
-
-
 
             

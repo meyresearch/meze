@@ -1,4 +1,4 @@
-from meze import HotMeze, HotMezeRecipe, Sofra
+from meze import Meze, HotMeze, HotMezeRecipe, Sofra
 import os
 import json
 import sys
@@ -38,7 +38,8 @@ bound_ligand_1_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
     topology=f"{bound_lig_1_equil_dir}/08_free/next.prm7",
     coordinates=f"{bound_lig_1_equil_dir}/08_free/next.rst7",
-    restraint_file=f"{bound_lig_1_equil_dir}/08_free/restraints.RST"
+    restraint_file=f"{bound_lig_1_equil_dir}/08_free/restraints.RST",
+    ligand_resname="MOL"
 )
 
 bound_lig_2_equil_dir = f"{project_dir}/equilibration/bound/{ligand_2}/repeat_{repeat}/"
@@ -47,7 +48,8 @@ bound_ligand_2_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
     topology=f"{bound_lig_2_equil_dir}/08_free/next.prm7",
     coordinates=f"{bound_lig_2_equil_dir}/08_free/next.rst7",
-    restraint_file=f"{bound_lig_2_equil_dir}/08_free/restraints.RST"
+    restraint_file=f"{bound_lig_2_equil_dir}/08_free/restraints.RST",
+    ligand_resname="MOL"
 )
 
 unbound_lig_1_equil_dir = f"{project_dir}/equilibration/unbound/{ligand_1}/repeat_{repeat}/"
@@ -56,7 +58,8 @@ unbound_ligand_1_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
     topology=f"{unbound_lig_1_equil_dir}/06_free/next.prm7",
     coordinates=f"{unbound_lig_1_equil_dir}/06_free/next.rst7",
-    stage="unbound"
+    stage="unbound",
+    ligand_resname="MOL"
 )
 
 unbound_lig_2_equil_dir = f"{project_dir}/equilibration/unbound/{ligand_2}/repeat_{repeat}/"
@@ -65,11 +68,21 @@ unbound_ligand_2_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
     topology=f"{unbound_lig_2_equil_dir}/06_free/next.prm7",
     coordinates=f"{unbound_lig_2_equil_dir}/06_free/next.rst7",
-    stage="unbound"
+    stage="unbound",
+    ligand_resname="MOL"
 )
 
 # merge in both 
 print("merge")
+unbound_ligand_1 = unbound_ligand_1_meze.get_mutatable_ligand_molecule()
+unbound_ligand_2 = unbound_ligand_2_meze.get_mutatable_ligand_molecule()
+bound_ligand_1 = bound_ligand_1_meze.get_mutatable_ligand_molecule()
+bound_ligand_2 = bound_ligand_2_meze.get_mutatable_ligand_molecule()
+
+
+
+merged_unbound_ligands = Meze.merge_ligands()
+
 
 # prep fep windows
 
