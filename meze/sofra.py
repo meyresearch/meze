@@ -793,7 +793,7 @@ class Meze:
         if self.recipe.model == 0:
             coordination_restraints = self._prepare_distance_restraints()
             angle_restraints = self._prepare_angle_restraints()
-            distance_restraints = coordination_restraints + angle_restraints
+            distance_restraints = (distance_restraints or []) + coordination_restraints + angle_restraints
         
         if distance_restraints:
             self.write_restrained_atoms_pdb(
