@@ -32,7 +32,7 @@ minimised_qm_meze = cold_qm_meze.minimise(
     process_name="01_qm_min",
     workdir=qmmm_dir,
     max_cycles=10, 
-    additional_restraints=restraints
+    additional_distance_restraints=restraints
 )
 
 print("Heating")
@@ -44,7 +44,7 @@ minimised_qm_meze.heat(
     runtime=50,
     start_temperature=100,
     end_temperature=300,
-    additional_restraints=restraints
+    additional_distance_restraints=restraints
 ) 
 
 print("Production")
@@ -59,5 +59,5 @@ hot_qm_meze = HotQuantumMeze.from_files(
 hot_qm_meze.run(
     process_name="03_qm_prod",
     workdir=qmmm_dir,
-    additional_restraints=restraints
+    additional_distance_restraints=restraints
 )

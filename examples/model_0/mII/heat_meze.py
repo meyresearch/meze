@@ -78,7 +78,7 @@ pressure_meze = relax_meze.pressurise(
      workdir=equil_dir, 
      position_restraints="solute",
      timestep=0.001,
-     additional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
+     additional_positional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
 )
 
 print("05 - Start lowering restraint weight on  solute")
@@ -90,7 +90,7 @@ lower_restraint = pressure_meze.pressurise(
      position_restraints="solute",
      timestep=0.001,
      restraint_weight=10.0,
-     additional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
+     additional_positional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
 )
 
 print("06 - Only restrain backbone atoms (and metal coordination)")
@@ -102,7 +102,7 @@ relax_backbone = lower_restraint.pressurise(
      position_restraints="backbone",
      timestep=0.001,
      restraint_weight=10.0,
-     additional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
+     additional_positional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
 
 )
 
@@ -115,7 +115,7 @@ reduce_restraint = relax_backbone.pressurise(
      timestep=0.001,
      position_restraints="metal-coordination",
      restraint_weight=1.0,
-     additional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
+     additional_positional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
 )
 
 
