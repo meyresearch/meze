@@ -2935,7 +2935,10 @@ class Sofra:
 
     def average_charges(self, 
                         new_parameterisation_directories: List[str])-> dict[str, dict[str, float]]:
-
+        if len(new_parameterisation_directories) != len(self.mezes):
+            raise ValueError(
+                f"Expected {len(self.mezes)} directories, got {len(new_parameterisation_directories)}."
+            )
         all_charges = {}
         resname_list = []
         for meze in self.mezes.values():
