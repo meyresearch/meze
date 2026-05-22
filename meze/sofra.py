@@ -2047,12 +2047,7 @@ class ColdMeze(Meze):
                 restraint="all" if position_restraints else None,
                 force_constant=recipe.restraint_weight
             )
-        else:
-            raise ValueError(
-                f"Invalid protocol type '{protocol_type}'. "
-                f"Must be one of {allowed}."
-            )
-        
+
         return super()._run(
             protocol=protocol,
             recipe=recipe,
@@ -2613,7 +2608,7 @@ class ColdQuantumMeze(QuantumMeze):
         )
 
     def run(self,
-            protocol_type: Literal["minimisation", "nvt", "npt"],
+            protocol_type: Literal["minimisation", "nvt"],
             system: Optional[bssSystem],
             workdir: Optional[str],
             restart: Optional[bool] = False,
@@ -2635,6 +2630,12 @@ class ColdQuantumMeze(QuantumMeze):
             additional_restraints: Optional[dict[str, Any]] = None
 
     ) -> "ColdQuantumMeze":
+        allowed_protocols = ["minimisation", "nvt"]
+        if protocol_type not in allowed_protocols:
+            raise ValueError(
+                f"Unsupported protocol type '{protocol_type}'.\n"
+                f"Must be one of {allowed_protocols}."
+            )
 
         recipe = ColdMezeRecipe(
             workdir=workdir or self.recipe.workdir,
@@ -2665,7 +2666,7 @@ class ColdQuantumMeze(QuantumMeze):
             config_options["irest"] = 1
             config_options["ntx"] = 5
 
-        allowed = ["minimisation", "nvt", "npt"]
+
         if protocol_type == "minimisation":
             config_options["ntmin"] = recipe.min_method
             config_options["maxcyc"] = recipe.max_cycles
@@ -2688,16 +2689,7 @@ class ColdQuantumMeze(QuantumMeze):
                 temperature=temperature,
                 pressure=None,
             )
-        elif protocol_type == "npt":
-            raise NotImplementedError(
-                f"Protocol type '{protocol_type}' not supported yet."
-                f"Must be one of {allowed}"
-            )
-        else:
-            raise ValueError(
-                f"Invalid protocol type '{protocol_type}'. "
-                f"Must be one of {allowed}."
-            )
+
         return super().run_qm(
             protocol=protocol,
             recipe=recipe,
