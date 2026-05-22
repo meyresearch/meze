@@ -2506,18 +2506,18 @@ class QuantumMeze(Meze):
         is_gpu: bool = False,
         additional_restraints: Optional[dict[str, Any]] = None
     ) -> "QuantumMeze":
-        
+        if additional_restraints is not None:
+            if not {"resids"} <= additional_restraints.keys() and not {"resnames"} <= additional_restraints.keys():
+                raise ValueError(
+                    "additional_restraints must contain 'resids' or 'resnames' keys."
+                )
         config_options["ntc"] = 1
         config_options["ntf"] = 1
 
         if not additional_restraints:
             disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
-        else: 
-            if not {"resids"} <= additional_restraints.keys() and not {"resnames"} <= additional_restraints.keys():
-                raise ValueError(
-                    "additional_restraints must contain 'resids' or 'resnames' keys."
-                )
             additional_resids = additional_restraints.get("resids", [])
+            
             if isinstance(additional_resids, int):
                 additional_resids = [additional_resids]
             additional_resids = set(additional_resids)
