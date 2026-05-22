@@ -1962,6 +1962,13 @@ class ColdMeze(Meze):
             engine_executable: Optional["str"] = None,
             additional_restraints: Optional[dict[str, Any]] = None
     ) -> "ColdMeze":
+        allowed_protocols = ["minimisation", "nvt", "npt"]
+        if protocol_type not in allowed_protocols:
+            raise ValueError(
+                f"Unsupported protocol type '{protocol_type}'.\n"
+                f"Must be one of {allowed_protocols}."
+            )
+
 
         # if not system:
         #     system = bss.IO.readMolecules([
@@ -2005,7 +2012,6 @@ class ColdMeze(Meze):
         if self.recipe.model == 0 or self.restraint_file:
             config_options["nmropt"] = 1
 
-        allowed = ["minimisation", "nvt", "npt"]
         if protocol_type == "minimisation":
             config_options["ntmin"] = recipe.min_method
             config_options["maxcyc"] = recipe.max_cycles
