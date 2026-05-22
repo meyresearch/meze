@@ -72,12 +72,13 @@ logging.basicConfig(
 
 log = logging.getLogger("rich")
 
-def merge_ligands(ligand_1: bss._SireWrappers.Molecule, 
-                  ligand_2: bss._SireWrappers.Molecule, 
-                  flexible_align: bool = False, 
-                  ring_breaks: bool = True, 
-                  ring_size_changes: bool = True):
-
+def merge_ligands(
+        ligand_1: bss._SireWrappers.Molecule, 
+        ligand_2: bss._SireWrappers.Molecule, 
+        flexible_align: bool = False, 
+        ring_breaks: bool = True, 
+        ring_size_changes: bool = True
+):
     mapping = bss.Align.matchAtoms(ligand_1, ligand_2, complete_rings_only=True)
     inverse_mapping = {value:key for key, value in mapping.items()}
     if flexible_align:
@@ -89,6 +90,18 @@ def merge_ligands(ligand_1: bss._SireWrappers.Molecule,
         aligned_ligand_2, 
         mapping, allow_ring_breaking=ring_breaks, allow_ring_size_change=ring_size_changes
     )
+
+def create_unbound_hybrid_molecule(
+        bss_base_system: bss._SireWrappers.System,
+        ligand_1: bss._SireWrappers.Molecule,
+        ligand_2: bss._SireWrappers.Molecule,
+        flexible_align: bool = False, 
+        ring_breaks: bool = True, 
+        ring_size_changes: bool = True,
+):
+    merged = merge_ligands(ligand_1, ligand_2,  flexible_align, ring_breaks, ring_size_changes)
+    bss_base_system.removeMolecules(ligand_1)
+    
 
 
 class MezeRecipe(BaseModel):
