@@ -427,6 +427,20 @@ class Meze:
 
         metal_atom_ids = metal_atom_ids or list(self.coordinating_residues.keys())
         ligand_residues = coordinating_residues or self.coordinating_residues
+        if coordinating_residues is not None:
+            if not isinstance(coordinating_residues, dict):
+                raise TypeError(
+                    f"coordinating_residues must be a dict, got {type(coordinating_residues).__name__}"
+                )
+            if not all(isinstance(k, int) for k in coordinating_residues):
+                raise TypeError(
+                    f"coordinating_residues keys must be ints (atom IDs), "
+                    f"got {set(type(k).__name__ for k in coordinating_residues)}"
+                )
+            if not all(isinstance(v, mda.AtomGroup) for v in coordinating_residues.values()):
+                raise TypeError(
+                    f"coordinating_residues values must be MDAnalysis AtomGroups"
+                )
         exclude = self.exclude_resids or exclude_residues
         if isinstance(exclude, int):
             exclude = [exclude]
@@ -2517,7 +2531,7 @@ class QuantumMeze(Meze):
         if not additional_restraints:
             disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
             additional_resids = additional_restraints.get("resids", [])
-            
+
             if isinstance(additional_resids, int):
                 additional_resids = [additional_resids]
             additional_resids = set(additional_resids)
