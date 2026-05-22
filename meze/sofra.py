@@ -1106,10 +1106,12 @@ class Meze:
         return restraint_file
 
 
-    def prepare_mcpb_system(self,
-                            directory: str | None = None, 
-                            ligand_name: str = "ligand") -> Self:
-        
+    def prepare_mcpb_system(
+            self,
+            directory: str | None = None, 
+            ligand_name: str = "ligand"
+    ) -> Self:
+
         if directory:
             os.makedirs(directory, exist_ok=True)
 
@@ -1151,7 +1153,13 @@ class Meze:
                               parameterised_non_standard_residues: Optional[list[Ligand]],
                               metals: list[str],
                               ligand_name: str = "ligand") -> str:
-        
+        if parameterised_non_standard_residues is not None:
+            non_ligands = [residue for residue in parameterised_non_standard_residues if not isinstance(residue, Ligand)]
+            if non_ligands:
+                raise TypeError(
+                    "parameterised_non_standard_residues must be a list of Ligand objects, "
+                    f"got {[type(residue).__name__ for residue in non_ligands]}"
+                )
         mcpb_input_file = os.path.join(directory, "mcpbpy.in")
 
         if "gaff" in self.recipe.ligand_forcefield:
@@ -2205,7 +2213,7 @@ class HotMeze(Meze):
         pdb_file: Optional[str] = None,
         topology: Optional[str] = None, 
         coordinates: Optional[str] = None, 
-        recipe: Optional[Union[dict, "ColdMezeRecipe"]] = None,        
+        recipe: Optional[Union[dict, "HotMezeRecipe"]] = None,        
         disulfide_bridges: Optional[List[dict[str, int]]] = None,
         ligand: Optional[Ligand] = None,
         ligand_resid: Optional[int] = None,
