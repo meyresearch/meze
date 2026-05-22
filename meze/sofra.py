@@ -2007,12 +2007,6 @@ class ColdMeze(Meze):
                 f"Must be one of {allowed_protocols}."
             )
 
-
-        # if not system:
-        #     system = bss.IO.readMolecules([
-        #         self.coordinates, self.topology
-        #     ])
-
         recipe = ColdMezeRecipe(
             workdir=workdir or self.recipe.workdir,
             max_cycles=max_cycles or self.recipe.max_cycles,
@@ -2321,7 +2315,7 @@ class HotMeze(Meze):
             temperature=bss.Types.Temperature(recipe.temperature, "K"),
             pressure=bss.Types.Pressure(recipe.pressure, "atm")
         )
-        if os.path.isfile(self.restraint_file):
+        if self.restraint_file and os.path.isfile(self.restraint_file):
             step_restraint_file = os.path.join(recipe.workdir, "restraints.RST")
             shutil.copyfile(self.restraint_file, step_restraint_file)
 
