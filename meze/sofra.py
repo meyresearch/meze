@@ -283,6 +283,11 @@ class Meze:
                      key: str, 
                      pickle_file: Optional[str] = None,
                      extra_fields: Optional[dict] = None):
+        if extra_fields is not None:
+            try:
+                json.dumps(extra_fields)
+            except (TypeError, ValueError) as e:
+                raise ValueError(f"extra_fields contians non-JSON-serialisable values: {e}")
         new_entry = {
             key: {}
         }
@@ -2287,7 +2292,6 @@ class HotMeze(Meze):
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 100000,
             distance_write_frequency: Optional[int] = 10000,
-            additional_restraints: Optional[dict[str, Any]] = None
     ):
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
