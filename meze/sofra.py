@@ -2603,7 +2603,7 @@ class QuantumMeze(Meze):
 
         if not additional_positional_restraints:
             disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
-        else: 
+        else:
             additional_resids = additional_restraints.get("resids", [])
 
             if isinstance(additional_resids, int):
