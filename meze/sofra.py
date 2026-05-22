@@ -1209,7 +1209,9 @@ class Meze:
                                  sbatch_options: Optional[dict] = None,
                                  additional_lines: Optional[list[str]] = None):
         _check_ambertools()
-        #TODO check prepare mcpb files exist
+        if additional_lines is not None and not all(isinstance(l, str) for l in additional_lines):
+            raise TypeError("additional_lines must be a list of strings")
+        
         if not self.parameterisation_directory:
             raise ValueError("MCPB parameterisation directory not set.")
         
