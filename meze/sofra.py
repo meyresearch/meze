@@ -881,8 +881,12 @@ class Meze:
             directory: str, 
             non_standard_parameterisation_method: Literal["antechamber", "tleap"] = "antechamber"
     ) -> Optional[list[Ligand]]:
+        if non_standard_parameterisation_method not in ("antechamber", "tleap"):
+            raise ValueError(
+                f"non_standard_parameterisation_method must be one of {('antechamber', 'tleap')} "
+                f"got {type(non_standard_parameterisation_method).__name__}"
+            )
         if self.non_standard_residues:
-            
             for residue in self.non_standard_residues.keys():
                 if not residue.isnumeric():
                     ag = self.universe.select_atoms(f"resname {residue}")
@@ -934,6 +938,11 @@ class Meze:
             non_standard_parameterisation_method: Literal["antechamber", "tleap"] = "antechamber"
     ) -> Self:
         _check_ambertools()
+        if non_standard_parameterisation_method not in ("antechamber", "tleap"):
+            raise ValueError(
+                f"non_standard_parameterisation_method must be one of {('antechamber', 'tleap')} "
+                f"got {type(non_standard_parameterisation_method).__name__}"
+            )
         if directory:
             os.makedirs(directory, exist_ok=True)
         
