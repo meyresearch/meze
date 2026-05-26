@@ -1872,7 +1872,7 @@ class ColdMeze(Meze):
         if pdb_file:
             topology = pdb_file
             coordinates = pdb_file
-        if not topology or not coordinates:
+        elif not topology or not coordinates:
             raise ValueError(
                 "You must supply either a pdb file or both a topology and coordinate file."
             )
