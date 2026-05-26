@@ -308,6 +308,8 @@ def _parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
             parts = line.split()
             if len(parts) == 2:
                 (key, value) = parts[0], parts[1]
+            elif len(parts) == 0:
+                continue
             else:
                 (key, value) = parts[0], parts[1:]
             mcpb_input_options[key] = value
