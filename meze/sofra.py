@@ -855,13 +855,15 @@ class Meze:
             self, 
             ligand_file: Union[str, list[str]], 
             name: str | None = None,
-            ligand_charge: Optional[int] = 0
+            ligand_charge: Optional[int] = 0,
+            residue_name: Optional[str] = None
     ) -> Self:
-        ligand = Ligand(ligand_file, name=name, charge=ligand_charge)
+        ligand = Ligand(ligand_file, name=name, charge=ligand_charge, residue_name=residue_name)
         
         return dataclasses.replace(
             self,
-            ligand=ligand
+            ligand=ligand,
+            ligand_resname=residue_name
         )
 
     def _validate_non_standard_residues(self):
@@ -1872,7 +1874,7 @@ class ColdMeze(Meze):
         if pdb_file:
             topology = pdb_file
             coordinates = pdb_file
-        elif not topology or not coordinates:
+        if not topology or not coordinates:
             raise ValueError(
                 "You must supply either a pdb file or both a topology and coordinate file."
             )
