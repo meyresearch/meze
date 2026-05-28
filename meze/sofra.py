@@ -2554,7 +2554,7 @@ class QuantumMeze(Meze):
             atom_ids = ",".join(list(map(str, self.qm_region["atom_ids"])))
             qm_mask = f"':{parsed_whole_residues}|(@{atom_ids})'"
         else:
-            qm_mask = custom_qm_region
+            qm_mask = f"'{custom_qm_region}'"
             
         qm_config_options = {
             "qmmask": str(qm_mask),
