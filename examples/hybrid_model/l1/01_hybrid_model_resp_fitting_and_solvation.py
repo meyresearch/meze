@@ -18,7 +18,7 @@ system_name = "l1"
 ligand_name = "ligand_53"
 
 prepared_meze = ColdMeze.from_files(
-    pdb_file=f"{project_dir}/L1_1SML_ligand.pdb", # MCPB.py input pdb file
+    pdb_file=f"{project_dir}/L1_1SML_OH_EZAFF.pdb", # MCPB.py input pdb file
     mcpbpy_input_file=f"{project_dir}/mcpb.in", # MCPB.py input file
     parameterisation_directory=project_dir, # directory to that specific ligand with gaussian outputs
     disulfide_bridges=[{"resid1": 217, "resid2": 245}],

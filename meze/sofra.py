@@ -1124,8 +1124,9 @@ class Meze:
 
     def prepare_mcpb_system(
             self,
-            directory: str | None = None, 
-            ligand_name: str = "ligand"
+            directory: Optional[str | None] = None, 
+            ligand_name: Optional[str] = "ligand",
+            ligand_file_name: Optional[str] = "MOL"
     ) -> Self:
 
         if directory:
@@ -1138,7 +1139,7 @@ class Meze:
 
         parameterised_ligand = self.ligand.parameterise(
             directory=parameterisation_directory, 
-            filename="MOL"
+            filename=ligand_file_name
         )
 
         self.prepare_metals_for_ezaff(directory=parameterisation_directory)
