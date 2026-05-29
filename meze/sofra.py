@@ -1150,11 +1150,14 @@ class Meze:
 
         self._validate_disulfide_bridges()
 
-        parameterised_ligand = self.ligand.parameterise(
-            directory=parameterisation_directory, 
-            filename=ligand_file_name
-        )
-
+        if not self.ligand.parameterised:
+            parameterised_ligand = self.ligand.parameterise(
+                directory=parameterisation_directory, 
+                filename=ligand_file_name
+            )
+        else:
+            parameterised_ligand = self.ligand
+            
         self.prepare_metals_for_ezaff(directory=parameterisation_directory)
 
         parameterised_non_standard_residues = self.parameterise_non_standard_residues(

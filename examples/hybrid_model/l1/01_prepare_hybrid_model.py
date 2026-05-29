@@ -28,7 +28,9 @@ cold_complex = cold_meze.add_ligand(
     ligand_file=f"{project_dir}/RBX.mol2",
     ligand_charge=-1,
     name="RBX",
-    residue_name="RBX"
+    residue_name="RBX",
+    parameterised=True,
+    frcmod_file=f"{project_dir}/RBX.frcmod"
 )
 
 output = f"{project_dir}/outputs/hybrid_model/{system_name}/{ligand_name}/"
