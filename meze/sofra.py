@@ -856,14 +856,27 @@ class Meze:
             ligand_file: Union[str, list[str]], 
             name: str | None = None,
             ligand_charge: Optional[int] = 0,
-            residue_name: Optional[str] = None
+            ligand_system: Optional[bssSystem] = None,
+            ligand_atom_type: Optional[str] = "gaff2",
+            parameterised: Optional[bool] = False,
+            frcmod_file: Optional[str] = None,
+            ligand_residue_name: Optional[str] = None,
+            
     ) -> Self:
-        ligand = Ligand(ligand_file, name=name, charge=ligand_charge, residue_name=residue_name)
-        
+        ligand = Ligand(
+            file=ligand_file, 
+            name=name, 
+            charge=ligand_charge,
+            system=ligand_system,
+            atom_type=ligand_atom_type,
+            parameterised=parameterised,
+            frcmod_file=frcmod_file,
+            residue_name=ligand_residue_name,
+        )
         return dataclasses.replace(
             self,
             ligand=ligand,
-            ligand_resname=residue_name
+            ligand_resname=ligand_residue_name
         )
 
     def _validate_non_standard_residues(self):
