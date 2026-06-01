@@ -6,25 +6,29 @@ system = "mII"
 
 project_dir = "/Users/af25016/projects/meze/data/"
 
-input_dir = f"{project_dir}/equilibration/{system}"
+input_dir = f"{project_dir}/model_0/equilibration/{system}"
 
 cold_qm_meze = ColdQuantumMeze.from_files(
     topology=f"{input_dir}/06_relax/next.prm7",
     coordinates=f"{input_dir}/06_relax/next.rst7",
     group_name=f"qm_mII_{system}",
     path_to_engine=os.path.join(os.environ["AMBERHOME"], "bin", "sander"),
-    additional_qm_resnames=["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB"]
+    additional_qm_resnames=["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB"],
+    custom_qm_region={
+        "whole_residues": [1015, 1022],
+        "atom_ids": [
+            "16186",
+            "16248-16251",
+            "2837-2842",
+            "1002-1007",
+            "7207-7217",
+            "971-981"
+        ]
+    }
 )
 
 qmmm_dir = os.path.join(project_dir, "qmmm", system)
 os.makedirs(qmmm_dir, exist_ok=True)
-
-k = 60
-radius = 1
-restraints ={
-    (16186, 16187): (0.096, k, radius), #Atom names: HO1-O1; Atom types: Ho-Oh
-}
-
 
 print("Minimising")
 
@@ -32,7 +36,6 @@ minimised_qm_meze = cold_qm_meze.minimise(
     process_name="01_qm_min",
     workdir=qmmm_dir,
     max_cycles=10, 
-    custom_qm_region=":1017-1024"
 )
 
 print("Heating")
@@ -43,8 +46,7 @@ minimised_qm_meze.heat(
     timestep=0.001,
     runtime=50,
     start_temperature=100,
-    end_temperature=300,
-    custom_qm_region=":1017-1024"
+    end_temperature=300
 ) 
 
 print("Production")
@@ -53,11 +55,21 @@ hot_qm_meze = HotQuantumMeze.from_files(
     topology=f"{qmmm_dir}/02_qm_heat/next.prm7",
     coordinates=f"{qmmm_dir}/02_qm_heat/next.rst7",
     group_name=f"qm_vim2_{system}",
-    path_to_engine=os.path.join(os.environ["AMBERHOME"], "bin", "sander")
+    path_to_engine=os.path.join(os.environ["AMBERHOME"], "bin", "sander"),
+    custom_qm_region={
+        "whole_residues": [1015, 1022],
+        "atom_ids": [
+            "16186",
+            "16248-16251",
+            "2837-2842",
+            "1002-1007",
+            "7207-7217",
+            "971-981"
+        ]
+    }
 )
 
 hot_qm_meze.run(
     process_name="03_qm_prod",
-    workdir=qmmm_dir,
-    custom_qm_region=":1017-1024"
+    workdir=qmmm_dir
 )

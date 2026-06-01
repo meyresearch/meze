@@ -2390,6 +2390,7 @@ class QuantumMeze(Meze):
     metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None
     additional_qm_resids: Optional[Union[int, list[int]]] = None
     additional_qm_resnames: Optional[Union[str, list[str]]] = None
+    custom_qm_region: Optional[dict[str, list]] = None
 
     def __post_init__(self):
         super().__post_init__()
@@ -2412,8 +2413,33 @@ class QuantumMeze(Meze):
                 self.universe.select_atoms(f"resname {resname}").resids
             )
 
-        self.qm_region = self._define_qm_region()
+        if self.custom_qm_region is not None:
+            if not isinstance(self.custom_qm_region, dict):
+                raise TypeError(
+                    f"custom_qm_region must be a dict, got {type(self.custom_qm_region).__name__}"
+                )
+            missing = {"whole_residues", "atom_ids"} - self.custom_qm_region.keys()
+            if missing:
+                raise ValueError(
+                    f"custom_qm_region is missing required keys: {missing}"
+                )
+            whole_residues = self.custom_qm_region["whole_residues"]
+            if isinstance(whole_residues, int):
+                self.custom_qm_region["whole_residues"] = [whole_residues]
+            elif isinstance(whole_residues, list):
+                if not all(isinstance(residue, int) for residue in whole_residues):
+                    raise TypeError("custom_qm_region['whole_residues'] must be an into or list of int")
+            else:
+                raise TypeError("custom_qm_region['whole_residues'] must be an int or list of int")
+            if not all(isinstance(atoms, str) for atoms in self.custom_qm_region["atom_ids"]):
+                raise TypeError("custom_qm_region['atom_ids'] must be a list of str")
+
+            self.qm_region = self.custom_qm_region
+        else:
+            self.qm_region = self._define_qm_region()
+        
         self.qm_charge = self._get_qm_charge()
+
         self.distance_restraints = self._prepare_distance_restraints(
             self.metal_resids_for_distance_restraints
         )
@@ -2427,6 +2453,7 @@ class QuantumMeze(Meze):
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
         additional_qm_resids: Optional[Union[int, list[int]]] = None,
         additional_qm_resnames: Optional[Union[str, list[str]]] = None,
+        custom_qm_region: Optional[dict[str, list]] = None,
         **kwargs
     ) -> "QuantumMeze":
         """
@@ -2441,7 +2468,8 @@ class QuantumMeze(Meze):
             metal_resids_for_distance_restraints=metal_resids_for_distance_restraints,
             additional_qm_resids=additional_qm_resids,
             additional_qm_resnames=additional_qm_resnames,
-            recipe=recipe
+            recipe=recipe,
+            custom_qm_region=custom_qm_region
         )
 
     def _define_qm_region(
@@ -2547,15 +2575,11 @@ class QuantumMeze(Meze):
     def _write_qm_namelist(
             self, 
             qm_theory: Optional[str] = "DFTB3", 
-            custom_qm_region: Optional[str] = None
     ):
-        if not custom_qm_region:
-            parsed_whole_residues = _residue_restraint_mask(self.qm_region["whole_residues"])
-            atom_ids = ",".join(list(map(str, self.qm_region["atom_ids"])))
-            qm_mask = f"':{parsed_whole_residues}|(@{atom_ids})'"
-        else:
-            qm_mask = f"'{custom_qm_region}'"
-            
+        parsed_whole_residues = _residue_restraint_mask(self.qm_region["whole_residues"])
+        atom_ids = ",".join(list(map(str, self.qm_region["atom_ids"])))
+        qm_mask = f"':{parsed_whole_residues}|(@{atom_ids})'"
+
         qm_config_options = {
             "qmmask": str(qm_mask),
             "writepdb": "1",
@@ -2599,7 +2623,6 @@ class QuantumMeze(Meze):
         is_gpu: bool = False,
         additional_positional_restraints: Optional[dict[str, Any]] = None,
         additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
-        custom_qm_region: Optional[str] = None
     ) -> "QuantumMeze":
         if additional_positional_restraints is not None:
             if not {"resids"} <= additional_positional_restraints.keys() and not {"resnames"} <= additional_positional_restraints.keys():
@@ -2628,13 +2651,8 @@ class QuantumMeze(Meze):
                 additional_resids.update(resname_resids)
             additional_resids = list(additional_resids)
             disres = additional_resids
-        
-        if not custom_qm_region:
-            self.qm_region = self._define_qm_region(
-                resids_to_exclude=metal_resids_for_distance_restraints
-            )
 
-        qm_namelist = self._write_qm_namelist(qm_theory=qm_theory, custom_qm_region=custom_qm_region)
+        qm_namelist = self._write_qm_namelist(qm_theory=qm_theory)
 
         if disres is not None:
             distance_restraints = self._prepare_distance_restraints(disres)
@@ -2678,6 +2696,7 @@ class ColdQuantumMeze(QuantumMeze):
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
         additional_qm_resids: Optional[Union[int, list[int]]] = None,
         additional_qm_resnames: Optional[Union[str, list[str]]] = None,
+        custom_qm_region: Optional[dict[str, list]] = None,
         **kwargs
     ) -> "ColdQuantumMeze":
         """
@@ -2701,7 +2720,8 @@ class ColdQuantumMeze(QuantumMeze):
             additional_qm_resids=additional_qm_resids,
             additional_qm_resnames=additional_qm_resnames,
             disulfide_bridges=disulfide_bridges,
-            recipe=recipe
+            recipe=recipe,
+            custom_qm_region=custom_qm_region
         )
 
     def run(self,
@@ -2726,7 +2746,6 @@ class ColdQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
             additional_positional_restraints: Optional[dict[str, Any]] = None,
             additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
-            custom_qm_region: Optional[str] = None
     ) -> "ColdQuantumMeze":
         allowed_protocols = ["minimisation", "nvt"]
         if protocol_type not in allowed_protocols:
@@ -2798,9 +2817,7 @@ class ColdQuantumMeze(QuantumMeze):
             config_options=config_options,
             is_gpu=False,
             additional_positional_restraints=additional_positional_restraints,
-            additional_distance_restraints=additional_distance_restraints,
-            custom_qm_region=custom_qm_region
-        )
+            additional_distance_restraints=additional_distance_restraints,        )
     
     def minimise(
             self,
@@ -2816,7 +2833,6 @@ class ColdQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
             additional_positional_restraints: Optional[dict[str, Any]] = None,
             additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
-            custom_qm_region: Optional[str] = None
     ) -> "ColdQuantumMeze":  
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
 
@@ -2834,7 +2850,6 @@ class ColdQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints=disres,
             additional_positional_restraints=additional_positional_restraints,
             additional_distance_restraints=additional_distance_restraints,
-            custom_qm_region=custom_qm_region
         )
     
     def heat(
@@ -2853,7 +2868,6 @@ class ColdQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
             additional_positional_restraints: Optional[dict[str, Any]] = None,
             additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
-            custom_qm_region: Optional[str] = None
     ) -> "ColdQuantumMeze":
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
         return self.run(
@@ -2872,7 +2886,6 @@ class ColdQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints=disres,
             additional_positional_restraints=additional_positional_restraints,
             additional_distance_restraints=additional_distance_restraints,
-            custom_qm_region=custom_qm_region
         )
     
 @dataclass
@@ -2892,6 +2905,7 @@ class HotQuantumMeze(QuantumMeze):
         metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
         additional_qm_resids: Optional[Union[int, list[int]]] = None,
         additional_qm_resnames: Optional[Union[str, list[str]]] = None,
+        custom_qm_region: Optional[dict[str, list]] = None,
         **kwargs
     ) -> "HotQuantumMeze":
         """
@@ -2915,7 +2929,8 @@ class HotQuantumMeze(QuantumMeze):
             additional_qm_resids=additional_qm_resids,
             additional_qm_resnames=additional_qm_resnames,
             recipe=recipe,
-            disulfide_bridges=disulfide_bridges
+            disulfide_bridges=disulfide_bridges,
+            custom_qm_region=custom_qm_region
         )
     
     def run(
@@ -2934,7 +2949,6 @@ class HotQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
             additional_positional_restraints: Optional[dict[str, Any]] = None,
             additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
-            custom_qm_region: Optional[str] = None
     ) -> "HotQuantumMeze":
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
         recipe = HotMezeRecipe(
@@ -2976,7 +2990,6 @@ class HotQuantumMeze(QuantumMeze):
             is_gpu=False,
             additional_positional_restraints=additional_positional_restraints,
             additional_distance_restraints=additional_distance_restraints,
-            custom_qm_region=custom_qm_region
         )
 
 @dataclass
