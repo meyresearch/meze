@@ -74,15 +74,21 @@ unbound_ligand_2_meze = HotMeze.from_files(
 
 # merge in both 
 print("merge")
-unbound_ligand_1 = unbound_ligand_1_meze.get_mutatable_ligand_molecule()
-unbound_ligand_2 = unbound_ligand_2_meze.get_mutatable_ligand_molecule()
-bound_ligand_1 = bound_ligand_1_meze.get_mutatable_ligand_molecule()
-bound_ligand_2 = bound_ligand_2_meze.get_mutatable_ligand_molecule()
+# unbound_ligand_1 = unbound_ligand_1_meze.get_mutatable_ligand_molecule()
+# unbound_ligand_2 = unbound_ligand_2_meze.get_mutatable_ligand_molecule()
+# bound_ligand_1 = bound_ligand_1_meze.get_mutatable_ligand_molecule()
+# bound_ligand_2 = bound_ligand_2_meze.get_mutatable_ligand_molecule()
 
 
 
-merged_unbound_ligands = Meze.merge_ligands()
+# merged_unbound_ligands = Meze.merge_ligands()
 
+
+unbound_system = AlchemicalSofra.create_unbound_hybrid_molecule(
+    flexible_align=False,
+    ring_breaks=True,
+    ring_size_changes=True
+)
 
 # prep fep windows
 
