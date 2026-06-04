@@ -1,4 +1,4 @@
-from meze import Meze, HotMeze, HotMezeRecipe, Sofra
+from meze import Meze, HotMeze, HotMezeRecipe, Sofra, AlchemicalSofra
 import os
 import json
 import sys

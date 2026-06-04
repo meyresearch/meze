@@ -72,37 +72,109 @@ logging.basicConfig(
 
 log = logging.getLogger("rich")
 
-def merge_ligands(
-        ligand_1: bss._SireWrappers.Molecule, 
-        ligand_2: bss._SireWrappers.Molecule, 
-        flexible_align: bool = False, 
-        ring_breaks: bool = True, 
+
+@dataclass
+class AlchemicalSofra:
+    first_meze: Meze
+    second_meze: Meze
+    stage: Literal["bound", "unbound"]
+    bss_base_system: Optional[bssSystem] = field(default=None, init=False)
+    first_molecule: Optional[bss._SireWrappers.Molecule] = field(default=None, init=False)
+    second_molecule: Optional[bss._SireWrappers.Molecule] = field(default=None, init=False)
+    merged_molecule: Optional[bss._SireWrappers.Molecule] = field(default=None, init=False)
+
+    def __post_init__(self):
+        if self.stage not in ["bound", "unbound"]:
+            message = f"stage must be 'bound' or 'unbound', got {self.stage}"
+            log.error(message)
+            raise ValueError(message)
+        
+        self._set_bss_molecules()
+        self._set_bss_base_system()
+        
+    def _set_bss_molecules(self):
+        self.first_molecule = self.first_meze.get_mutatable_ligand_molecule()
+        self.second_molecule = self.second_meze.get_mutatable_ligand_molecule()
+    
+    def _set_bss_base_system(self):
+        self.bss_base_system = self.first_meze.system
+        log.info(f"Setting base system from the first meze object.")
+
+    def merge(
+            self,
+            flexible_align: bool = False, 
+            ring_breaks: bool = True, 
+            ring_size_changes: bool = True
+    ):
+        mapping = bss.Align.matchAtoms(self.first_molecule, self.second_molecule, complete_rings_only=True)
+        inverse_mapping = {value:key for key, value in mapping.items()}
+        if flexible_align:
+            aligned_ligand_2 = bss.Align.flexAlign(self.second_molecule, self.first_molecule, inverse_mapping)
+        else:
+            aligned_ligand_2 = bss.Align.rmsdAlign(self.second_molecule, self.first_molecule, inverse_mapping)
+        return bss.Align.merge(
+            self.first_molecule, 
+            aligned_ligand_2, 
+            mapping, allow_ring_breaking=ring_breaks, allow_ring_size_change=ring_size_changes
+        )
+
+    def create_unbound_hybrid_molecule(
+            self,
+            flexible_align: bool = False, 
+            ring_breaks: bool = True, 
+            ring_size_changes: bool = True,
+    ):
+        self.merged_molecule = self.merge(flexible_align, ring_breaks, ring_size_changes)
+        system = self.bss_base_system
+        system.removeMolecules(self.first_molecule)
+        system.addMolecules(self.merged_molecule)
+        return system
+    
+    def setup_alchemistry(self):
+        if self.stage == "unbound":
+            pass
+        else:
+            pass
+        
+
+def setup_unbound_stage(
+        ligand_1_meze: Meze,
+        ligand_2_meze: Meze,
+        directory: Optional[str],
+        overwrite: bool = False,
+        flexible_align: bool = False,
+        ring_breaks: bool = True,
         ring_size_changes: bool = True
 ):
-    mapping = bss.Align.matchAtoms(ligand_1, ligand_2, complete_rings_only=True)
-    inverse_mapping = {value:key for key, value in mapping.items()}
-    if flexible_align:
-        aligned_ligand_2 = bss.Align.flexAlign(ligand_2, ligand_1, inverse_mapping)
-    else:
-        aligned_ligand_2 = bss.Align.rmsdAlign(ligand_2, ligand_1, inverse_mapping)
-    return bss.Align.merge(
-        ligand_1, 
-        aligned_ligand_2, 
-        mapping, allow_ring_breaking=ring_breaks, allow_ring_size_change=ring_size_changes
-    )
+    if not directory:
+        directory = os.getcwd()
+    elif not os.path.isdir(directory):
+        message = f"Input directory {directory} does not exist."
+        log.error(message)
+        raise FileNotFoundError(message)
 
-def create_unbound_hybrid_molecule(
-        bss_base_system: bss._SireWrappers.System,
-        ligand_1: bss._SireWrappers.Molecule,
-        ligand_2: bss._SireWrappers.Molecule,
-        flexible_align: bool = False, 
-        ring_breaks: bool = True, 
-        ring_size_changes: bool = True,
-):
-    merged = merge_ligands(ligand_1, ligand_2,  flexible_align, ring_breaks, ring_size_changes)
-    bss_base_system.removeMolecules(ligand_1)
+    working_directory = os.path.join(directory, "unbound")
+    log.info(f"Creating unbound stage in directory: {working_directory}")
+    try:
+        os.makedirs(working_directory, exist_ok=overwrite)
+    except OSError:
+        message = f"Trying to create unbound stage directory which already exists, but 'overwrite' is set to {overwrite}.\nEither supply a different 'directory' or set 'overwrite=True'."
+        log.error(message)
+        raise FileExistsError
     
+    ligand_1_molecule = ligand_1_meze.get_mutatable_ligand_molecule()
+    ligand_2_molecule = ligand_2_meze.get_mutatable_ligand_molecule()
 
+    base_system = ligand_1_meze.system
+
+    merged_ligand_system = create_unbound_hybrid_molecule(
+        bss_base_system=base_system,
+        ligand_1=ligand_1_molecule,
+        ligand_2=ligand_2_molecule,
+        flexible_align=flexible_align,
+        ring_breaks=ring_breaks,
+        ring_size_changes=ring_size_changes
+    )
 
 class MezeRecipe(BaseModel):
     """Meze workflow recipe
