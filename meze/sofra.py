@@ -2042,7 +2042,8 @@ class ColdMeze(Meze):
             pressure: Optional[Union[float, bssPressure]] = None,
             is_gpu: Optional[bool] = True,
             engine_executable: Optional["str"] = None,
-            additional_restraints: Optional[dict[str, Any]] = None
+            additional_positional_restraints: Optional[dict[str, Any]] = None,
+            additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None
     ) -> "ColdMeze":
         allowed_protocols = ["minimisation", "nvt", "npt"]
         if protocol_type not in allowed_protocols:
@@ -2082,10 +2083,10 @@ class ColdMeze(Meze):
         if position_restraints:
             config_options["restraintmask"] = self._build_restraint_mask(
                 position_restraints=position_restraints, 
-                additional_restraints=additional_restraints
+                additional_restraints=additional_positional_restraints
             )
         
-        if self.recipe.model == 0 or self.restraint_file:
+        if self.recipe.model == 0 or self.restraint_file or additional_distance_restraints:
             config_options["nmropt"] = 1
 
         if protocol_type == "minimisation":
@@ -2123,7 +2124,6 @@ class ColdMeze(Meze):
                 restraint="all" if position_restraints else None,
                 force_constant=recipe.restraint_weight
             )
-
         return super()._run(
             protocol=protocol,
             recipe=recipe,
@@ -2131,6 +2131,7 @@ class ColdMeze(Meze):
             process_name=process_name,
             config_options=config_options,
             is_gpu=is_gpu,
+            distance_restraints=extra_distance_restraints
         )
     
     def minimise(
@@ -2148,7 +2149,8 @@ class ColdMeze(Meze):
             nb_cutoff: Optional[float] = None,
             is_gpu: Optional[bool] = False,
             engine_executable: Optional[str] = None,
-            additional_restraints: Optional[dict[str, Any]] = None
+            additional_positional_restraints: Optional[dict[str, Any]] = None,
+            additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None
     ) -> "ColdMeze":  
         
         return self.run(
@@ -2164,7 +2166,8 @@ class ColdMeze(Meze):
             method=method,
             is_gpu=is_gpu,
             engine_executable=engine_executable,
-            additional_restraints=additional_restraints
+            additional_positional_restraints=additional_positional_restraints,
+            additional_distance_restraints=additional_distance_restraints
         )
 
     def heat(
@@ -2184,7 +2187,9 @@ class ColdMeze(Meze):
             process_name: Optional[str] = "nvt",
             is_gpu: Optional[bool] = True,
             engine_executable: Optional[str] = None,
-            additional_restraints: Optional[dict[str, Any]] = None
+            additional_positional_restraints: Optional[dict[str, Any]] = None,
+            additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None
+
     ) -> "ColdMeze":
 
         return self.run(
@@ -2202,7 +2207,8 @@ class ColdMeze(Meze):
             end_temperature=end_temperature,
             is_gpu=is_gpu,
             engine_executable=engine_executable,
-            additional_restraints=additional_restraints
+            additional_positional_restraints=additional_positional_restraints,
+            additional_distance_restraints=additional_distance_restraints
         )
 
     def pressurise(
@@ -2221,7 +2227,9 @@ class ColdMeze(Meze):
             process_name: Optional[str] = "npt",
             is_gpu: Optional[bool] = True,
             engine_executable: Optional[str] = None,
-            additional_restraints: Optional[dict[str, Any]] = None
+            additional_positional_restraints: Optional[dict[str, Any]] = None,
+            additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None
+
     ) -> "ColdMeze":
 
         return self.run(
@@ -2238,7 +2246,8 @@ class ColdMeze(Meze):
             pressure=pressure,
             is_gpu=is_gpu,
             engine_executable=engine_executable,
-            additional_restraints=additional_restraints
+            additional_positional_restraints=additional_positional_restraints,
+            additional_distance_restraints=additional_distance_restraints
         )
 
 @dataclass
