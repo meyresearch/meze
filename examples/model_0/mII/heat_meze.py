@@ -44,7 +44,7 @@ minimised_meze = solvated_meze.minimise(
     position_restraints="solute",
     max_cycles=5000,
     is_gpu=False,
-    additional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
+    additional_positional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
 )
 
 print("02 - Heating with restrained solute")
@@ -56,7 +56,7 @@ hot_meze = minimised_meze.heat(
     timestep=0.001,
     start_temperature=100,
     end_temperature=300,
-        additional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}   
+        additional_positional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}   
 ) 
 
 print("03 - Constant temperature with restrained solute")
@@ -67,7 +67,7 @@ relax_meze = hot_meze.heat(
     workdir=equil_dir,
     position_restraints="solute",
     timestep=0.001,
-    additional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
+    additional_positional_restraints={"resnames": ["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB", "NLN"]}
 )
 
 print("04 - Add pressure with restrained solute")
