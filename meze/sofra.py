@@ -2339,6 +2339,7 @@ class HotMeze(Meze):
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 100000,
             distance_write_frequency: Optional[int] = 10000,
+            additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None
     ):
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
@@ -2359,7 +2360,7 @@ class HotMeze(Meze):
                           "ntx": 5, 
                           "iwrap": 0}
 
-        if self.recipe.model == 0 or self.restraint_file:
+        if self.recipe.model == 0 or self.restraint_file or additional_distance_restraints:
             config_options["nmropt"] = 1
 
         protocol = bss.Protocol.Production(
@@ -2371,14 +2372,15 @@ class HotMeze(Meze):
         if self.restraint_file and os.path.isfile(self.restraint_file):
             step_restraint_file = os.path.join(recipe.workdir, "restraints.RST")
             shutil.copyfile(self.restraint_file, step_restraint_file)
-
+        extra_distance_restraints = _write_distance_restraints(additional_distance_restraints) if additional_distance_restraints else None
         return super()._run(
             protocol=protocol,
             recipe=recipe,
             system=system,
             process_name=process_name,
             config_options=config_options,
-            distance_write_frequency=distance_write_frequency
+            distance_write_frequency=distance_write_frequency,
+            distance_restraints=extra_distance_restraints
         )
         
 @dataclass
