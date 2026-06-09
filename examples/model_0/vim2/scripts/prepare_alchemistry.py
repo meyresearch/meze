@@ -13,15 +13,13 @@ from pathlib import Path
 import glob
 
 
-# UNCOMMENT BEFORE COMMIT
-project_dir = sys.argv[1]
-# system_name = sys.argv[2]
-# ligand_1 = sys.argv[3]
-# ligand_2 = sys.argv[4]
-# repeat = sys.argv[5]
+REPO_ROOT = Path().resolve()
+EXAMPLES_DIR = REPO_ROOT / "examples"
+DATA_DIR = REPO_ROOT / "data"
+project_dir = DATA_DIR
 
-#DEBUGGING
 system_name = "vim2"
+
 ligand_1 = "ligand_11"
 ligand_2 = "ligand_12"
 repeat = 1
@@ -38,7 +36,7 @@ json_recipe["path_to_engine"] = os.path.join(
         os.environ["AMBERHOME"], "bin", "sander"
 )
 
-bound_lig_1_equil_dir = f"{project_dir}/equilibration/bound/{ligand_1}/repeat_{repeat}/"
+bound_lig_1_equil_dir = f"{project_dir}/equilibration/model_0/{system_name}/bound/{ligand_1}/repeat_{repeat}/"
 
 bound_ligand_1_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
@@ -48,7 +46,7 @@ bound_ligand_1_meze = HotMeze.from_files(
     ligand_resname="MOL"
 )
 
-bound_lig_2_equil_dir = f"{project_dir}/equilibration/bound/{ligand_2}/repeat_{repeat}/"
+bound_lig_2_equil_dir = f"{project_dir}/equilibration/model_0/{system_name}/bound/{ligand_2}/repeat_{repeat}/"
 
 bound_ligand_2_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
@@ -58,7 +56,7 @@ bound_ligand_2_meze = HotMeze.from_files(
     ligand_resname="MOL"
 )
 
-unbound_lig_1_equil_dir = f"{project_dir}/equilibration/unbound/{ligand_1}/repeat_{repeat}/"
+unbound_lig_1_equil_dir = f"{project_dir}/equilibration/model_0/{system_name}/unbound/{ligand_1}/repeat_{repeat}/"
 
 unbound_ligand_1_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
@@ -68,7 +66,7 @@ unbound_ligand_1_meze = HotMeze.from_files(
     ligand_resname="MOL"
 )
 
-unbound_lig_2_equil_dir = f"{project_dir}/equilibration/unbound/{ligand_2}/repeat_{repeat}/"
+unbound_lig_2_equil_dir = f"{project_dir}/equilibration/model_0/{system_name}/unbound/{ligand_2}/repeat_{repeat}/"
 
 unbound_ligand_2_meze = HotMeze.from_files(
     recipe=HotMezeRecipe(**json_recipe),
@@ -79,7 +77,7 @@ unbound_ligand_2_meze = HotMeze.from_files(
 )
 
 # merge in both 
-print("merge")
+
 # unbound_ligand_1 = unbound_ligand_1_meze.get_mutatable_ligand_molecule()
 # unbound_ligand_2 = unbound_ligand_2_meze.get_mutatable_ligand_molecule()
 # bound_ligand_1 = bound_ligand_1_meze.get_mutatable_ligand_molecule()
@@ -98,18 +96,16 @@ alchemical_recipe = AlchemicalMezeRecipe(
 unbound_sofra = AlchemicalSofra(
     first_meze=unbound_ligand_1_meze,
     second_meze=unbound_ligand_2_meze,
+    first_name=ligand_1,
+    second_name=ligand_2,
     stage="unbound",
-    sofra_file=model_0_sofra,
-    directory=f"{project_dir}/outputs/",
-    overwrite=False,
+    system_sofra=model_0_sofra,
+    directory=f"{project_dir}/outputs/model_0/",
+    overwrite=True,
     recipe=alchemical_recipe
 )
 
-merged_unbound_system = unbound_sofra.setup_alchemistry(
-    flexible_align=False,
-    ring_breaks=True,
-    ring_size_changes=True
-)
+merged_unbound_system = unbound_sofra.setup_alchemistry()
 
 # prep fep windows
 

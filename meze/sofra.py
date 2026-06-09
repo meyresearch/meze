@@ -26,6 +26,7 @@ from typing import (
     Self,
     List
 )
+import pandas as pd
 import pickle
 import pathlib
 from .ligand import Ligand
@@ -120,7 +121,12 @@ class MezeRecipe(BaseModel):
     n_repeats: int = Field(
         3, ge=1, description="Number of repeats"
     )
-    
+    temperature: Union[float, bssTemperature] = Field(
+        300.0,  description="Simulation temperature in kelvin"
+    )
+    pressure: Union[float, bssPressure] = Field(
+        1.0, description="Simulation pressure in atm"
+    )
     @field_validator("model", mode="before")
     @classmethod
     def validate_model(cls, v):
@@ -161,6 +167,26 @@ class MezeRecipe(BaseModel):
             raise ValueError(f"nb_cutoff must be greater than or equal to 0 atm")
         return bss.Types.Length(value, "angstrom")    
 
+    @field_validator("temperature", mode="before")
+    @classmethod
+    def validate_temperature(cls, value):
+        if isinstance(value, bss.Types.Temperature):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"temperature must be greater than or equal to 0 K")
+        return(bss.Types.Temperature(value, "kelvin"))
+    
+    @field_validator("pressure", mode="before")
+    @classmethod
+    def validate_pressure(cls, value):
+        if isinstance(value, bss.Types.Pressure):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"pressure must be greater than or equal to 0 atm")
+        return(bss.Types.Pressure(value, "atm"))    
+    
     def __str__(self) -> str:
         """Print recipe information as JSON
         """
@@ -256,11 +282,12 @@ class HotMezeRecipe(MezeRecipe):
 class AlchemicalMezeRecipe(MezeRecipe):
     """Meze workflow recipe for alchemical free energy calculations
     """
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     n_lambdas: int = Field(
         16, ge=3, description="Number of lambda windows"
     )
-    sampling_time: float = Field(
-        4.0, ge=0., description="Runtime for each lambda window"
+    sampling_time: Union[float, bssTime] = Field(
+        4.0, description="Runtime for each lambda window in ns."
     )
     restart_interval: int = Field(
         500, ge=1, description="N:o steps with which restart files are written"
@@ -289,12 +316,32 @@ class AlchemicalMezeRecipe(MezeRecipe):
     lambda_min_steps: int = Field(
         10000, ge=1, description="Number of steepest descent steps for lambda minimisation."
     )
-    lambda_nvt_time: float = Field(
-        200, ge=1, description="Runtime for lambda NVT equilibration, in ps."
+    lambda_nvt_time: Union[float, bssTime] = Field(
+        200, description="Runtime for lambda NVT equilibration, in ps."
     )
-    lambda_npt_time: float = Field(
-        200, ge=1, description="Runtime for lambda NPT equilibration, in ps."
+    lambda_npt_time: Union[float, bssTime] = Field(
+        200, description="Runtime for lambda NPT equilibration, in ps."
     )
+    @field_validator("sampling_time", mode="before")
+    @classmethod
+    def validate_sampling_time(cls, value):
+        if isinstance(value, bssTime):
+            return value
+        value = float(value)
+        if value <= 0:
+            raise ValueError(f"sampling_time must be greater than 0 ns")
+        return(bssTime(value, "nanoseconds"))
+    
+    @field_validator("lambda_nvt_time", "lambda_npt_time", mode="before")
+    @classmethod
+    def validate_lambda_times(cls, value):
+        if isinstance(value, bssTime):
+            return value
+        value = float(value)
+        if value <= 0:
+            raise ValueError(f"lambda equilibration times must be greater than 0 ps")
+
+        return(bssTime(value, "picoseconds"))
 
 
 @dataclass
@@ -524,7 +571,7 @@ class Meze:
         if len(residues) == 0:
             raise RuntimeError(f"No residues found in BioSimSpace system for meze with file:\n{self.coordinates}")
         residue_names = [residue.name() for residue in residues]
-        ligand_residues = [residue for residue in residues if residue.name.upper() == self.ligand_resname]
+        ligand_residues = [residue for residue in residues if residue.name().upper() == self.ligand_resname]
         if not ligand_residues:
             raise RuntimeError(f"Could not find any ligand residues for meze object with file:\n{self.coordinates}")
         if len(ligand_residues) > 1:
@@ -3238,6 +3285,12 @@ class Sofra:
         mezes = {}
         for ligand_name, entry in sofra_contents.items():
             if not isinstance(entry, dict):
+                if ligand_name == "network_file":
+                    network_file = entry
+                    if not os.path.isfile(network_file):
+                        message = f"Could not find network file {network_file} from sofra file:\n{sofra_file}"
+                        log.error(message)
+                        raise FileNotFoundError(message)
                 continue
             try:
                 mezes[ligand_name] = Meze.load(entry["pickle_file"])
@@ -3276,7 +3329,8 @@ class Sofra:
                    sofra_file=sofra_file, 
                    sofra_contents=sofra_contents, 
                    project_directory=project_directory,
-                   group_name=sofra_group_name)
+                   group_name=sofra_group_name,
+                   network_file=network_file)
 
 
     def average_charges(self, 
@@ -3692,7 +3746,9 @@ class AlchemicalSofra:
     second_meze: Meze
     stage: Literal["bound", "unbound"]
     recipe: AlchemicalMezeRecipe
-    sofra_file: Optional[str] = field(default=None)
+    first_name: Optional[str] = "ligand_1"
+    second_name: Optional[str] = "ligand_2"
+    system_sofra: Optional[Sofra] = field(default=None)
     directory: Optional[str] = field(default=None)
     overwrite: bool = field(default=False)
     bss_base_system: Optional[bssSystem] = field(default=None, init=False)
@@ -3700,6 +3756,7 @@ class AlchemicalSofra:
     second_molecule: Optional[bss._SireWrappers.Molecule] = field(default=None, init=False)
     merged_molecule: Optional[bss._SireWrappers.Molecule] = field(default=None, init=False)
     working_directory: Optional[str] = field(default=None, init=False)
+    transformation: Optional[str] = field(default=None, init=False)
 
     def __post_init__(self):
         if self.stage not in ["bound", "unbound"]:
@@ -3711,10 +3768,12 @@ class AlchemicalSofra:
             message = f"Currently only supporting AMBER as the RBFE MD engine."
             log.error(message)
             raise RuntimeError(message)
-
+        
         self._set_bss_molecules()
         self._set_bss_base_system()
+        self._set_transformation()
         self._set_working_directory()
+
 
     def _set_working_directory(self):
 
@@ -3722,10 +3781,10 @@ class AlchemicalSofra:
 
         if not os.path.isdir(directory):
             message = f"Input directory {directory} does not exist."
-            log.error(message)
-            raise FileNotFoundError(message)
+            log.warning(message)
+            os.makedirs(directory)
 
-        working_directory = os.path.join(directory, self.stage)
+        working_directory = os.path.join(directory, self.transformation, self.stage)
         log.info(f"Creating unbound stage in directory: {working_directory}")
         try:
             os.makedirs(working_directory, exist_ok=self.overwrite)
@@ -3742,6 +3801,14 @@ class AlchemicalSofra:
     def _set_bss_base_system(self):
         self.bss_base_system = self.first_meze.system
         log.info(f"Setting base system from the first meze object.")
+
+    def _set_network(self, file: str):
+        self.network = pd.read_csv(file, sep=",", header=0, index_col=False)
+        log.info(f"Read in network:\n{self.network.head()}")
+
+    def _set_transformation(self):
+        self.transformation = f"{self.first_name}~{self.second_name}"
+        log.info(f"Setting up transformation: {self.transformation}")
 
     def merge(
             self,
@@ -3778,6 +3845,19 @@ class AlchemicalSofra:
         else:
             pass
 
+        lambda_minimisation_protocol = bss.Protocol.FreeEnergyMinimisation(
+            num_lam=self.recipe.n_lambdas,
+            steps=self.recipe.lambda_min_steps
+        )
+        lambda_nvt_protocol = bss.Protocol.FreeEnergyEquilibration(
+            num_lam=self.recipe.n_lambdas,
+            pressure=None,
+            temperature=self.recipe.temperature
+        )
+        lambda_npt_protocol = bss.Protocol.FreeEnergyEquilibration(
+            num_lam=self.recipe.n_lambdas,
+            pressure=self.recipe.pressure
+        )
         protocol = bss.Protocol.FreeEnergy(
             num_lam=self.recipe.n_lambdas,
             runtime=self.recipe.sampling_time,
@@ -3785,8 +3865,36 @@ class AlchemicalSofra:
             report_interval=self.recipe.report_interval,
         )
 
+        log.info("Setting up lambda minimisation.")
+        bss.FreeEnergy.Relative(
+            system=merged_ligand_system,
+            protocol=lambda_minimisation_protocol,
+            engine=self.recipe.engine,
+            work_dir=f"{self.working_directory}/min/"
+        )
 
+        log.info("Setting up lambda NVT equilibration.")
+        bss.FreeEnergy.Relative(
+            system=merged_ligand_system,
+            protocol=lambda_nvt_protocol,
+            engine=self.recipe.engine,
+            work_dir=f"{self.working_directory}/nvt/"
+        )
+        log.info("Setting up lambda NPT equilibration.")
+        bss.FreeEnergy.Relative(
+            system=merged_ligand_system,
+            protocol=lambda_npt_protocol,
+            engine=self.recipe.engine,
+            work_dir=f"{self.working_directory}/npt/"
+        )
 
+        log.info("Setting up lambda production.")
+        bss.FreeEnergy.Relative(
+            system=merged_ligand_system,
+            protocol=protocol,
+            engine=self.recipe.engine,
+            work_dir=f"{self.working_directory}/prod/"
+        )
 
 
 
