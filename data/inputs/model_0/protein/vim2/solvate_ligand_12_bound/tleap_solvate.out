@@ -1,0 +1,448 @@
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/prep to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/lib to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/parm to search path.
+-I: Adding /Users/af25016/Software/ambertools25/dat/leap/cmd to search path.
+-s: Ignoring all leaprc startup files.
+-f: Source /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/tleap_solvate.in.
+
+Welcome to LEaP!
+Sourcing: /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/tleap_solvate.in
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.protein.ff14SB
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.protein.ff14SB done
+Log file: ./leap.log
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/parm10.dat
+Reading title:
+PARM99 + frcmod.ff99SB + frcmod.parmbsc0 + OL3 for RNA
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ff14SB
+Reading force field modification type file (frcmod)
+Reading title:
+ff14SB protein backbone and sidechain parameters
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/amino12.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/aminoct12.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/aminont12.lib
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.water.tip3p
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.water.tip3p done
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/atomic_ions.lib
+Loading library: /Users/af25016/Software/ambertools25/dat/leap/lib/solvents.lib
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+This is the additional/replacement parameter set for TIP3P water
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ionsjc_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Monovalent ion parameters for Ewald and TIP3P water from Joung & Cheatham JPCB (2008)
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions234lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of divalent to tetravalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
+----- Source: /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.gaff2
+----- Source of /Users/af25016/Software/ambertools25/dat/leap/cmd/leaprc.gaff2 done
+Log file: ./leap.log
+Loading parameters: /Users/af25016/Software/ambertools25/dat/leap/parm/gaff2.dat
+Reading title:
+AMBER General Force Field for organic molecules (Version 2.2.20, March 2021)
+Loading parameters: /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/ligand_12.frcmod
+Reading force field modification type file (frcmod)
+Reading title:
+Remark line goes here
+Loading Mol2 file: /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/ligand_12.mol2
+Reading MOLECULE named MOL
+Loading parameters: /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/MOH.frcmod
+Reading force field modification type file (frcmod)
+Reading title:
+Remark line goes here
+Loading Mol2 file: /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/MOH.mol2
+Reading MOLECULE named MOH
+Loading PDB file: /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/vim2.fixed.pdb
+  Added missing heavy atom: .R<CSER 232>.A<OXT 12>
+  total atoms in file: 3998
+  Leap added 1 missing atom according to residue templates:
+       1 Heavy
+Writing pdb file: ligand_12_complex_dry.pdb
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+ Converting N-terminal residue name to PDB format: NGLU -> GLU
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+ Converting C-terminal residue name to PDB format: CSER -> SER
+Checking 'complex'....
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+The unperturbed charge of the unit (-12.000000) is not zero.
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.477 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 413>.A<H2 3> and .R<WAT 298>.A<H1 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 0.962 angstroms between nonbonded atoms O and HE
+-------  .R<WAT 398>.A<O 1> and .R<ARG 14>.A<HE 15>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.287 angstroms between nonbonded atoms O and HH21
+-------  .R<WAT 398>.A<O 1> and .R<ARG 14>.A<HH21 21>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.283 angstroms between nonbonded atoms H1 and NE
+-------  .R<WAT 398>.A<H1 2> and .R<ARG 14>.A<NE 14>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 0.445 angstroms between nonbonded atoms H1 and HE
+-------  .R<WAT 398>.A<H1 2> and .R<ARG 14>.A<HE 15>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.064 angstroms between nonbonded atoms H2 and HH21
+-------  .R<WAT 398>.A<H2 3> and .R<ARG 14>.A<HH21 21>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.132 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 397>.A<H2 3> and .R<WAT 396>.A<H1 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.146 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 391>.A<H1 2> and .R<WAT 385>.A<H2 3>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 0.931 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 387>.A<H2 3> and .R<WAT 317>.A<H1 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.470 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 383>.A<H2 3> and .R<WAT 250>.A<H1 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.243 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 382>.A<H2 3> and .R<WAT 283>.A<H1 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.423 angstroms between nonbonded atoms H2 and HZ2
+-------  .R<WAT 373>.A<H2 3> and .R<LYS 226>.A<HZ2 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.057 angstroms between nonbonded atoms H1 and H2
+-------  .R<WAT 372>.A<H1 2> and .R<WAT 326>.A<H2 3>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.301 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 366>.A<H2 3> and .R<SER 123>.A<H 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.287 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 362>.A<H2 3> and .R<GLY 137>.A<H 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.293 angstroms between nonbonded atoms H2 and H1
+-------  .R<WAT 358>.A<H2 3> and .R<WAT 325>.A<H1 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.435 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 350>.A<H1 2> and .R<LEU 15>.A<H 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.435 angstroms between nonbonded atoms O and H1
+-------  .R<WAT 339>.A<O 1> and .R<WAT 269>.A<H1 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.453 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 338>.A<H1 2> and .R<ILE 119>.A<H 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 335>.A<H1 2> and .R<ALA 181>.A<H 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.375 angstroms between nonbonded atoms H1 and HE1
+-------  .R<WAT 332>.A<H1 2> and .R<TRP 23>.A<HE1 12>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.424 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 327>.A<H1 2> and .R<ASN 179>.A<H 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.304 angstroms between nonbonded atoms H2 and H
+-------  .R<WAT 320>.A<H2 3> and .R<CYM 167>.A<H 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.444 angstroms between nonbonded atoms H2 and HE2
+-------  .R<WAT 317>.A<H2 3> and .R<HIE 228>.A<HE2 13>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.041 angstroms between nonbonded atoms H1 and HH11
+-------  .R<WAT 310>.A<H1 2> and .R<ARG 96>.A<HH11 18>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.456 angstroms between nonbonded atoms H2 and HD22
+-------  .R<WAT 283>.A<H2 3> and .R<ASN 179>.A<HD22 12>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.338 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 266>.A<H1 2> and .R<GLY 33>.A<H 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.395 angstroms between nonbonded atoms H1 and HG1
+-------  .R<WAT 258>.A<H1 2> and .R<THR 190>.A<HG1 12>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.485 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 257>.A<H1 2> and .R<GLY 210>.A<H 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.275 angstroms between nonbonded atoms H1 and HH
+-------  .R<WAT 256>.A<H1 2> and .R<TYR 103>.A<HH 15>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.351 angstroms between nonbonded atoms H1 and H
+-------  .R<WAT 245>.A<H1 2> and .R<THR 28>.A<H 2>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.449 angstroms between nonbonded atoms H2 and HH
+-------  .R<WAT 242>.A<H2 3> and .R<TYR 170>.A<HH 15>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH11 and HH12
+-------  .R<ARG 231>.A<HH11 18> and .R<ARG 231>.A<HH12 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
+-------  .R<ARG 231>.A<HH21 21> and .R<ARG 231>.A<HH22 22>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
+-------  .R<ASN 230>.A<HD21 11> and .R<ASN 230>.A<HD22 12>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ2
+-------  .R<LYS 226>.A<HZ1 18> and .R<LYS 226>.A<HZ2 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ3
+-------  .R<LYS 226>.A<HZ1 18> and .R<LYS 226>.A<HZ3 20>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.449 angstroms between nonbonded atoms HZ2 and HZ3
+-------  .R<LYS 226>.A<HZ2 19> and .R<LYS 226>.A<HZ3 20>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
+-------  .R<ASN 223>.A<HD21 11> and .R<ASN 223>.A<HD22 12>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ2
+-------  .R<LYS 219>.A<HZ1 18> and .R<LYS 219>.A<HZ2 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ3
+-------  .R<LYS 219>.A<HZ1 18> and .R<LYS 219>.A<HZ3 20>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.450 angstroms between nonbonded atoms HZ2 and HZ3
+-------  .R<LYS 219>.A<HZ2 19> and .R<LYS 219>.A<HZ3 20>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HE21 and HE22
+-------  .R<GLN 203>.A<HE21 14> and .R<GLN 203>.A<HE22 15>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HE21 and HE22
+-------  .R<GLN 196>.A<HE21 14> and .R<GLN 196>.A<HE22 15>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HH11 and HH12
+-------  .R<ARG 194>.A<HH11 18> and .R<ARG 194>.A<HH12 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HH21 and HH22
+-------  .R<ARG 194>.A<HH21 21> and .R<ARG 194>.A<HH22 22>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
+-------  .R<ASN 179>.A<HD21 11> and .R<ASN 179>.A<HD22 12>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HH11 and HH12
+-------  .R<ARG 174>.A<HH11 18> and .R<ARG 174>.A<HH12 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
+-------  .R<ARG 174>.A<HH21 21> and .R<ARG 174>.A<HH22 22>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
+-------  .R<ASN 152>.A<HD21 11> and .R<ASN 152>.A<HD22 12>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HH11 and HH12
+-------  .R<ARG 135>.A<HH11 18> and .R<ARG 135>.A<HH12 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
+-------  .R<ARG 135>.A<HH21 21> and .R<ARG 135>.A<HH22 22>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
+-------  .R<ASN 117>.A<HD21 11> and .R<ASN 117>.A<HD22 12>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH11 and HH12
+-------  .R<ARG 110>.A<HH11 18> and .R<ARG 110>.A<HH12 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HH21 and HH22
+-------  .R<ARG 110>.A<HH21 21> and .R<ARG 110>.A<HH22 22>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH11 and HH12
+-------  .R<ARG 109>.A<HH11 18> and .R<ARG 109>.A<HH12 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
+-------  .R<ARG 109>.A<HH21 21> and .R<ARG 109>.A<HH22 22>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH11 and HH12
+-------  .R<ARG 96>.A<HH11 18> and .R<ARG 96>.A<HH12 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
+-------  .R<ARG 96>.A<HH21 21> and .R<ARG 96>.A<HH22 22>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HH11 and HH12
+-------  .R<ARG 88>.A<HH11 18> and .R<ARG 88>.A<HH12 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HH21 and HH22
+-------  .R<ARG 88>.A<HH21 21> and .R<ARG 88>.A<HH22 22>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HH11 and HH12
+-------  .R<ARG 78>.A<HH11 18> and .R<ARG 78>.A<HH12 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HH21 and HH22
+-------  .R<ARG 78>.A<HH21 21> and .R<ARG 78>.A<HH22 22>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HE21 and HE22
+-------  .R<GLN 71>.A<HE21 14> and .R<GLN 71>.A<HE22 15>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HD21 and HD22
+-------  .R<ASN 60>.A<HD21 11> and .R<ASN 60>.A<HD22 12>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ2
+-------  .R<LYS 59>.A<HZ1 18> and .R<LYS 59>.A<HZ2 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.449 angstroms between nonbonded atoms HZ1 and HZ3
+-------  .R<LYS 59>.A<HZ1 18> and .R<LYS 59>.A<HZ3 20>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.449 angstroms between nonbonded atoms HZ2 and HZ3
+-------  .R<LYS 59>.A<HZ2 19> and .R<LYS 59>.A<HZ3 20>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH11 and HH12
+-------  .R<ARG 44>.A<HH11 18> and .R<ARG 44>.A<HH12 19>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.489 angstroms between nonbonded atoms HH21 and HH22
+-------  .R<ARG 44>.A<HH21 21> and .R<ARG 44>.A<HH22 22>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HD21 and HD22
+-------  .R<ASN 39>.A<HD21 11> and .R<ASN 39>.A<HD22 12>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HE21 and HE22
+-------  .R<GLN 29>.A<HE21 14> and .R<GLN 29>.A<HE22 15>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.490 angstroms between nonbonded atoms HE21 and HE22
+-------  .R<GLN 17>.A<HE21 14> and .R<GLN 17>.A<HE22 15>
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+Close contact of 1.402 angstroms between nonbonded atoms OE2 and HG2
+-------  .R<GLU 12>.A<OE2 13> and .R<PRO 9>.A<HG2 6>
+Checking parameters for unit 'complex'.
+Checking for bond parameters.
+Checking for angle parameters.
+check:  Warnings: 75
+Unit is OK.
+Scaling up box by a factor of 1.236750 to meet diagonal cut criterion
+  Solute vdw bounding box:              56.548 46.338 46.169
+  Total bounding box for atom centers:  81.283 81.283 81.283
+      (box expansion for 'iso' is  31.1%)
+  Solvent unit box:                     18.774 18.774 18.774
+  Volume: 278550.969 A^3 (oct)
+  Total mass 154405.602 amu,  Density 0.920 g/cc
+  Added 6993 residues.
+12 Na+ ions required to neutralize.
+Adding 12 counter ions to "complex" using 1A grid
+Grid extends from solute vdw + 1.48  to  7.47
+Resolution:      1.00 Angstrom.
+Calculating grid charges
+Placed Na+ in complex at (1.42, 18.56, -22.57).
+Placed Na+ in complex at (-36.58, 10.56, -21.57).
+Placed Na+ in complex at (-23.58, -26.44, 19.43).
+Placed Na+ in complex at (-36.58, 11.56, 4.43).
+Placed Na+ in complex at (-36.58, -12.44, -8.57).
+Placed Na+ in complex at (6.42, 38.56, -17.57).
+Placed Na+ in complex at (0.42, 26.56, 29.43).
+Placed Na+ in complex at (17.42, -16.44, -34.57).
+Placed Na+ in complex at (-2.58, -18.44, 33.43).
+Placed Na+ in complex at (9.42, 41.56, 8.43).
+Placed Na+ in complex at (-36.58, -12.44, 18.43).
+Placed Na+ in complex at (36.42, 5.56, -26.57).
+
+Done adding ions.
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+addIons: 1st Ion & target unit have charges of the same sign:
+     unit charge = -3.19744e-14; ion1 charge = -1;
+     can't neutralize.
+Writing pdb file: ligand_12_complex_solv.pdb
+   printing CRYST1 record to PDB file with box info
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+ Converting N-terminal residue name to PDB format: NGLU -> GLU
+
+/Users/af25016/Software/ambertools25/bin/teLeap: Warning!
+ Converting C-terminal residue name to PDB format: CSER -> SER
+Checking Unit.
+Building topology.
+Building atom parameters.
+Building bond parameters.
+Building angle parameters.
+Building proper torsion parameters.
+Building improper torsion parameters.
+ total 724 improper torsions applied
+Building H-Bond parameters.
+Incorporating Non-Bonded adjustments.
+Not Marking per-residue atom chain types.
+Marking per-residue atom chain types.
+  (Residues lacking connect0/connect1 - 
+   these don't have chain types marked:
+
+	res	total affected
+
+	CSER	1
+	MOH	1
+	MOL	1
+	NGLU	1
+	WAT	7175
+  )
+ (no restraints)
+	Quit
+
+Exiting LEaP: Errors = 0; Warnings = 80; Notes = 0.

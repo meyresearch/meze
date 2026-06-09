@@ -296,7 +296,7 @@ class AlchemicalMezeRecipe(MezeRecipe):
         200, ge=1, description="Runtime for lambda NPT equilibration, in ps."
     )
 
-    
+
 @dataclass
 class Meze:
     topology: str 
@@ -3577,6 +3577,11 @@ class Sofra:
                            force_connected_ligands_file: Optional[str] = None):
         #TODO
         # have an option to input a network to allow users to use the same network accross models
+        if not pdb_files:
+            message = "Could not find any pdb files in the given path"
+            log.error(message)
+            raise RuntimeError(message)
+        
         sdf_files = pdb_to_sdf(pdb_files)
 
         ligand_names = list(self.mezes.keys())
@@ -3779,6 +3784,7 @@ class AlchemicalSofra:
             restart_interval=self.recipe.restart_interval,
             report_interval=self.recipe.report_interval,
         )
+
 
 
 

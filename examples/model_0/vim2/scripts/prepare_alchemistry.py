@@ -14,17 +14,16 @@ import glob
 
 
 # UNCOMMENT BEFORE COMMIT
-# project_dir = sys.argv[1]
+project_dir = sys.argv[1]
 # system_name = sys.argv[2]
 # ligand_1 = sys.argv[3]
 # ligand_2 = sys.argv[4]
 # repeat = sys.argv[5]
 
 #DEBUGGING
-project_dir = "/Volumes/external_harddrive/projects/vim2-model-0/"
 system_name = "vim2"
-ligand_1 = "ligand_1"
-ligand_2 = "ligand_4"
+ligand_1 = "ligand_11"
+ligand_2 = "ligand_12"
 repeat = 1
 
 model_0_sofra = Sofra.from_file(
@@ -92,7 +91,8 @@ print("merge")
 
 alchemical_recipe = AlchemicalMezeRecipe(
     n_lambdas=16,
-    sampling_time=4.0
+    sampling_time=4.0,
+    engine="AMBER"
 )
 
 unbound_sofra = AlchemicalSofra(

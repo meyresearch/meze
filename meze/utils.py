@@ -402,6 +402,7 @@ def pdb_to_sdf(files: str | list[str]):
         files = [files]
     
     output_files = []
+
     for ligand_file in files:
         name = Path(ligand_file).stem
         _, extension = os.path.splitext(ligand_file)

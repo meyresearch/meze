@@ -5,15 +5,10 @@ import sys
 from pathlib import Path
 import glob
 
-# REPO_ROOT = Path().resolve()
-# EXAMPLES_DIR = REPO_ROOT / "examples"
-# DATA_DIR = REPO_ROOT / "data"
-# project_dir = DATA_DIR
-
-
-#DEBUGGING
-project_dir = "/Volumes/external_harddrive/projects/vim2-model-0/"
-system_name = "vim2"
+REPO_ROOT = Path().resolve()
+EXAMPLES_DIR = REPO_ROOT / "examples"
+DATA_DIR = REPO_ROOT / "data"
+project_dir = DATA_DIR
 
 system_name = "vim2"
 

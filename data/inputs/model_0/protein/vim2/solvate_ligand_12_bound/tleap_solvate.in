@@ -1,0 +1,22 @@
+source leaprc.protein.ff14SB
+source leaprc.water.tip3p
+loadamberparams frcmod.ions1lm_126_tip3p
+source leaprc.gaff2
+loadamberparams /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/ligand_12.frcmod
+lig = loadmol2 /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/ligand_12.mol2
+
+loadamberparams /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/MOH.frcmod
+MOH = loadmol2 /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/MOH.mol2
+
+protein = loadpdb /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/vim2.fixed.pdb
+complex = combine {protein lig}
+savepdb complex ligand_12_complex_dry.pdb
+check complex
+
+solvateoct complex TIP3PBOX 10.0 iso 0.75
+addions2 complex Na+ 0
+addions2 complex Cl- 0
+
+savepdb complex ligand_12_complex_solv.pdb
+saveamberparm complex ligand_12_complex_solv.prmtop ligand_12_complex_solv.inpcrd
+quit

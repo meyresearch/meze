@@ -5,5 +5,13 @@
         "tleap_input_file": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/tleap_solvate.in",
         "topology": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/ligand_11_complex_solv.prmtop",
         "coordinates": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_11_bound/ligand_11_complex_solv.inpcrd"
-    }
+    },
+    "ligand_12": {
+        "pickle_file": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_12_bound//ligand_12_solvated.pkl",
+        "parameterisation_directory": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_12_bound/",
+        "tleap_input_file": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_12_bound/tleap_solvate.in",
+        "topology": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_12_bound/ligand_12_complex_solv.prmtop",
+        "coordinates": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/solvate_ligand_12_bound/ligand_12_complex_solv.inpcrd"
+    },
+    "network_file": "/Users/af25016/projects/meze/data/inputs/model_0/protein/vim2/lomap/vim2_model_0_lomap_network.csv"
 }
