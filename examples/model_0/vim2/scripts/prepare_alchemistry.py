@@ -1,4 +1,11 @@
-from meze import Meze, HotMeze, HotMezeRecipe, Sofra, AlchemicalSofra
+from meze import (
+    Meze, 
+    HotMeze, 
+    HotMezeRecipe, 
+    Sofra, 
+    AlchemicalSofra, 
+    AlchemicalMezeRecipe
+)
 import os
 import json
 import sys
@@ -83,8 +90,22 @@ print("merge")
 
 # merged_unbound_ligands = Meze.merge_ligands()
 
+alchemical_recipe = AlchemicalMezeRecipe(
+    n_lambdas=16,
+    sampling_time=4.0
+)
 
-unbound_system = AlchemicalSofra.create_unbound_hybrid_molecule(
+unbound_sofra = AlchemicalSofra(
+    first_meze=unbound_ligand_1_meze,
+    second_meze=unbound_ligand_2_meze,
+    stage="unbound",
+    sofra_file=model_0_sofra,
+    directory=f"{project_dir}/outputs/",
+    overwrite=False,
+    recipe=alchemical_recipe
+)
+
+merged_unbound_system = unbound_sofra.setup_alchemistry(
     flexible_align=False,
     ring_breaks=True,
     ring_size_changes=True
