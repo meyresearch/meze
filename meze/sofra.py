@@ -121,13 +121,13 @@ class MezeRecipe(BaseModel):
     n_repeats: int = Field(
         3, ge=1, description="Number of repeats"
     )
-    temperature: Union[float, bssTemperature] = Field(
+    temperature: Union[float, bss.Types.Temperature] = Field(
         300.0,  description="Simulation temperature in kelvin"
     )
-    pressure: Union[float, bssPressure] = Field(
+    pressure: Union[float, bss.Types.Pressure] = Field(
         1.0, description="Simulation pressure in atm"
     )
-    @field_validator("model", mode="before")
+    @field_validator("model", mode="after")
     @classmethod
     def validate_model(cls, v):
         if v is None:
@@ -167,7 +167,7 @@ class MezeRecipe(BaseModel):
             raise ValueError(f"nb_cutoff must be greater than or equal to 0 atm")
         return bss.Types.Length(value, "angstrom")    
 
-    @field_validator("temperature", mode="before")
+    @field_validator("temperature", mode="after")
     @classmethod
     def validate_temperature(cls, value):
         if isinstance(value, bss.Types.Temperature):
@@ -177,7 +177,7 @@ class MezeRecipe(BaseModel):
             raise ValueError(f"temperature must be greater than or equal to 0 K")
         return(bss.Types.Temperature(value, "kelvin"))
     
-    @field_validator("pressure", mode="before")
+    @field_validator("pressure", mode="after")
     @classmethod
     def validate_pressure(cls, value):
         if isinstance(value, bss.Types.Pressure):
@@ -282,7 +282,7 @@ class HotMezeRecipe(MezeRecipe):
 class AlchemicalMezeRecipe(MezeRecipe):
     """Meze workflow recipe for alchemical free energy calculations
     """
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True, validate_default=True)
     n_lambdas: int = Field(
         16, ge=3, description="Number of lambda windows"
     )
@@ -322,7 +322,7 @@ class AlchemicalMezeRecipe(MezeRecipe):
     lambda_npt_time: Union[float, bssTime] = Field(
         200, description="Runtime for lambda NPT equilibration, in ps."
     )
-    @field_validator("sampling_time", mode="before")
+    @field_validator("sampling_time", mode="after")
     @classmethod
     def validate_sampling_time(cls, value):
         if isinstance(value, bssTime):
@@ -332,7 +332,7 @@ class AlchemicalMezeRecipe(MezeRecipe):
             raise ValueError(f"sampling_time must be greater than 0 ns")
         return(bssTime(value, "nanoseconds"))
     
-    @field_validator("lambda_nvt_time", "lambda_npt_time", mode="before")
+    @field_validator("lambda_nvt_time", "lambda_npt_time", mode="after")
     @classmethod
     def validate_lambda_times(cls, value):
         if isinstance(value, bssTime):
@@ -3870,7 +3870,8 @@ class AlchemicalSofra:
             system=merged_ligand_system,
             protocol=lambda_minimisation_protocol,
             engine=self.recipe.engine,
-            work_dir=f"{self.working_directory}/min/"
+            work_dir=f"{self.working_directory}/min/",
+            setup_only=True
         )
 
         log.info("Setting up lambda NVT equilibration.")
@@ -3878,14 +3879,16 @@ class AlchemicalSofra:
             system=merged_ligand_system,
             protocol=lambda_nvt_protocol,
             engine=self.recipe.engine,
-            work_dir=f"{self.working_directory}/nvt/"
+            work_dir=f"{self.working_directory}/nvt/",
+            setup_only=True
         )
         log.info("Setting up lambda NPT equilibration.")
         bss.FreeEnergy.Relative(
             system=merged_ligand_system,
             protocol=lambda_npt_protocol,
             engine=self.recipe.engine,
-            work_dir=f"{self.working_directory}/npt/"
+            work_dir=f"{self.working_directory}/npt/",
+            setup_only=True
         )
 
         log.info("Setting up lambda production.")
@@ -3893,7 +3896,8 @@ class AlchemicalSofra:
             system=merged_ligand_system,
             protocol=protocol,
             engine=self.recipe.engine,
-            work_dir=f"{self.working_directory}/prod/"
+            work_dir=f"{self.working_directory}/prod/",
+            setup_only=True
         )
 
 
