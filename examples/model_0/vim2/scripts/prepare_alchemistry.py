@@ -24,16 +24,16 @@ ligand_1 = "ligand_11"
 ligand_2 = "ligand_12"
 repeat = 1
 
-model_0_sofra = Sofra.from_file(
-    sofra_file=f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json",
-    directory=project_dir
-)
+# model_0_sofra = Sofra.from_file(
+#     sofra_file=f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json",
+#     directory=project_dir
+# )
 
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
 json_recipe["path_to_engine"] = os.path.join(
-        os.environ["AMBERHOME"], "bin", "sander"
+        os.environ["PMEMDHOME"], "bin", "pmemd.cuda"
 )
 
 bound_lig_1_equil_dir = f"{project_dir}/equilibration/model_0/{system_name}/bound/{ligand_1}/repeat_{repeat}/"
@@ -99,7 +99,7 @@ unbound_sofra = AlchemicalSofra(
     first_name=ligand_1,
     second_name=ligand_2,
     stage="unbound",
-    system_sofra=model_0_sofra,
+    # system_sofra=model_0_sofra,
     directory=f"{project_dir}/outputs/model_0/",
     overwrite=True,
     recipe=alchemical_recipe

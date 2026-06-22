@@ -1,15 +1,15 @@
-source leaprc.protein.ff14SB
+source oldff/leaprc.ff14SB
 source leaprc.water.tip3p
 loadamberparams frcmod.ions1lm_126_tip3p
+protein = loadpdb /user/work/af25016/vim2-model-0//inputs/protein/vim2.fixed.pdb
 source leaprc.gaff2
-loadamberparams /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/ligand_12.frcmod
-lig = loadmol2 /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/ligand_12.mol2
+loadamberparams /user/work/af25016/vim2-model-0//inputs/protein/solvate_ligand_12_bound/ligand_12.frcmod
+lig = loadmol2 /user/work/af25016/vim2-model-0//inputs/protein/solvate_ligand_12_bound/ligand_12.mol2
 
-loadamberparams /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/MOH.frcmod
-MOH = loadmol2 /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/solvate_ligand_12_bound/MOH.mol2
+loadamberparams /user/work/af25016/vim2-model-0//inputs/protein/solvate_ligand_12_bound/MOH.frcmod
+res = loadmol2 /user/work/af25016/vim2-model-0//inputs/protein/solvate_ligand_12_bound/MOH.mol2
 
-protein = loadpdb /Users/af25016/projects/vim2-model-0//inputs/model_0/protein/vim2/vim2.fixed.pdb
-complex = combine {protein lig}
+complex = combine {protein res lig}
 savepdb complex ligand_12_complex_dry.pdb
 check complex
 

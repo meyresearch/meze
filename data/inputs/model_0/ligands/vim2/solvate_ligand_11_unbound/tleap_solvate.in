@@ -1,10 +1,10 @@
 source leaprc.gaff2
 source leaprc.water.tip3p
 loadamberparams frcmod.ions1lm_126_tip3p
-loadamberparams /Users/af25016/projects/meze/data/inputs/model_0/ligands/vim2/solvate_ligand_11_unbound/ligand_11.frcmod
-lig = loadmol2 /Users/af25016/projects/meze/data/inputs/model_0/ligands/vim2/solvate_ligand_11_unbound/ligand_11.mol2
+loadamberparams /group/chem/oliveira2t/af25016/vim2-model-0//inputs/ligands/solvate_ligand_11_unbound/ligand_11.frcmod
+lig = loadmol2 /group/chem/oliveira2t/af25016/vim2-model-0//inputs/ligands/solvate_ligand_11_unbound/ligand_11.mol2
 
-solvateoct lig TIP3PBOX 10.0 iso 0.75
+solvateoct lig TIP3PBOX 12.0 iso 0.75
 addions2 lig Na+ 0
 addions2 lig Cl- 0
 
