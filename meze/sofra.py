@@ -60,6 +60,7 @@ from rich.console import Console
 from rdkit import Chem
 import subprocess
 import csv
+import copy
 
 console = Console(force_terminal=True, color_system="truecolor")
 
@@ -126,6 +127,9 @@ class MezeRecipe(BaseModel):
     )
     pressure: Union[float, bss.Types.Pressure] = Field(
         1.0, description="Simulation pressure in atm"
+    )
+    nb_cutoff: float = Field(
+        12.0, ge=0, description="Cut-off for electrostatics interactions"
     )
     @field_validator("model", mode="after")
     @classmethod
@@ -316,6 +320,12 @@ class AlchemicalMezeRecipe(MezeRecipe):
     lambda_min_steps: int = Field(
         10000, ge=1, description="Number of steepest descent steps for lambda minimisation."
     )
+    lambda_n_sd_cycles: int = Field(
+        1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
+    ) 
+    lambda_min_method: int = Field(
+        1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient"
+    )    
     lambda_nvt_time: Union[float, bssTime] = Field(
         200, description="Runtime for lambda NVT equilibration, in ps."
     )
@@ -3839,24 +3849,42 @@ class AlchemicalSofra:
         system.addMolecules(self.merged_molecule)
         return system
     
-    def setup_alchemistry(self):
+    def setup_alchemistry(self, is_gpu: bool = True):
         if self.stage == "unbound":
             merged_ligand_system = self.create_unbound_hybrid_molecule()
         else:
             pass
 
+        config_options = {
+            "cut": self.recipe.nb_cutoff,
+            "ntpr": 1000,
+            "iwrap": 0
+        }
+
+        if self.recipe.model == 0 or self.first_meze.restraint_file:
+            config_options["nmropt"] = 1
+
+        minimisation_config = copy.deepcopy(config_options)
+        minimisation_config["ntmin"] = self.recipe.lambda_min_method
+        minimisation_config["maxcyc"] = self.recipe.lambda_min_steps
+        minimisation_config["ncyc"] = self.recipe.lambda_n_sd_cycles
+
         lambda_minimisation_protocol = bss.Protocol.FreeEnergyMinimisation(
+            steps=self.recipe.lambda_min_steps,
             num_lam=self.recipe.n_lambdas,
             steps=self.recipe.lambda_min_steps
         )
+
         lambda_nvt_protocol = bss.Protocol.FreeEnergyEquilibration(
             num_lam=self.recipe.n_lambdas,
             pressure=None,
-            temperature=self.recipe.temperature
+            temperature=self.recipe.temperature,
+            runtime=self.recipe.lambda_nvt_time
         )
         lambda_npt_protocol = bss.Protocol.FreeEnergyEquilibration(
             num_lam=self.recipe.n_lambdas,
-            pressure=self.recipe.pressure
+            pressure=self.recipe.pressure,
+            runtime=self.recipe.lambda_npt_time
         )
         protocol = bss.Protocol.FreeEnergy(
             num_lam=self.recipe.n_lambdas,
@@ -3871,7 +3899,10 @@ class AlchemicalSofra:
             protocol=lambda_minimisation_protocol,
             engine=self.recipe.engine,
             work_dir=f"{self.working_directory}/min/",
-            setup_only=True
+            setup_only=True,
+            extra_options=minimisation_config,
+            exe=self.recipe.path_to_engine,
+            is_gpu=is_gpu
         )
 
         log.info("Setting up lambda NVT equilibration.")
@@ -3880,7 +3911,9 @@ class AlchemicalSofra:
             protocol=lambda_nvt_protocol,
             engine=self.recipe.engine,
             work_dir=f"{self.working_directory}/nvt/",
-            setup_only=True
+            setup_only=True,
+            exe=self.recipe.path_to_engine,
+            is_gpu=is_gpu
         )
         log.info("Setting up lambda NPT equilibration.")
         bss.FreeEnergy.Relative(
@@ -3888,7 +3921,9 @@ class AlchemicalSofra:
             protocol=lambda_npt_protocol,
             engine=self.recipe.engine,
             work_dir=f"{self.working_directory}/npt/",
-            setup_only=True
+            setup_only=True,
+            exe=self.recipe.path_to_engine,
+            is_gpu=is_gpu
         )
 
         log.info("Setting up lambda production.")
@@ -3897,7 +3932,9 @@ class AlchemicalSofra:
             protocol=protocol,
             engine=self.recipe.engine,
             work_dir=f"{self.working_directory}/prod/",
-            setup_only=True
+            setup_only=True,
+            exe=self.recipe.path_to_engine,
+            is_gpu=is_gpu
         )
 
 
