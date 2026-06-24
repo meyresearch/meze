@@ -2,7 +2,10 @@ import glob
 import json
 import warnings
 import logging
-
+from somd2 import(
+    config,
+    runner
+)
 import yaml
 warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
 logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
@@ -2478,7 +2481,7 @@ class HotMeze(Meze):
                 )
         elif not self.restraint_file and self.recipe.model == 0:
             log.warning(
-                "No restraint file supplied while model is 0."
+                "No restraint file supplied while model is 0.\n"
                 "Restraints will be determined from input files."
             )
 
@@ -3868,19 +3871,34 @@ class AlchemicalSofra:
         
         bss.Stream.save(
             sire_object=merged_ligand_system,
-            filebase=self.working_directory
-
+            filebase=f"{self.working_directory}/{self.transformation}"
         )
 
         somd2_config_file = os.path.join(self.working_directory, "config.yaml")
         
         somd2_config = {
             "num_lambda": self.recipe.n_lambdas,
-            "runtime": self.recipe.sampling_time
+            "runtime": str(self.recipe.sampling_time * bss.Units.Time.nanosecond)
         }
 
         with open(somd2_config_file, "w") as ofile:
             yaml.dump(somd2_config, ofile)
+
+
+        somd2_config = config.Config(
+            runtime=str(self.recipe.sampling_time * bss.Units.Time.nanosecond),
+            num_lambda=self.recipe.n_lambdas
+        )
+
+        sire_obj = merged_ligand_system._getSireObject()
+
+        print(type(sire_obj))
+        somd2_runner = runner.Runner(
+            system=f"{self.working_directory}/{self.transformation}.bss",
+            config=somd2_config
+        )
+
+
 
         # minimisation_config = copy.deepcopy(config_options)
         # minimisation_config["ntmin"] = self.recipe.lambda_min_method

@@ -83,30 +83,39 @@ unbound_ligand_2_meze = HotMeze.from_files(
 # bound_ligand_1 = bound_ligand_1_meze.get_mutatable_ligand_molecule()
 # bound_ligand_2 = bound_ligand_2_meze.get_mutatable_ligand_molecule()
 
-
-
 # merged_unbound_ligands = Meze.merge_ligands()
 
 alchemical_recipe = AlchemicalMezeRecipe(
     n_lambdas=16,
     sampling_time=4.0,
-    engine="AMBER"
+    engine="SOMD2"
 )
 
-unbound_sofra = AlchemicalSofra(
-    first_meze=unbound_ligand_1_meze,
-    second_meze=unbound_ligand_2_meze,
+# unbound_sofra = AlchemicalSofra(
+#     first_meze=unbound_ligand_1_meze,
+#     second_meze=unbound_ligand_2_meze,
+#     first_name=ligand_1,
+#     second_name=ligand_2,
+#     stage="unbound",
+#     directory=f"{project_dir}/outputs/model_0/",
+#     overwrite=True,
+#     recipe=alchemical_recipe
+# )
+
+bound_sofra = AlchemicalSofra(
+    first_meze=bound_ligand_1_meze,
+    second_meze=bound_ligand_2_meze,
     first_name=ligand_1,
     second_name=ligand_2,
-    stage="unbound",
-    # system_sofra=model_0_sofra,
+    stage="bound",
     directory=f"{project_dir}/outputs/model_0/",
     overwrite=True,
     recipe=alchemical_recipe
 )
 
-merged_unbound_system = unbound_sofra.setup_alchemistry()
+# merged_unbound_system = unbound_sofra.setup_alchemistry()
 
+merged_bound_system = bound_sofra.setup_alchemistry()
 # prep fep windows
 
 # write submission scripts
