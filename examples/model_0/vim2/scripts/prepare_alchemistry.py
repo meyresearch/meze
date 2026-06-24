@@ -32,9 +32,9 @@ repeat = 1
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)
 
-json_recipe["path_to_engine"] = os.path.join(
-        os.environ["PMEMDHOME"], "bin", "pmemd.cuda"
-)
+# json_recipe["path_to_engine"] = os.path.join(
+#         os.environ["PMEMDHOME"], "bin", "pmemd.cuda"
+# )
 
 bound_lig_1_equil_dir = f"{project_dir}/equilibration/model_0/{system_name}/bound/{ligand_1}/repeat_{repeat}/"
 

@@ -1,7 +1,10 @@
-import glob 
+import glob
 import json
 import warnings
 import logging
+import multiprocessing
+if multiprocessing.get_start_method(allow_none=True) is None:
+    multiprocessing.set_start_method("fork")
 from somd2 import(
     config,
     runner
