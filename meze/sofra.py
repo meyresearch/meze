@@ -3794,7 +3794,7 @@ class AlchemicalSofra:
             os.makedirs(directory)
 
         working_directory = os.path.join(directory, self.transformation, self.stage)
-        log.info(f"Creating unbound stage in directory: {working_directory}")
+        log.info(f"Creating {self.stage} stage in directory: {working_directory}")
         try:
             os.makedirs(working_directory, exist_ok=self.overwrite)
         except OSError:
@@ -3836,8 +3836,8 @@ class AlchemicalSofra:
             aligned_ligand_2, 
             mapping, allow_ring_breaking=ring_breaks, allow_ring_size_change=ring_size_changes
         )
-
-    def create_unbound_hybrid_molecule(self):
+    
+    def create_hybrid_molecule(self):
         self.merged_molecule = self.merge(
             self.recipe.flexible_align, 
             self.recipe.ring_breaks, 
@@ -3847,13 +3847,6 @@ class AlchemicalSofra:
         system.removeMolecules(self.first_molecule)
         system.addMolecules(self.merged_molecule)
         return system
-    
-    def create_bound_hybrid_molecule(self):
-        self.merged_molecule = self.merge(
-            self.recipe.flexible_align, 
-            self.recipe.ring_breaks, 
-            self.recipe.ring_size_changes
-        )
 
     
     def setup_alchemistry(self, is_gpu: bool = True):
@@ -3864,14 +3857,12 @@ class AlchemicalSofra:
             "iwrap": 0
         }
 
-        if self.stage == "unbound":
-            merged_ligand_system = self.create_unbound_hybrid_molecule()
-        else:
+        if "bound":
             if self.recipe.model == 0 or self.first_meze.restraint_file:
                 config_options["nmropt"] = 1
             
-            merged_ligand_system = self.create_bound_hybrid_molecule()
-                
+        merged_ligand_system = self.create_hybrid_molecule()
+        
         minimisation_config = copy.deepcopy(config_options)
         minimisation_config["ntmin"] = self.recipe.lambda_min_method
         minimisation_config["maxcyc"] = self.recipe.lambda_min_steps
