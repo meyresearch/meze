@@ -580,7 +580,6 @@ class Meze:
         residues = self.system.getResidues()
         if len(residues) == 0:
             raise RuntimeError(f"No residues found in BioSimSpace system for meze with file:\n{self.coordinates}")
-        residue_names = [residue.name() for residue in residues]
         ligand_residues = [residue for residue in residues if residue.name().upper() == self.ligand_resname]
         if not ligand_residues:
             raise RuntimeError(f"Could not find any ligand residues for meze object with file:\n{self.coordinates}")
@@ -3849,6 +3848,14 @@ class AlchemicalSofra:
         system.addMolecules(self.merged_molecule)
         return system
     
+    def create_bound_hybrid_molecule(self):
+        self.merged_molecule = self.merge(
+            self.recipe.flexible_align, 
+            self.recipe.ring_breaks, 
+            self.recipe.ring_size_changes
+        )
+
+    
     def setup_alchemistry(self, is_gpu: bool = True):
 
         config_options = {
@@ -3862,9 +3869,9 @@ class AlchemicalSofra:
         else:
             if self.recipe.model == 0 or self.first_meze.restraint_file:
                 config_options["nmropt"] = 1
-                
             
-
+            merged_ligand_system = self.create_bound_hybrid_molecule()
+                
         minimisation_config = copy.deepcopy(config_options)
         minimisation_config["ntmin"] = self.recipe.lambda_min_method
         minimisation_config["maxcyc"] = self.recipe.lambda_min_steps
@@ -3873,7 +3880,6 @@ class AlchemicalSofra:
         lambda_minimisation_protocol = bss.Protocol.FreeEnergyMinimisation(
             steps=self.recipe.lambda_min_steps,
             num_lam=self.recipe.n_lambdas,
-            steps=self.recipe.lambda_min_steps
         )
 
         lambda_nvt_protocol = bss.Protocol.FreeEnergyEquilibration(
