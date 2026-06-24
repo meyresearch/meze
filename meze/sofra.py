@@ -826,12 +826,16 @@ class Meze:
         process.wait()
         
         if process.isError():
-            message = f"The run {process_name} exited with an error.\nCheck the log/error files at:\n\t\t{run_directory}\n"
-            log.error(message)
-            message = f"Outputting the last error and output lines:\n"
-            log.info(message)
+            error_message = f"The run {process_name} exited with an error.\n\nCheck the log/error files at:\n\t\t{run_directory}\n"
+            log.error(error_message)
+            info_message = f"Outputting the last error and output lines:\n"
+            log.info(info_message)
             process.stdout(n=20)
             process.stderr(n=20)
+
+            error_line = process.getStderr()[-1]
+
+            raise RuntimeError(f"{error_message}\n{error_line}")
 
         new_system = process.getSystem()
         topology, new_coordinates = bss.IO.saveMolecules(
