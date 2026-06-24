@@ -887,7 +887,7 @@ class Meze:
             
             restraints[(ag1.ids[0], ag2.ids[0])] = (
                 round(dist, 2), 
-                round(force_constants[i], 2), 
+                round(force_constant[i], 2), 
                 round(flat_bottom_radii[i], 2)
             )
         return restraints
