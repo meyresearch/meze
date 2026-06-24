@@ -2,6 +2,8 @@ import glob
 import json
 import warnings
 import logging
+
+import yaml
 warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
 logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
 logging.getLogger("MDAnalysis").setLevel(logging.ERROR)
@@ -309,49 +311,49 @@ class AlchemicalMezeRecipe(MezeRecipe):
         True, description="Whether to allow ring sizes to change for merging."
     )
     engine: str = Field(
-        "AMBER", description="Which MD engine to use for the alchemistry"
+        "SOMD2", description="Which MD engine to use for the alchemistry"
     )
-    alchemical_alpha: float = Field(
-        0.5, ge=0., description="The soft-core alpha parameter."
-    )
-    alchemical_beta: float = Field(
-        12, ge=0., description="The soft-core beta parameter."
-    )
-    lambda_min_steps: int = Field(
-        10000, ge=1, description="Number of steepest descent steps for lambda minimisation."
-    )
-    lambda_n_sd_cycles: int = Field(
-        1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
-    ) 
-    lambda_min_method: int = Field(
-        1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient"
-    )    
-    lambda_nvt_time: Union[float, bssTime] = Field(
-        200, description="Runtime for lambda NVT equilibration, in ps."
-    )
-    lambda_npt_time: Union[float, bssTime] = Field(
-        200, description="Runtime for lambda NPT equilibration, in ps."
-    )
-    @field_validator("sampling_time", mode="after")
-    @classmethod
-    def validate_sampling_time(cls, value):
-        if isinstance(value, bssTime):
-            return value
-        value = float(value)
-        if value <= 0:
-            raise ValueError(f"sampling_time must be greater than 0 ns")
-        return(bssTime(value, "nanoseconds"))
+    # alchemical_alpha: float = Field(
+    #     0.5, ge=0., description="The soft-core alpha parameter."
+    # )
+    # alchemical_beta: float = Field(
+    #     12, ge=0., description="The soft-core beta parameter."
+    # )
+    # lambda_min_steps: int = Field(
+    #     10000, ge=1, description="Number of steepest descent steps for lambda minimisation."
+    # )
+    # lambda_n_sd_cycles: int = Field(
+    #     1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
+    # ) 
+    # lambda_min_method: int = Field(
+    #     1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient"
+    # )    
+    # lambda_nvt_time: Union[float, bssTime] = Field(
+    #     200, description="Runtime for lambda NVT equilibration, in ps."
+    # )
+    # lambda_npt_time: Union[float, bssTime] = Field(
+    #     200, description="Runtime for lambda NPT equilibration, in ps."
+    # )
+    # @field_validator("sampling_time", mode="after")
+    # @classmethod
+    # def validate_sampling_time(cls, value):
+    #     if isinstance(value, bssTime):
+    #         return value
+    #     value = float(value)
+    #     if value <= 0:
+    #         raise ValueError(f"sampling_time must be greater than 0 ns")
+    #     return(bssTime(value, "nanoseconds"))
     
-    @field_validator("lambda_nvt_time", "lambda_npt_time", mode="after")
-    @classmethod
-    def validate_lambda_times(cls, value):
-        if isinstance(value, bssTime):
-            return value
-        value = float(value)
-        if value <= 0:
-            raise ValueError(f"lambda equilibration times must be greater than 0 ps")
+    # @field_validator("lambda_nvt_time", "lambda_npt_time", mode="after")
+    # @classmethod
+    # def validate_lambda_times(cls, value):
+    #     if isinstance(value, bssTime):
+    #         return value
+    #     value = float(value)
+    #     if value <= 0:
+    #         raise ValueError(f"lambda equilibration times must be greater than 0 ps")
 
-        return(bssTime(value, "picoseconds"))
+    #     return(bssTime(value, "picoseconds"))
 
 
 @dataclass
@@ -3773,8 +3775,8 @@ class AlchemicalSofra:
             log.error(message)
             raise ValueError(message)
         
-        if self.recipe.engine.upper() not in ["AMBER"]:
-            message = f"Currently only supporting AMBER as the RBFE MD engine."
+        if self.recipe.engine.upper() not in ["SOMD2"]:
+            message = f"Currently only supporting SOMD2 as the RBFE MD engine."
             log.error(message)
             raise RuntimeError(message)
         
@@ -3859,81 +3861,98 @@ class AlchemicalSofra:
 
         if "bound":
             if self.recipe.model == 0 or self.first_meze.restraint_file:
-                config_options["nmropt"] = 1
+                # config_options["nmropt"] = 1
+                pass
             
         merged_ligand_system = self.create_hybrid_molecule()
         
-        minimisation_config = copy.deepcopy(config_options)
-        minimisation_config["ntmin"] = self.recipe.lambda_min_method
-        minimisation_config["maxcyc"] = self.recipe.lambda_min_steps
-        minimisation_config["ncyc"] = self.recipe.lambda_n_sd_cycles
+        bss.Stream.save(
+            sire_object=merged_ligand_system,
+            filebase=self.working_directory
 
-        lambda_minimisation_protocol = bss.Protocol.FreeEnergyMinimisation(
-            steps=self.recipe.lambda_min_steps,
-            num_lam=self.recipe.n_lambdas,
         )
 
-        lambda_nvt_protocol = bss.Protocol.FreeEnergyEquilibration(
-            num_lam=self.recipe.n_lambdas,
-            pressure=None,
-            temperature=self.recipe.temperature,
-            runtime=self.recipe.lambda_nvt_time
-        )
-        lambda_npt_protocol = bss.Protocol.FreeEnergyEquilibration(
-            num_lam=self.recipe.n_lambdas,
-            pressure=self.recipe.pressure,
-            runtime=self.recipe.lambda_npt_time
-        )
-        protocol = bss.Protocol.FreeEnergy(
-            num_lam=self.recipe.n_lambdas,
-            runtime=self.recipe.sampling_time,
-            restart_interval=self.recipe.restart_interval,
-            report_interval=self.recipe.report_interval,
-        )
+        somd2_config_file = os.path.join(self.working_directory, "config.yaml")
+        
+        somd2_config = {
+            "num_lambda": self.recipe.n_lambdas,
+            "runtime": self.recipe.sampling_time
+        }
 
-        log.info("Setting up lambda minimisation.")
-        bss.FreeEnergy.Relative(
-            system=merged_ligand_system,
-            protocol=lambda_minimisation_protocol,
-            engine=self.recipe.engine,
-            work_dir=f"{self.working_directory}/min/",
-            setup_only=True,
-            extra_options=minimisation_config,
-            exe=self.recipe.path_to_engine,
-            is_gpu=is_gpu
-        )
+        with open(somd2_config_file, "w") as ofile:
+            yaml.dump(somd2_config, ofile)
 
-        log.info("Setting up lambda NVT equilibration.")
-        bss.FreeEnergy.Relative(
-            system=merged_ligand_system,
-            protocol=lambda_nvt_protocol,
-            engine=self.recipe.engine,
-            work_dir=f"{self.working_directory}/nvt/",
-            setup_only=True,
-            exe=self.recipe.path_to_engine,
-            is_gpu=is_gpu
-        )
-        log.info("Setting up lambda NPT equilibration.")
-        bss.FreeEnergy.Relative(
-            system=merged_ligand_system,
-            protocol=lambda_npt_protocol,
-            engine=self.recipe.engine,
-            work_dir=f"{self.working_directory}/npt/",
-            setup_only=True,
-            exe=self.recipe.path_to_engine,
-            is_gpu=is_gpu
-        )
+        # minimisation_config = copy.deepcopy(config_options)
+        # minimisation_config["ntmin"] = self.recipe.lambda_min_method
+        # minimisation_config["maxcyc"] = self.recipe.lambda_min_steps
+        # minimisation_config["ncyc"] = self.recipe.lambda_n_sd_cycles
 
-        log.info("Setting up lambda production.")
-        bss.FreeEnergy.Relative(
-            system=merged_ligand_system,
-            protocol=protocol,
-            engine=self.recipe.engine,
-            work_dir=f"{self.working_directory}/prod/",
-            setup_only=True,
-            exe=self.recipe.path_to_engine,
-            is_gpu=is_gpu
-        )
+        # lambda_minimisation_protocol = bss.Protocol.FreeEnergyMinimisation(
+        #     steps=self.recipe.lambda_min_steps,
+        #     num_lam=self.recipe.n_lambdas,
+        # )
+
+        # lambda_nvt_protocol = bss.Protocol.FreeEnergyEquilibration(
+        #     num_lam=self.recipe.n_lambdas,
+        #     pressure=None,
+        #     temperature=self.recipe.temperature,
+        #     runtime=self.recipe.lambda_nvt_time
+        # )
+        # lambda_npt_protocol = bss.Protocol.FreeEnergyEquilibration(
+        #     num_lam=self.recipe.n_lambdas,
+        #     pressure=self.recipe.pressure,
+        #     runtime=self.recipe.lambda_npt_time
+        # )
+        # protocol = bss.Protocol.FreeEnergy(
+        #     num_lam=self.recipe.n_lambdas,
+        #     runtime=self.recipe.sampling_time,
+        #     restart_interval=self.recipe.restart_interval,
+        #     report_interval=self.recipe.report_interval,
+        # )
+
+        # log.info("Setting up lambda minimisation.")
+        # bss.FreeEnergy.Relative(
+        #     system=merged_ligand_system,
+        #     protocol=lambda_minimisation_protocol,
+        #     engine=self.recipe.engine,
+        #     work_dir=f"{self.working_directory}/min/",
+        #     setup_only=True,
+        #     extra_options=minimisation_config,
+        #     exe=self.recipe.path_to_engine,
+        #     is_gpu=is_gpu
+        # )
+
+        # log.info("Setting up lambda NVT equilibration.")
+        # bss.FreeEnergy.Relative(
+        #     system=merged_ligand_system,
+        #     protocol=lambda_nvt_protocol,
+        #     engine=self.recipe.engine,
+        #     work_dir=f"{self.working_directory}/nvt/",
+        #     setup_only=True,
+        #     exe=self.recipe.path_to_engine,
+        #     is_gpu=is_gpu
+        # )
+        # log.info("Setting up lambda NPT equilibration.")
+        # bss.FreeEnergy.Relative(
+        #     system=merged_ligand_system,
+        #     protocol=lambda_npt_protocol,
+        #     engine=self.recipe.engine,
+        #     work_dir=f"{self.working_directory}/npt/",
+        #     setup_only=True,
+        #     exe=self.recipe.path_to_engine,
+        #     is_gpu=is_gpu
+        # )
+
+        # log.info("Setting up lambda production.")
+        # bss.FreeEnergy.Relative(
+        #     system=merged_ligand_system,
+        #     protocol=protocol,
+        #     engine=self.recipe.engine,
+        #     work_dir=f"{self.working_directory}/prod/",
+        #     setup_only=True,
+        #     exe=self.recipe.path_to_engine,
+        #     is_gpu=is_gpu
+        # )
 
 
 
