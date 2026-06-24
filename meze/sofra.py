@@ -824,6 +824,14 @@ class Meze:
 
         process.start()
         process.wait()
+        
+        if process.isError():
+            message = f"The run {process_name} exited with an error.\nCheck the log/error files at:\n\t\t{run_directory}\n"
+            log.error(message)
+            message = f"Outputting the last error and output lines:\n"
+            log.info(message)
+            process.stdout(n=20)
+            process.stderr(n=20)
 
         new_system = process.getSystem()
         topology, new_coordinates = bss.IO.saveMolecules(
@@ -2088,6 +2096,8 @@ class ColdMeze(Meze):
         
         if self.recipe.model == 0 or self.restraint_file or additional_distance_restraints:
             config_options["nmropt"] = 1
+
+        extra_distance_restraints = _write_distance_restraints(additional_distance_restraints) if additional_distance_restraints else None
 
         if protocol_type == "minimisation":
             config_options["ntmin"] = recipe.min_method
