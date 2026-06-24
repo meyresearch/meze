@@ -3850,10 +3850,6 @@ class AlchemicalSofra:
         return system
     
     def setup_alchemistry(self, is_gpu: bool = True):
-        if self.stage == "unbound":
-            merged_ligand_system = self.create_unbound_hybrid_molecule()
-        else:
-            pass
 
         config_options = {
             "cut": self.recipe.nb_cutoff,
@@ -3861,8 +3857,13 @@ class AlchemicalSofra:
             "iwrap": 0
         }
 
-        if self.recipe.model == 0 or self.first_meze.restraint_file:
-            config_options["nmropt"] = 1
+        if self.stage == "unbound":
+            merged_ligand_system = self.create_unbound_hybrid_molecule()
+        else:
+            if self.recipe.model == 0 or self.first_meze.restraint_file:
+                config_options["nmropt"] = 1
+                
+            
 
         minimisation_config = copy.deepcopy(config_options)
         minimisation_config["ntmin"] = self.recipe.lambda_min_method
