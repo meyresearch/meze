@@ -12,8 +12,8 @@ system_name = "vim2"
 
 project_dir = DATA_DIR
 
-ligand_name = sys.argv[1]
-repeat = sys.argv[2]
+ligand_name = "ligand_11"
+repeat = 1
 
 # set ColdMezeRecipe including model (i.e. metal params), ligand(?)
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
@@ -42,7 +42,7 @@ minimised_meze = solvated_meze.minimise(
     process_name="01_min",
     workdir=equil_dir,
     position_restraints="solute",
-    max_cycles=5000,
+    max_cycles=10,
     is_gpu=True
 )
 
