@@ -68,7 +68,7 @@ from rich.console import Console
 from rdkit import Chem
 import subprocess
 import csv
-import copy
+import sire
 
 console = Console(force_terminal=True, color_system="truecolor")
 
@@ -3893,11 +3893,12 @@ class AlchemicalSofra:
             num_lambda=self.recipe.n_lambdas
         )
 
-        sire_obj = merged_ligand_system._getSireObject()
+        sire_obj = sire.system.System(merged_ligand_system._sire_object)
 
         print(type(sire_obj))
         somd2_runner = runner.Runner(
-            system=f"{self.working_directory}/{self.transformation}.bss",
+        #    system=f"{self.working_directory}/{self.transformation}.bss",
+        system=sire_obj,
             config=somd2_config
         )
 
