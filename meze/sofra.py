@@ -3852,17 +3852,10 @@ class AlchemicalSofra:
         return system
 
     
-    def setup_alchemistry(self, is_gpu: bool = True):
-
-        config_options = {
-            "cut": self.recipe.nb_cutoff,
-            "ntpr": 1000,
-            "iwrap": 0
-        }
+    def setup_alchemistry(self, compute_platform: Literal["cuda", "opencl", "cpu"] = "cuda"):
 
         if "bound":
             if self.recipe.model == 0 or self.first_meze.restraint_file:
-                # config_options["nmropt"] = 1
                 """
                 import sire as sr
 
@@ -3879,12 +3872,11 @@ class AlchemicalSofra:
                 # add more if needed
 
                 """
+
                 pass
             
         merged_ligand_system = self.create_hybrid_molecule()
         
-
-
         somd2_config_file = os.path.join(self.working_directory, "config.yaml")
         
         somd2_config = {
@@ -3897,12 +3889,12 @@ class AlchemicalSofra:
 
 
         somd2_config = config.Config(
-            runtime=str(self.recipe.sampling_time * bss.Units.Time.nanosecond),
+            runtime=str(self.recipe.sampling_time),
             num_lambda=self.recipe.n_lambdas,
             log_file=f"{self.transformation}_somd2_log.txt",
             timestep=str(self.recipe.dt * bss.Units.Time.picosecond),
-            temperature=str(self.recipe.temperature * bss.Units.Temperature.kelvin),
-            pressure=str(self.recipe.pressure * bss.Units.Pressure.atm),
+            temperature=str(self.recipe.temperature),
+            pressure=str(self.recipe.pressure),
             integrator="leapfrog",
             cutoff_type="pme",
             cutoff=str(self.recipe.nb_cutoff * bss.Units.Length.angstrom),
@@ -3913,8 +3905,8 @@ class AlchemicalSofra:
             minimise=True,
             minimisation_constraints=False,
             minimisation_errors=False,
-            equilibration_time=str(self.recipe.lambda_equilibration_time * bss.Units.Time.picosecond),
-            equilibration_timestep=str(self.recipe.lambda_equilibration_dt * bss.Units.Time.picosecond),
+            equilibration_time=str(self.recipe.lambda_equilibration_time),
+            equilibration_timestep=str(self.recipe.lambda_equilibration_dt),
             equilibration_constraints=True,
             opencl_platform_index=0,
             output_directory="somd2-output",

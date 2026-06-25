@@ -115,7 +115,9 @@ bound_sofra = AlchemicalSofra(
 
 # merged_unbound_system = unbound_sofra.setup_alchemistry()
 
-merged_bound_system = bound_sofra.setup_alchemistry()
+merged_bound_system = bound_sofra.setup_alchemistry(
+    compute_platform="cpu" # dev/testing only! 
+)
 # prep fep windows
 
 # write submission scripts
