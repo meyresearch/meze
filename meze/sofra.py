@@ -319,47 +319,42 @@ class AlchemicalMezeRecipe(MezeRecipe):
     engine: str = Field(
         "SOMD2", description="Which MD engine to use for the alchemistry"
     )
+    dt: float = Field(
+        0.002, description="Integrator timestep, in picoseconds"
+    )    
     # alchemical_alpha: float = Field(
     #     0.5, ge=0., description="The soft-core alpha parameter."
     # )
     # alchemical_beta: float = Field(
     #     12, ge=0., description="The soft-core beta parameter."
     # )
-    # lambda_min_steps: int = Field(
-    #     10000, ge=1, description="Number of steepest descent steps for lambda minimisation."
-    # )
-    # lambda_n_sd_cycles: int = Field(
-    #     1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
-    # ) 
-    # lambda_min_method: int = Field(
-    #     1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient"
-    # )    
-    # lambda_nvt_time: Union[float, bssTime] = Field(
-    #     200, description="Runtime for lambda NVT equilibration, in ps."
-    # )
-    # lambda_npt_time: Union[float, bssTime] = Field(
-    #     200, description="Runtime for lambda NPT equilibration, in ps."
-    # )
-    # @field_validator("sampling_time", mode="after")
-    # @classmethod
-    # def validate_sampling_time(cls, value):
-    #     if isinstance(value, bssTime):
-    #         return value
-    #     value = float(value)
-    #     if value <= 0:
-    #         raise ValueError(f"sampling_time must be greater than 0 ns")
-    #     return(bssTime(value, "nanoseconds"))
-    
-    # @field_validator("lambda_nvt_time", "lambda_npt_time", mode="after")
-    # @classmethod
-    # def validate_lambda_times(cls, value):
-    #     if isinstance(value, bssTime):
-    #         return value
-    #     value = float(value)
-    #     if value <= 0:
-    #         raise ValueError(f"lambda equilibration times must be greater than 0 ps")
+ 
+    lambda_equilibration_time: Union[float, bssTime] = Field(
+        100, description="Runtime for lambda NVT equilibration, in ps."
+    )
+    lambda_equilibration_dt: Union[float, bssTime] = Field(
+        0.002, description="Integrator timestep for lambda equilibration, in ps."
+    )
 
-    #     return(bssTime(value, "picoseconds"))
+    @field_validator("sampling_time", mode="after")
+    @classmethod
+    def validate_sampling_time(cls, value):
+        if isinstance(value, bssTime):
+            return value
+        value = float(value)
+        if value <= 0:
+            raise ValueError(f"sampling_time must be greater than 0 ns")
+        return(bssTime(value, "nanoseconds"))
+    
+    @field_validator("lambda_equilibration_time", mode="after")
+    @classmethod
+    def validate_lambda_times(cls, value):
+        if isinstance(value, bssTime):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"lambda equilibration times must be greater or equal to 0 ps")
+        return(bssTime(value, "picoseconds"))
 
 
 @dataclass
@@ -3868,14 +3863,27 @@ class AlchemicalSofra:
         if "bound":
             if self.recipe.model == 0 or self.first_meze.restraint_file:
                 # config_options["nmropt"] = 1
+                """
+                import sire as sr
+
+                # BondRestraint(atom0_idx, atom1_idx, r0, k)
+                # r0 = equilibrium distance, k = force constant
+                single = sr.mm.BondRestraint(
+                    atom0,   # atom index or atom object
+                    atom1,   # atom index or atom object
+                    r0=3.0 * sr.units.angstrom,
+                    k=10.0 * sr.units.kcal_per_mol / sr.units.angstrom**2
+                )
+                restraints = sr.mm.BondRestraints("my_distance_restraints")
+                restraints.add(single)
+                # add more if needed
+
+                """
                 pass
             
         merged_ligand_system = self.create_hybrid_molecule()
         
-        bss.Stream.save(
-            sire_object=merged_ligand_system,
-            filebase=f"{self.working_directory}/{self.transformation}"
-        )
+
 
         somd2_config_file = os.path.join(self.working_directory, "config.yaml")
         
@@ -3890,15 +3898,43 @@ class AlchemicalSofra:
 
         somd2_config = config.Config(
             runtime=str(self.recipe.sampling_time * bss.Units.Time.nanosecond),
-            num_lambda=self.recipe.n_lambdas
+            num_lambda=self.recipe.n_lambdas,
+            log_file=f"{self.transformation}_somd2_log.txt",
+            timestep=str(self.recipe.dt * bss.Units.Time.picosecond),
+            temperature=str(self.recipe.temperature * bss.Units.Temperature.kelvin),
+            pressure=str(self.recipe.pressure * bss.Units.Pressure.atm),
+            integrator="leapfrog",
+            cutoff_type="pme",
+            cutoff=str(self.recipe.nb_cutoff * bss.Units.Length.angstrom),
+            hmr=False,
+            restraints=None, #how to do this???
+            constraint="h_bonds",
+            perturbable_constraint="h_bonds_not_heavy_perturbed",
+            minimise=True,
+            minimisation_constraints=False,
+            minimisation_errors=False,
+            equilibration_time=str(self.recipe.lambda_equilibration_time * bss.Units.Time.picosecond),
+            equilibration_timestep=str(self.recipe.lambda_equilibration_dt * bss.Units.Time.picosecond),
+            equilibration_constraints=True,
+            opencl_platform_index=0,
+            output_directory="somd2-output",
+            restart=False,
+            use_backup=False,
+            write_config=True,
+            overwrite=False,
+            somd1_compatibility=False,
+            pert_file=None,
         )
 
-        sire_obj = sire.system.System(merged_ligand_system._sire_object)
+        sire_system = sire.system.System(merged_ligand_system._sire_object)
 
-        print(type(sire_obj))
+        bss.Stream.save(
+            sire_object=sire_system,
+            filebase=f"{self.working_directory}/{self.transformation}"
+        )
+
         somd2_runner = runner.Runner(
-        #    system=f"{self.working_directory}/{self.transformation}.bss",
-        system=sire_obj,
+            system=sire_system,
             config=somd2_config
         )
 
