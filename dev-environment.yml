@@ -2,10 +2,11 @@ name: meze-dev
 channels:
   - conda-forge
   - openbiosim
+  - openbiosim/label/dev
 dependencies:
   - python>=3.11
   - biosimspace
-  - somd2
+  - openbiosim/label/dev::somd2
   - numpy<2
   - mdanalysis
   - openbabel
