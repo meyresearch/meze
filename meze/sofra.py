@@ -199,6 +199,16 @@ class MezeRecipe(BaseModel):
             raise ValueError(f"pressure must be greater than or equal to 0 atm")
         return bss.Types.Pressure(value, "atm")
     
+    @field_validator("nb_cutoff", mode="after")
+    @classmethod
+    def validate_cutoff_distance(cls, value):
+        if isinstance(value, bss.Types.Length):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"nb_cutoff must be greater than or equal to 0 atm")
+        return bss.Types.Length(value, "angstrom")    
+    
     def __str__(self) -> str:
         """Print recipe information as JSON
         """
@@ -348,7 +358,7 @@ class AlchemicalMezeRecipe(MezeRecipe):
             raise ValueError(f"lambda equilibration times must be greater or equal to 0 ps")
         return(bssTime(value, "picoseconds"))
     
-    @field_validator("dt", "lambda_equilibration_time", "lambda_equilibratio_dt", mode="after")
+    @field_validator("dt", "lambda_equilibration_time", "lambda_equilibration_dt", mode="after")
     @classmethod
     def validate_picosecond_times(cls, value):
         if isinstance(value, bss.Types.Time):
@@ -3880,25 +3890,17 @@ class AlchemicalSofra:
         
         somd2_config_file = os.path.join(self.working_directory, "config.yaml")
         
-        somd2_config = {
-            "num_lambda": self.recipe.n_lambdas,
-            "runtime": str(self.recipe.sampling_time * bss.Units.Time.nanosecond)
-        }
-
-        with open(somd2_config_file, "w") as ofile:
-            yaml.dump(somd2_config, ofile)
-
-
         somd2_config = config.Config(
             runtime=str(self.recipe.sampling_time),
             num_lambda=self.recipe.n_lambdas,
             log_file=f"{self.transformation}_somd2_log.txt",
-            timestep=str(self.recipe.dt * bss.Units.Time.picosecond),
+            timestep=str(self.recipe.dt),
             temperature=str(self.recipe.temperature),
             pressure=str(self.recipe.pressure),
-            integrator="leapfrog",
+            integrator="langevin",
             cutoff_type="pme",
-            cutoff=str(self.recipe.nb_cutoff * bss.Units.Length.angstrom),
+            cutoff=str(self.recipe.nb_cutoff),
+            platform=compute_platform,
             hmr=False,
             restraints=None, #how to do this???
             constraint="h_bonds",
@@ -3910,26 +3912,31 @@ class AlchemicalSofra:
             equilibration_timestep=str(self.recipe.lambda_equilibration_dt),
             equilibration_constraints=True,
             opencl_platform_index=0,
-            output_directory="somd2-output",
             restart=False,
             use_backup=False,
             write_config=True,
             overwrite=False,
             somd1_compatibility=False,
             pert_file=None,
+            output_directory=self.working_directory
         )
+
+        config_dictionary = somd2_config.as_dict()
+
+        with open(somd2_config_file, "w") as ofile:
+            yaml.dump(config_dictionary, ofile)
 
         sire_system = sire.system.System(merged_ligand_system._sire_object)
 
-        bss.Stream.save(
-            sire_object=sire_system,
-            filebase=f"{self.working_directory}/{self.transformation}"
+        sire.stream.save(
+            obj=sire_system,
+            filename=f"{self.working_directory}/merged_system.bss"
         )
 
-        somd2_runner = runner.Runner(
-            system=sire_system,
-            config=somd2_config
-        )
+        # somd2_runner = runner.Runner(
+        #     system=sire_system,
+        #     config=somd2_config
+        # )
 
 
 

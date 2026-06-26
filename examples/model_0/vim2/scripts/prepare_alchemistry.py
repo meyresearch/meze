@@ -108,7 +108,7 @@ bound_sofra = AlchemicalSofra(
     first_name=ligand_1,
     second_name=ligand_2,
     stage="bound",
-    directory=f"{project_dir}/outputs/model_0/",
+    directory=f"{project_dir}/outputs/model_0/{system_name}",
     overwrite=True,
     recipe=alchemical_recipe
 )
