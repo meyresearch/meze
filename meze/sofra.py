@@ -187,7 +187,7 @@ class MezeRecipe(BaseModel):
         value = float(value)
         if value < 0:
             raise ValueError(f"temperature must be greater than or equal to 0 K")
-        return(bss.Types.Temperature(value, "kelvin"))
+        return bss.Types.Temperature(value, "kelvin")
     
     @field_validator("pressure", mode="after")
     @classmethod
@@ -197,7 +197,7 @@ class MezeRecipe(BaseModel):
         value = float(value)
         if value < 0:
             raise ValueError(f"pressure must be greater than or equal to 0 atm")
-        return(bss.Types.Pressure(value, "atm"))    
+        return bss.Types.Pressure(value, "atm")
     
     def __str__(self) -> str:
         """Print recipe information as JSON
@@ -263,7 +263,6 @@ class ColdMezeRecipe(MezeRecipe):
             raise ValueError(f"temperature must be greater than or equal to 0 K")
         return bss.Types.Temperature(value, "kelvin")
 
-
 class HotMezeRecipe(MezeRecipe):
     """Meze workflow recipe for production runs
     """
@@ -322,13 +321,6 @@ class AlchemicalMezeRecipe(MezeRecipe):
     dt: float = Field(
         0.002, description="Integrator timestep, in picoseconds"
     )    
-    # alchemical_alpha: float = Field(
-    #     0.5, ge=0., description="The soft-core alpha parameter."
-    # )
-    # alchemical_beta: float = Field(
-    #     12, ge=0., description="The soft-core beta parameter."
-    # )
- 
     lambda_equilibration_time: Union[float, bssTime] = Field(
         100, description="Runtime for lambda NVT equilibration, in ps."
     )
@@ -355,6 +347,15 @@ class AlchemicalMezeRecipe(MezeRecipe):
         if value < 0:
             raise ValueError(f"lambda equilibration times must be greater or equal to 0 ps")
         return(bssTime(value, "picoseconds"))
+    
+    @field_validator("dt", "lambda_equilibration_time", "lambda_equilibratio_dt", mode="after")
+    @classmethod
+    def validate_picosecond_times(cls, value):
+        if isinstance(value, bss.Types.Time):
+            return value
+        if value < 0:
+            raise ValueError(f"dt must be greater than or equal to 0 picoseconds")
+        return bss.Types.Time(value, "picoseconds")
 
 
 @dataclass
