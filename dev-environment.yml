@@ -4,9 +4,8 @@ channels:
   - openbiosim
   - openbiosim/label/dev
 dependencies:
-  - python>=3.11
-  - biosimspace
-  - sire>=2026.1.0
+  - python=3.12
+  - openbiosim/label/dev::biosimspace
   - openbiosim/label/dev::somd2
   - numpy<2
   - mdanalysis
