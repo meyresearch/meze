@@ -6,6 +6,7 @@ channels:
 dependencies:
   - python>=3.11
   - biosimspace
+  - sire>=2026.1.0
   - openbiosim/label/dev::somd2
   - numpy<2
   - mdanalysis
