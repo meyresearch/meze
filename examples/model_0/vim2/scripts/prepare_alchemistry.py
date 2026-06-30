@@ -86,9 +86,9 @@ unbound_ligand_2_meze = HotMeze.from_files(
 # merged_unbound_ligands = Meze.merge_ligands()
 
 alchemical_recipe = AlchemicalMezeRecipe(
-    n_lambdas=16,
-    sampling_time=4.0,
-    engine="SOMD2"
+    n_lambdas=3,
+    sampling_time=1,
+    engine="SOMD"
 )
 
 # unbound_sofra = AlchemicalSofra(
@@ -116,7 +116,8 @@ bound_sofra = AlchemicalSofra(
 # merged_unbound_system = unbound_sofra.setup_alchemistry()
 
 merged_bound_system = bound_sofra.setup_alchemistry(
-    compute_platform="cpu" # dev/testing only! 
+    compute_platform="cpu", # dev/testing only! 
+    debug=True
 )
 # prep fep windows
 
