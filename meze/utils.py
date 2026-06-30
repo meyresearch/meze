@@ -425,6 +425,18 @@ def pdb_to_sdf(files: str | list[str]):
     
     return output_files
 
-    
+def _set_n_somd_moves(
+        sampling_time: float,
+        n_somd_cycles: int,
+        stepsize: float = 0.002,
 
-        
+) -> int:
+        """
+        Set SOMD nmoves in a reasonable way for better performance.
+        See reference to: https://github.com/michellab/BioSimSpace/issues/258 and
+        https://github.com/OpenBioSim/biosimspace/issues/18 
+        """
+         
+        time = sampling_time * 1000
+        number_of_steps = int(time / stepsize)
+        return  number_of_steps // n_somd_cycles
