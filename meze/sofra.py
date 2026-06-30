@@ -59,7 +59,8 @@ from .utils import (
     _check_log_files,
     _get_mol2_charge,
     _edit_mcpbpy_tleap_input,
-    pdb_to_sdf
+    pdb_to_sdf,
+    _set_n_somd_moves
 )
 from .helpers import _check_ambertools
 import shutil
@@ -326,16 +327,16 @@ class AlchemicalMezeRecipe(MezeRecipe):
         True, description="Whether to allow ring sizes to change for merging."
     )
     engine: str = Field(
-        "SOMD2", description="Which MD engine to use for the alchemistry"
+        "SOMD", description="Which MD engine to use for the alchemistry"
     )
     dt: float = Field(
         0.002, description="Integrator timestep, in picoseconds"
     )    
-    lambda_equilibration_time: Union[float, bssTime] = Field(
-        100, description="Runtime for lambda NVT equilibration, in ps."
+    minimise_lambda: bool = Field(
+        True, description="Whether to carry out minimisation at each lambda"
     )
-    lambda_equilibration_dt: Union[float, bssTime] = Field(
-        0.002, description="Integrator timestep for lambda equilibration, in ps."
+    lambda_minimisation_steps: int = Field(
+        5000, description="Number of minimisation steps to do at each lambda minimisation."
     )
 
     @field_validator("sampling_time", mode="after")
@@ -347,18 +348,8 @@ class AlchemicalMezeRecipe(MezeRecipe):
         if value <= 0:
             raise ValueError(f"sampling_time must be greater than 0 ns")
         return(bssTime(value, "nanoseconds"))
-    
-    @field_validator("lambda_equilibration_time", mode="after")
-    @classmethod
-    def validate_lambda_times(cls, value):
-        if isinstance(value, bssTime):
-            return value
-        value = float(value)
-        if value < 0:
-            raise ValueError(f"lambda equilibration times must be greater or equal to 0 ps")
-        return(bssTime(value, "picoseconds"))
-    
-    @field_validator("dt", "lambda_equilibration_time", "lambda_equilibration_dt", mode="after")
+
+    @field_validator("dt", mode="after")
     @classmethod
     def validate_picosecond_times(cls, value):
         if isinstance(value, bss.Types.Time):
@@ -3787,8 +3778,8 @@ class AlchemicalSofra:
             log.error(message)
             raise ValueError(message)
         
-        if self.recipe.engine.upper() not in ["SOMD2"]:
-            message = f"Currently only supporting SOMD2 as the RBFE MD engine."
+        if self.recipe.engine.upper() not in ["SOMD"]:
+            message = f"Currently only supporting SOMD as the RBFE MD engine."
             log.error(message)
             raise RuntimeError(message)
         
@@ -3863,156 +3854,93 @@ class AlchemicalSofra:
         return system
 
     
-    def setup_alchemistry(self, compute_platform: Literal["cuda", "opencl", "cpu"] = "cuda"):
-
-        if "bound":
-            if self.recipe.model == 0 or self.first_meze.restraint_file:
-                """
-                import sire as sr
-
-                # BondRestraint(atom0_idx, atom1_idx, r0, k)
-                # r0 = equilibrium distance, k = force constant
-                single = sr.mm.BondRestraint(
-                    atom0,   # atom index or atom object
-                    atom1,   # atom index or atom object
-                    r0=3.0 * sr.units.angstrom,
-                    k=10.0 * sr.units.kcal_per_mol / sr.units.angstrom**2
-                )
-                restraints = sr.mm.BondRestraints("my_distance_restraints")
-                restraints.add(single)
-                # add more if needed
-
-                """
-
-                pass
-            
+    def setup_alchemistry(
+            self, 
+            compute_platform: Literal["cuda", "opencl", "cpu"] = "cuda",
+            n_somd_cycles: Optional[int] = None,
+            n_somd_moves: Optional[int] = None,
+            n_frames: Optional[int] = 250,
+            buffered_coordinates_frequency: Optional[int] = None,
+            only_save_end_states: bool = False,
+            debug: bool = False
+    ):
+        
         merged_ligand_system = self.create_hybrid_molecule()
         
-        somd2_config_file = os.path.join(self.working_directory, "config.yaml")
+        n_somd_cycles = n_somd_cycles or int(self.recipe.sampling_time._value * 5)
+        n_somd_moves = n_somd_moves or _set_n_somd_moves(sampling_time=self.recipe.sampling_time, n_somd_cycles=n_somd_cycles, stepsize=self.recipe.dt)
+        buffered_coordinates_frequency = buffered_coordinates_frequency or max(int(n_somd_moves / n_frames), 10000)
+        n_cycles_per_saved_frame = max(1, self.recipe.restart_interval // n_somd_moves)
+
+        config_options = {
+            "ncycles": n_somd_cycles,
+            "nmoves": n_somd_moves,
+            "buffered coordinates frequency": buffered_coordinates_frequency,
+            "ncycles_per_snap": n_cycles_per_saved_frame,
+            "minimal coordinate saving": only_save_end_states,
+            "minimise": self.recipe.minimise_lambda,
+            "minimise maximum iterations": self.recipe.lambda_minimisation_steps,
+            "cutoff distance": self.recipe.nb_cutoff,
+            "platform": compute_platform,
+            "verbose": debug
+        }
         
-        somd2_config = config.Config(
-            runtime=str(self.recipe.sampling_time),
-            num_lambda=self.recipe.n_lambdas,
-            log_file=f"{self.transformation}_somd2_log.txt",
-            timestep=str(self.recipe.dt),
-            temperature=str(self.recipe.temperature),
-            pressure=str(self.recipe.pressure),
-            integrator="langevin",
-            cutoff_type="pme",
-            cutoff=str(self.recipe.nb_cutoff),
-            platform=compute_platform,
-            hmr=False,
-            restraints=None, #how to do this???
-            constraint="h_bonds",
-            perturbable_constraint="h_bonds_not_heavy_perturbed",
-            minimise=True,
-            minimisation_constraints=False,
-            minimisation_errors=False,
-            equilibration_time=str(self.recipe.lambda_equilibration_time),
-            equilibration_timestep=str(self.recipe.lambda_equilibration_dt),
-            equilibration_constraints=True,
-            opencl_platform_index=0,
-            restart=False,
-            use_backup=False,
-            write_config=True,
-            overwrite=False,
-            somd1_compatibility=False,
-            pert_file=None,
-            output_directory=self.working_directory
+        if "bound":
+            if self.recipe.model == 0 or self.first_meze.restraint_file:
+                config_options["use permanent distance restraints"] = True
+                config_options["distance restraints dictionary"] = None #FIXME
+                # permanent distance restraints dictionary = {} Dictionary of pair of atoms whose distance is restrained, and restraint parameters. Syntax is {(atom0,atom1):(reql, kl, Dl)} where atom0, atom1 are atomic indices. reql the equilibrium distance. Kl the force constant of the restraint. D the flat bottom radius. Permanent restraints are not affected by turn-on-restraints mode and are always at full strength.
+
+                # def set_somd_restraints():
+                somd_restraints = {}
+                with open(self.first_meze.restraint_file, "r") as ifile:
+                    for line in ifile:                    
+                        iat1 = int(line.split("iat=")[1].split(",")[0]) - 1
+                        iat2 = int(line.split("iat=")[1].split(",")[1]) - 1 
+                        r2 = float(line.split("r2=")[1].split(",")[0])
+                        r3 = float(line.split("r3=")[1].split(",")[0])
+                        rk2 = float(line.split("rk2=")[1].split(",")[0])
+                        flat_bottom_radius = np.round((r3 - r2)/2, decimals=2)
+                        equilibrium_distance = np.round(r2 + flat_bottom_radius, decimals=2)
+                        force_constant = np.round(rk2, decimals=2)
+
+                        atom_key = (iat1, iat2)
+                        restraint_value = (equilibrium_distance, force_constant, flat_bottom_radius)
+                        somd_restraints[atom_key] = restraint_value                        
+
+    """
+            somd_restraints_file = self.somd_restraints(directory, somd_restraints_dict)
+        with open(somd_restraints_file, "r") as file:
+            restraints = file.readlines()
+
+        with open(directory + "somd.cfg", "a") as file:
+            file.writelines(restraints)
+"""
+
+
+
+
+
+        free_energy_protocol = bss.Protocol.FreeEnergy(
+            num_lam=self.recipe.n_lambdas,
+            runtime=self.recipe.sampling_time,
+            timestep=self.recipe.dt,
+            temperature=self.recipe.temperature,
+            pressure=self.recipe.pressure,
+            # restraint=None, #FIXME
+            # force_constant=None #FIXME
         )
 
-        config_dictionary = somd2_config.as_dict()
-
-        with open(somd2_config_file, "w") as ofile:
-            yaml.dump(config_dictionary, ofile)
-
-        sire_system = sire.system.System(merged_ligand_system._sire_object)
-
-        sire.stream.save(
-            obj=sire_system,
-            filename=f"{self.working_directory}/merged_system.bss"
+        bss.FreeEnergy.Relative(
+            system=merged_ligand_system,
+            protocol=free_energy_protocol,
+            work_dir=self.working_directory,
+            engine=self.recipe.engine,
+            setup_only=True,
+            extra_options=config_options
         )
 
-        # somd2_runner = runner.Runner(
-        #     system=sire_system,
-        #     config=somd2_config
-        # )
-
-
-
-        # minimisation_config = copy.deepcopy(config_options)
-        # minimisation_config["ntmin"] = self.recipe.lambda_min_method
-        # minimisation_config["maxcyc"] = self.recipe.lambda_min_steps
-        # minimisation_config["ncyc"] = self.recipe.lambda_n_sd_cycles
-
-        # lambda_minimisation_protocol = bss.Protocol.FreeEnergyMinimisation(
-        #     steps=self.recipe.lambda_min_steps,
-        #     num_lam=self.recipe.n_lambdas,
-        # )
-
-        # lambda_nvt_protocol = bss.Protocol.FreeEnergyEquilibration(
-        #     num_lam=self.recipe.n_lambdas,
-        #     pressure=None,
-        #     temperature=self.recipe.temperature,
-        #     runtime=self.recipe.lambda_nvt_time
-        # )
-        # lambda_npt_protocol = bss.Protocol.FreeEnergyEquilibration(
-        #     num_lam=self.recipe.n_lambdas,
-        #     pressure=self.recipe.pressure,
-        #     runtime=self.recipe.lambda_npt_time
-        # )
-        # protocol = bss.Protocol.FreeEnergy(
-        #     num_lam=self.recipe.n_lambdas,
-        #     runtime=self.recipe.sampling_time,
-        #     restart_interval=self.recipe.restart_interval,
-        #     report_interval=self.recipe.report_interval,
-        # )
-
-        # log.info("Setting up lambda minimisation.")
-        # bss.FreeEnergy.Relative(
-        #     system=merged_ligand_system,
-        #     protocol=lambda_minimisation_protocol,
-        #     engine=self.recipe.engine,
-        #     work_dir=f"{self.working_directory}/min/",
-        #     setup_only=True,
-        #     extra_options=minimisation_config,
-        #     exe=self.recipe.path_to_engine,
-        #     is_gpu=is_gpu
-        # )
-
-        # log.info("Setting up lambda NVT equilibration.")
-        # bss.FreeEnergy.Relative(
-        #     system=merged_ligand_system,
-        #     protocol=lambda_nvt_protocol,
-        #     engine=self.recipe.engine,
-        #     work_dir=f"{self.working_directory}/nvt/",
-        #     setup_only=True,
-        #     exe=self.recipe.path_to_engine,
-        #     is_gpu=is_gpu
-        # )
-        # log.info("Setting up lambda NPT equilibration.")
-        # bss.FreeEnergy.Relative(
-        #     system=merged_ligand_system,
-        #     protocol=lambda_npt_protocol,
-        #     engine=self.recipe.engine,
-        #     work_dir=f"{self.working_directory}/npt/",
-        #     setup_only=True,
-        #     exe=self.recipe.path_to_engine,
-        #     is_gpu=is_gpu
-        # )
-
-        # log.info("Setting up lambda production.")
-        # bss.FreeEnergy.Relative(
-        #     system=merged_ligand_system,
-        #     protocol=protocol,
-        #     engine=self.recipe.engine,
-        #     work_dir=f"{self.working_directory}/prod/",
-        #     setup_only=True,
-        #     exe=self.recipe.path_to_engine,
-        #     is_gpu=is_gpu
-        # )
-
-
+        # after process, need to remove gpu index line
 
 
 
