@@ -2986,7 +2986,7 @@ class HotQuantumMeze(QuantumMeze):
             workdir: Optional[str],
             system: Optional[bssSystem] = None,
             process_name: Optional[str] = "qm-meze-run",
-            nb_cutoff: Optional[float] = None,
+            ensemble: Optional[Literal["nvt", "npt"]] = "nvt",            nb_cutoff: Optional[float] = None,
             timestep: Optional[Union[float, bssTime]] = 0.001,
             runtime: Optional[Union[float, bssTime]] = None,
             temperature: Optional[Union[float, bssTemperature]] = 300,
@@ -2999,10 +2999,15 @@ class HotQuantumMeze(QuantumMeze):
             additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
     ) -> "HotQuantumMeze":
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
+        if ensemble == "npt" and not pressure:
+            message = f"Running in the {ensemble} ensemble requires 'pressure' to be set.\nGot {pressure}."
+            log.error(message)
+            raise RuntimeError(message)
+
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
             nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
-            runtime= runtime or self.recipe.runtime,
+            runtime=runtime or self.recipe.runtime,
             dt=timestep or self.recipe.dt,
             temperature=temperature or self.recipe.temperature,
             pressure=pressure or self.recipe.pressure,
@@ -3021,10 +3026,10 @@ class HotQuantumMeze(QuantumMeze):
         }
         
         protocol = bss.Protocol.Production(
-            timestep=bss.Types.Time(recipe.dt, "ps"),
-            runtime=bss.Types.Time(recipe.runtime, "ps"),
-            temperature=bss.Types.Temperature(recipe.temperature, "K"),
-            pressure=None
+            timestep=recipe.dt,
+            runtime=recipe.runtime,
+            temperature=recipe.temperature,
+            pressure=recipe.pressure
         )
 
         return super().run_qm(
