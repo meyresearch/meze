@@ -52,6 +52,18 @@ pip uninstall -y meze
 pip install --no-cache-dir git+https://github.com/meyresearch/meze.git@main
 ```
 
+Once you have installed `meze`, you need to make sure the `$AMBERHOME` environment variable is set in the `conda` environment:
+```
+conda env config vars set AMBERHOME=/path/to/amber 
+conda deactivate && conda activate <env>
+```
+
+You can double-check the environment variable is set:
+```
+echo $AMBERHOME
+```
+which should return a path to your `amber.sh` file.  
+
 # Developing
 
 Clone the repository:
