@@ -2901,6 +2901,40 @@ class ColdQuantumMeze(QuantumMeze):
             additional_positional_restraints=additional_positional_restraints,
             additional_distance_restraints=additional_distance_restraints,
         )
+
+    def pressurise(
+            self,
+            system: Optional[bssSystem] = None,
+            workdir: Optional[str] = None,
+            restart: Optional[bool] = False,
+            timestep: Optional[Union[float, bssTemperature]] = 0.001,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = 300,
+            pressure: Optional[Union[float, bssPressure]] = 1.0,
+            process_name: Optional[str] = "qm-npt",
+            engine_executable: Optional[str] = None,
+            qm_theory: Optional[str] = "DFTB3",
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+            additional_positional_restraints: Optional[dict[str, Any]] = None,
+            additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
+    ) -> "ColdQuantumMeze":
+        disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
+        return self.run(
+            protocol_type="npt",
+            system=system,
+            workdir=workdir,
+            restart=restart,
+            process_name=process_name,
+            timestep=timestep,
+            temperature=temperature,
+            runtime=runtime,
+            pressure=pressure,
+            engine_executable=engine_executable,
+            qm_theory=qm_theory,
+            metal_resids_for_distance_restraints=disres,
+            additional_positional_restraints=additional_positional_restraints,
+            additional_distance_restraints=additional_distance_restraints,
+        )
     
 @dataclass
 class HotQuantumMeze(QuantumMeze):
