@@ -3,10 +3,11 @@ import os
 import sys
 from pathlib import Path
 
+REPO_ROOT = Path().resolve()  
+EXAMPLES_DIR = REPO_ROOT / "examples"
+project_dir = REPO_ROOT / "data"
+
 system = "mII"
-
-project_dir = Path(__file__).parent / "data" 
-
 
 input_dir = f"{project_dir}/model_0/equilibration/{system}"
 
@@ -46,7 +47,7 @@ minimised_qm_meze.pressurise(
     process_name="02_qm_npt",
     workdir=qmmm_dir,
     timestep=0.001,
-    runtime=50,
+    runtime=5,
     temperature=300,
     pressure=1.0
 ) 

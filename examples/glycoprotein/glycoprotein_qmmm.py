@@ -1,11 +1,13 @@
 from meze import ColdQuantumMeze, HotQuantumMeze
 import os
 import sys
-
-system = "mII"
 from pathlib import Path
 
-project_dir = Path(__file__).parent / "data" 
+REPO_ROOT = Path().resolve()  
+EXAMPLES_DIR = REPO_ROOT / "examples"
+project_dir = REPO_ROOT / "data"
+
+system = "mII"
 
 cold_qm_meze = ColdQuantumMeze.from_files(
     topology=f"{project_dir}/inputs/qmmm/protein/{system}/complex.prm7",

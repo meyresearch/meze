@@ -5,7 +5,10 @@ import json
 import sys
 from pathlib import Path
 
-project_dir = Path(__file__).parent / "data" 
+REPO_ROOT = Path().resolve()  
+EXAMPLES_DIR = REPO_ROOT / "examples"
+project_dir = REPO_ROOT / "data"
+
 
 system_name = "mII"
 ligand_name = "m5g0"
