@@ -30,7 +30,7 @@ cold_qm_meze = ColdQuantumMeze.from_files(
     }
 )
 
-qmmm_dir = os.path.join(project_dir, "qmmm", system)
+qmmm_dir = os.path.join(project_dir, "outputs", "qmmm", system)
 os.makedirs(qmmm_dir, exist_ok=True)
 
 print("Minimising")
