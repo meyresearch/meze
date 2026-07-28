@@ -2820,6 +2820,15 @@ class ColdQuantumMeze(QuantumMeze):
                 temperature=temperature,
                 pressure=None,
             )
+        else:
+            pressure = bss.Types.Pressure(recipe.pressure, "bar")
+            temperature = bss.Types.Temperature(recipe.temperature, "K")
+            protocol = bss.Protocol.Equilibration(
+                timestep=bss.Types.Time(recipe.dt, "ps"),
+                runtime=bss.Types.Time(recipe.runtime, "ps"),
+                temperature=temperature,
+                pressure=pressure,
+            )            
 
         return super().run_qm(
             protocol=protocol,
@@ -3024,6 +3033,8 @@ class HotQuantumMeze(QuantumMeze):
             "ntx": 5,
             "ifqnt": 1
         }
+        if ensemble == "npt":
+            config_options["barostat"] = 2
         
         protocol = bss.Protocol.Production(
             timestep=recipe.dt,

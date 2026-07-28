@@ -41,7 +41,7 @@ minimised_qm_meze = cold_qm_meze.minimise(
     max_cycles=10, 
 )
 
-print("Heating")
+print("Equilibrating")
 
 minimised_qm_meze.pressurise(
     process_name="02_qm_npt",
