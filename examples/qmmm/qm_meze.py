@@ -9,7 +9,7 @@ project_dir = REPO_ROOT / "data"
 
 system = "mII"
 
-input_dir = f"{project_dir}/model_0/equilibration/{system}"
+input_dir = f"{project_dir}/equilibration/model_0/{system}"
 
 cold_qm_meze = ColdQuantumMeze.from_files(
     topology=f"{input_dir}/06_relax/next.prm7",
