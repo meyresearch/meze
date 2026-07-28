@@ -2,8 +2,8 @@ from meze import ColdMeze, ColdMezeRecipe
 import os
 import json
 import sys
-
-project_dir = "/Users/af25016/projects/meze/data/"
+from pathlib import Path
+project_dir = Path(__file__).parent / "data" 
 system_name = "mII"
 ligand_name = "m5g0"
 

@@ -2,11 +2,12 @@ from meze import ColdMeze, ColdMezeRecipe
 import json
 import MDAnalysis as mda
 import glob
+from pathlib import Path
 
 system_name = "mII"
 ligand_name = "m5g0"
 
-project_dir = "/Users/af25016/projects/meze/data/"
+project_dir = Path(__file__).parent / "data" 
 
 with open(f"{project_dir}/inputs/hybrid_model/protein/{system_name}/model_ezaff_recipe.json", "r") as file:
     json_recipe = json.load(file)

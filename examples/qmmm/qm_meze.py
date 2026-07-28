@@ -1,10 +1,12 @@
 from meze import ColdQuantumMeze, HotQuantumMeze
 import os
 import sys
+from pathlib import Path
 
 system = "mII"
 
-project_dir = "/Users/af25016/projects/meze/data/"
+project_dir = Path(__file__).parent / "data" 
+
 
 input_dir = f"{project_dir}/model_0/equilibration/{system}"
 
@@ -40,20 +42,20 @@ minimised_qm_meze = cold_qm_meze.minimise(
 
 print("Heating")
 
-minimised_qm_meze.heat(
-    process_name="02_qm_heat",
+minimised_qm_meze.pressurise(
+    process_name="02_qm_npt",
     workdir=qmmm_dir,
     timestep=0.001,
     runtime=50,
-    start_temperature=100,
-    end_temperature=300
+    temperature=300,
+    pressure=1.0
 ) 
 
 print("Production")
 
 hot_qm_meze = HotQuantumMeze.from_files(
-    topology=f"{qmmm_dir}/02_qm_heat/next.prm7",
-    coordinates=f"{qmmm_dir}/02_qm_heat/next.rst7",
+    topology=f"{qmmm_dir}/02_qm_npt/next.prm7",
+    coordinates=f"{qmmm_dir}/02_qm_npt/next.rst7",
     group_name=f"qm_vim2_{system}",
     path_to_engine=os.path.join(os.environ["AMBERHOME"], "bin", "sander"),
     custom_qm_region={
@@ -71,5 +73,8 @@ hot_qm_meze = HotQuantumMeze.from_files(
 
 hot_qm_meze.run(
     process_name="03_qm_prod",
-    workdir=qmmm_dir
+    workdir=qmmm_dir,
+    ensemble="npt",
+    pressure=1.0,
+    temperature=300
 )

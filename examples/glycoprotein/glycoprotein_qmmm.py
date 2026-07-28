@@ -3,8 +3,9 @@ import os
 import sys
 
 system = "mII"
+from pathlib import Path
 
-project_dir = "/Users/af25016/projects/meze/data/"
+project_dir = Path(__file__).parent / "data" 
 
 cold_qm_meze = ColdQuantumMeze.from_files(
     topology=f"{project_dir}/inputs/qmmm/protein/{system}/complex.prm7",
