@@ -9,11 +9,11 @@ project_dir = REPO_ROOT / "data"
 
 system = "mII"
 
-input_dir = f"{project_dir}/equilibration/model_0/{system}"
+input_dir = f"{project_dir}/equilibration/model_0/{system}/m5g0/"
 
 cold_qm_meze = ColdQuantumMeze.from_files(
-    topology=f"{input_dir}/06_relax/next.prm7",
-    coordinates=f"{input_dir}/06_relax/next.rst7",
+    topology=f"{input_dir}/next.prm7",
+    coordinates=f"{input_dir}/next.rst7",
     group_name=f"qm_mII_{system}",
     path_to_engine=os.path.join(os.environ["AMBERHOME"], "bin", "sander"),
     additional_qm_resnames=["0YB", "ROH", "4YA", "0MA", "2MA", "VMA", "VMB"],
