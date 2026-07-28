@@ -2761,7 +2761,7 @@ class ColdQuantumMeze(QuantumMeze):
             additional_positional_restraints: Optional[dict[str, Any]] = None,
             additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
     ) -> "ColdQuantumMeze":
-        allowed_protocols = ["minimisation", "nvt"]
+        allowed_protocols = ["minimisation", "nvt", "npt"]
         if protocol_type not in allowed_protocols:
             raise ValueError(
                 f"Unsupported protocol type '{protocol_type}'.\n"
