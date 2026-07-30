@@ -39,6 +39,7 @@ from BioSimSpace._SireWrappers import System as bssSystem
 from BioSimSpace.Types._time import Time as bssTime
 from BioSimSpace.Types._temperature import Temperature as bssTemperature
 from BioSimSpace.Types._pressure import Pressure as bssPressure
+from BioSimSpace.Types._length import Length as bssLength
 from .utils import (
     _residue_restraint_mask,
     _write_distance_restraints,
@@ -121,8 +122,8 @@ class MezeRecipe(BaseModel):
     pressure: Union[float, bssPressure] = Field(
         1.0, description="Simulation pressure in atm"
     )
-    nb_cutoff: float = Field(
-        12.0, ge=0, description="Cut-off for electrostatics interactions"
+    nb_cutoff: Union[float, bssLength] = Field(
+        12.0, description="Cut-off for electrostatics interactions"
     )
 
     @field_validator("model", mode="before")
@@ -183,10 +184,10 @@ class ColdMezeRecipe(MezeRecipe):
     barostat: int = Field(
         2, ge=1, le=2, description="Type of barostat, 1: Berendsen, 2: MC"
     )
-    runtime: float = Field(
+    runtime: Union[float, bssTime] = Field(
         100.0, description="Simulation time in picoseconds"
     )
-    dt: float = Field(
+    dt: Union[float, bssTime] = Field(
         0.001, description="Integrator timestep, in picoseconds"
     )
     start_temperature: float = Field(
@@ -222,10 +223,10 @@ class ColdMezeRecipe(MezeRecipe):
 class HotMezeRecipe(MezeRecipe):
     """Meze workflow recipe for production runs
     """
-    runtime: float = Field(
+    runtime: Union[float, bssTime] = Field(
         100.0, description="Simulation time in nanoseconds"
     )
-    dt: float = Field(
+    dt: Union[float, bssTime] = Field(
         0.002, description="Integrator timestep, in picoseconds"
     )
     @field_validator("runtime", mode="after")
@@ -2134,7 +2135,7 @@ class ColdMeze(Meze):
         )
 
         config_options = {
-            "cut": recipe.nb_cutoff,
+            "cut": recipe.nb_cutoff._value,
             "ntpr": 1000,
             "iwrap": 0
         }
@@ -2417,7 +2418,7 @@ class HotMeze(Meze):
             model=self.recipe.model
         )
 
-        config_options = {"cut": recipe.nb_cutoff,
+        config_options = {"cut": recipe.nb_cutoff._value,
                           "ntpr": write_frequency,
                           "ntwx": write_frequency,
                           "ntwr": write_frequency,
@@ -2835,7 +2836,7 @@ class ColdQuantumMeze(QuantumMeze):
         )
         
         config_options = {
-            "cut": recipe.nb_cutoff,
+            "cut": recipe.nb_cutoff._value,
             "ntpr": 50,
             "ntwx": 50,
             "ntwx": 50,
@@ -2844,11 +2845,11 @@ class ColdQuantumMeze(QuantumMeze):
             "qm_shake": int(qm_shake)
         }
         
-        if not qm_shake and recipe.dt > 1.0:
+        if not qm_shake and recipe.dt._value > 1.0:
             message = f"Cannot run a QM/MM MD simulation with a timestep larger than 1.0 fs without 'qm_shake' set to False."
             log.error(message)
             raise RuntimeError(message)
-        elif qm_shake and recipe.dt > 1.0:
+        elif qm_shake and recipe.dt._value > 1.0:
             message = f"QM shake is on, and the timestep is {recipe.dt} fs, which is not recommended for QM/MM equilibration."
             log.warning(message)
         else:
@@ -3084,7 +3085,7 @@ class HotQuantumMeze(QuantumMeze):
         )
 
         config_options = {
-            "cut": recipe.nb_cutoff,
+            "cut": recipe.nb_cutoff._value,
             "ntpr": write_frequency,
             "ntwx": write_frequency,
             "ntwx": write_frequency,
