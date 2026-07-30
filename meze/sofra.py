@@ -195,15 +195,30 @@ class ColdMezeRecipe(MezeRecipe):
     end_temperature: float = Field(
         300.0, description="Simulation end temperature in kelvin"
     )
-    temperature: float = Field(
-        300.0,  description="Simulation temperature in kelvin"
-    )
-    pressure: float = Field(
-        1.0, description="Simulation pressure in atm"
-    )
     restraint_weight: float = Field(
         100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
     )
+    
+    @field_validator("dt", "runtime", mode="after")
+    @classmethod
+    def validate_time(cls, value):
+        if isinstance(value, bss.Types.Time):
+            return value
+        if value < 0:
+            raise ValueError(f"dt, time must be greater than or equal to 0 picoseconds")
+        return bss.Types.Time(value, "picoseconds")
+
+    @field_validator("start_temperature", "end_temperature", mode="after")
+    @classmethod
+    def validate_temperature(cls, value):
+        if isinstance(value, bss.Types.Temperature):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"temperature must be greater than or equal to 0 K")
+        return bss.Types.Temperature(value, "kelvin")
+
+
 class HotMezeRecipe(MezeRecipe):
     """Meze workflow recipe for production runs
     """
