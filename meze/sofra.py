@@ -198,7 +198,7 @@ class ColdMezeRecipe(MezeRecipe):
     restraint_weight: float = Field(
         100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
     )
-    
+
     @field_validator("dt", "runtime", mode="after")
     @classmethod
     def validate_time(cls, value):
@@ -222,21 +222,29 @@ class ColdMezeRecipe(MezeRecipe):
 class HotMezeRecipe(MezeRecipe):
     """Meze workflow recipe for production runs
     """
-    nb_cutoff: float = Field(
-        12.0, ge=0, description="Cut-off for electrostatics interactions"
-    )
     runtime: float = Field(
         100.0, description="Simulation time in nanoseconds"
     )
     dt: float = Field(
         0.002, description="Integrator timestep, in picoseconds"
     )
-    temperature: float = Field(
-        300.0,  description="Simulation temperature in kelvin"
-    )
-    pressure: float = Field(
-        1.0, description="Simulation pressure in atm"
-    )
+    @field_validator("runtime", mode="after")
+    @classmethod
+    def validate_timestep(cls, value):
+        if isinstance(value, bss.Types.Time):
+            return value
+        if value < 0:
+            raise ValueError(f"dt must be greater than or equal to 0 nanoseconds")
+        return bss.Types.Time(value, "nanoseconds")
+    
+    @field_validator("dt", mode="after")
+    @classmethod
+    def validate_timestep(cls, value):
+        if isinstance(value, bss.Types.Time):
+            return value
+        if value < 0:
+            raise ValueError(f"dt must be greater than or equal to 0 picoseconds")
+        return bss.Types.Time(value, "picoseconds")
 
 
 @dataclass
