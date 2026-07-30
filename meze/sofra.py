@@ -14,7 +14,8 @@ import numpy as np
 from pydantic import (
     Field,
     field_validator,
-    BaseModel
+    BaseModel,
+    ConfigDict
 )
 from typing import (
     Any,
@@ -72,6 +73,7 @@ log = logging.getLogger("rich")
 class MezeRecipe(BaseModel):
     """Meze workflow recipe
     """
+    model_config = ConfigDict(arbitrary_types_allowed=True, validate_default=True)
     workdir: str = Field(default_factory=os.getcwd, description="Working directory")
     metal: str = Field("ZN", description="Metal element")
     metal_charge: int = Field(2, description="Metal charge")
@@ -113,6 +115,12 @@ class MezeRecipe(BaseModel):
     solvent_closeness: float = Field(
         0.75, ge=0, le=1, description="Solvent closeness"
     )
+    temperature: Union[float, bss.Types.Temperature] = Field(
+        300.0, description="Simulation temperature in kelvin"
+    )
+    pressure: Union[float, bss.Types.Pressure] = Field(
+        1.0, description="Simulation pressure in atm"
+    )   
 
     @field_validator("model", mode="before")
     @classmethod
@@ -123,6 +131,26 @@ class MezeRecipe(BaseModel):
             return int(v)
         except (TypeError, ValueError):
             raise ValueError(f"Cannot covert model='{v}' to int")
+        
+    @field_validator("pressure", mode="after")
+    @classmethod
+    def validate_pressure(cls, value):
+        if isinstance(value, bss.Types.Pressure):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"pressure must be greater than or equal to 0 atm")
+        return bss.Types.Pressure(value, "atm")
+    
+    @field_validator("nb_cutoff", mode="after")
+    @classmethod
+    def validate_cutoff_distance(cls, value):
+        if isinstance(value, bss.Types.Length):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"nb_cutoff must be greater than or equal to 0 atm")
+        return bss.Types.Length(value, "angstrom")    
 
     def __str__(self) -> str:
         """Print recipe information as JSON
