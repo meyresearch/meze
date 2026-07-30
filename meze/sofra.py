@@ -136,6 +136,16 @@ class MezeRecipe(BaseModel):
         except (TypeError, ValueError):
             raise ValueError(f"Cannot covert model='{v}' to int")
         
+    @field_validator("temperature", mode="after")
+    @classmethod
+    def validate_temperature(cls, value):
+        if isinstance(value, bss.Types.Temperature):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"temperature must be greater than or equal to 0 K")
+        return bss.Types.Temperature(value, "kelvin")
+
     @field_validator("pressure", mode="after")
     @classmethod
     def validate_pressure(cls, value):
@@ -211,7 +221,7 @@ class ColdMezeRecipe(MezeRecipe):
 
     @field_validator("start_temperature", "end_temperature", mode="after")
     @classmethod
-    def validate_temperature(cls, value):
+    def validate_temperature_range(cls, value):
         if isinstance(value, bss.Types.Temperature):
             return value
         value = float(value)
@@ -315,7 +325,7 @@ class Meze:
             self._set_ligand()
         else:
             log.warning(
-                "Ligand not set by user in meze construction. Do you wish to continue without it?"
+                "Ligand not set by user in meze construction. Inferring from inputs."
             )
 
 
@@ -2641,6 +2651,7 @@ class QuantumMeze(Meze):
     def _write_qm_namelist(
             self, 
             qm_theory: Optional[str] = "DFTB3", 
+            qm_shake: Optional[int] = 0
     ):
         parsed_whole_residues = _residue_restraint_mask(self.qm_region["whole_residues"])
         atom_ids = ",".join(list(map(str, self.qm_region["atom_ids"])))
@@ -2651,7 +2662,7 @@ class QuantumMeze(Meze):
             "writepdb": "1",
             "qmcharge": str(self.qm_charge),
             "qm_theory": f"'{qm_theory}'",
-            "qmshake": "0",
+            "qmshake": str(qm_shake),
             "qm_ewald": "1",
             "qm_pme": "1"
         }
@@ -2689,6 +2700,7 @@ class QuantumMeze(Meze):
         is_gpu: bool = False,
         additional_positional_restraints: Optional[dict[str, Any]] = None,
         additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
+        qm_shake: Optional[bool] = False
     ) -> "QuantumMeze":
         if additional_positional_restraints is not None:
             if not {"resids"} <= additional_positional_restraints.keys() and not {"resnames"} <= additional_positional_restraints.keys():
@@ -2716,7 +2728,7 @@ class QuantumMeze(Meze):
             additional_resids = list(additional_resids)
             disres = additional_resids
 
-        qm_namelist = self._write_qm_namelist(qm_theory=qm_theory)
+        qm_namelist = self._write_qm_namelist(qm_theory=qm_theory, qm_shake=int(qm_shake))
 
         if disres is not None:
             distance_restraints = self._prepare_distance_restraints(disres)
@@ -2841,8 +2853,7 @@ class ColdQuantumMeze(QuantumMeze):
             "ntwx": 50,
             "ntwx": 50,
             "iwrap": 0,
-            "ifqnt": 1,
-            "qm_shake": int(qm_shake)
+            "ifqnt": 1
         }
         
         if not qm_shake and recipe.dt._value > 1.0:
@@ -2884,8 +2895,7 @@ class ColdQuantumMeze(QuantumMeze):
                 pressure=None,
             )
         else:
-            pressure = recipe.pressure
-            temperature = recipe.temperature
+            config_options["barostat"] = recipe.barostat
             protocol = bss.Protocol.Equilibration(
                 timestep=recipe.dt,
                 runtime=recipe.runtime,
@@ -2903,7 +2913,8 @@ class ColdQuantumMeze(QuantumMeze):
             config_options=config_options,
             is_gpu=False,
             additional_positional_restraints=additional_positional_restraints,
-            additional_distance_restraints=additional_distance_restraints
+            additional_distance_restraints=additional_distance_restraints,
+            qm_shake=qm_shake
         )
     
     def minimise(
@@ -3094,9 +3105,8 @@ class HotQuantumMeze(QuantumMeze):
             "ntx": 5,
             "ifqnt": 1
         }
-        # if ensemble == "npt":
-        #     config_options["barostat"] = 2
-        #     config_options["ntp"] = 1
+        if ensemble == "npt":
+            config_options["barostat"] = 2
         
         protocol = bss.Protocol.Production(
             timestep=recipe.dt,
