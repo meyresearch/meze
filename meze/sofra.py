@@ -2170,10 +2170,10 @@ class ColdMeze(Meze):
                 temperature = recipe.temperature
 
             protocol = bss.Protocol.Equilibration(
-                timestep=bss.Types.Time(recipe.dt, "ps"),
-                runtime=bss.Types.Time(recipe.runtime, "ps"),
-                temperature_start=bss.Types.Temperature(recipe.start_temperature, "K"),
-                temperature_end=bss.Types.Temperature(recipe.end_temperature, "K"),
+                timestep=recipe.dt,
+                runtime=recipe.runtime,
+                temperature_start=recipe.start_temperature,
+                temperature_end=recipe.end_temperature,
                 temperature=temperature,
                 pressure=None,
                 restraint="all" if position_restraints else None,
@@ -2182,10 +2182,10 @@ class ColdMeze(Meze):
         elif protocol_type == "npt":
             config_options["barostat"] = recipe.barostat
             protocol = bss.Protocol.Equilibration(
-                timestep=bss.Types.Time(recipe.dt, "ps"),
-                runtime=bss.Types.Time(recipe.runtime, "ps"),
-                temperature=bss.Types.Temperature(recipe.temperature, "K"),
-                pressure=bss.Types.Pressure(recipe.pressure, "atm"),
+                timestep=recipe.dt,
+                runtime=recipe.runtime,
+                temperature=recipe.temperature,
+                pressure=recipe.pressure,
                 restraint="all" if position_restraints else None,
                 force_constant=recipe.restraint_weight
             )
@@ -2429,10 +2429,10 @@ class HotMeze(Meze):
             config_options["nmropt"] = 1
 
         protocol = bss.Protocol.Production(
-            timestep=bss.Types.Time(recipe.dt, "ps"),
-            runtime=bss.Types.Time(recipe.runtime, "ns"),
-            temperature=bss.Types.Temperature(recipe.temperature, "K"),
-            pressure=bss.Types.Pressure(recipe.pressure, "atm")
+            timestep=recipe.dt,
+            runtime=recipe.runtime,
+            temperature=recipe.temperature,
+            pressure=recipe.pressure
         )
         if self.restraint_file and os.path.isfile(self.restraint_file):
             step_restraint_file = os.path.join(recipe.workdir, "restraints.RST")
@@ -2861,13 +2861,13 @@ class ColdQuantumMeze(QuantumMeze):
             if recipe.start_temperature != recipe.end_temperature:
                 temperature = None
             else:
-                temperature = bss.Types.Temperature(recipe.temperature, "K")
+                temperature = recipe.temperature
 
             protocol = bss.Protocol.Equilibration(
-                timestep=bss.Types.Time(recipe.dt, "ps"),
-                runtime=bss.Types.Time(recipe.runtime, "ps"),
-                temperature_start=bss.Types.Temperature(recipe.start_temperature, "K"),
-                temperature_end=bss.Types.Temperature(recipe.end_temperature, "K"),
+                timestep=recipe.dt,
+                runtime=recipe.runtime,
+                temperature_start=recipe.start_temperature,
+                temperature_end=recipe.end_temperature,
                 temperature=temperature,
                 pressure=None,
             )
@@ -2891,7 +2891,8 @@ class ColdQuantumMeze(QuantumMeze):
             config_options=config_options,
             is_gpu=False,
             additional_positional_restraints=additional_positional_restraints,
-            additional_distance_restraints=additional_distance_restraints,        )
+            additional_distance_restraints=additional_distance_restraints
+        )
     
     def minimise(
             self,
