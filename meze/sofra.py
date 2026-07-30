@@ -230,7 +230,7 @@ class HotMezeRecipe(MezeRecipe):
     )
     @field_validator("runtime", mode="after")
     @classmethod
-    def validate_timestep(cls, value):
+    def validate_time(cls, value):
         if isinstance(value, bss.Types.Time):
             return value
         if value < 0:
