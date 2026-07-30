@@ -120,7 +120,10 @@ class MezeRecipe(BaseModel):
     )
     pressure: Union[float, bssPressure] = Field(
         1.0, description="Simulation pressure in atm"
-    )   
+    )
+    nb_cutoff: float = Field(
+        12.0, ge=0, description="Cut-off for electrostatics interactions"
+    )
 
     @field_validator("model", mode="before")
     @classmethod
@@ -179,9 +182,6 @@ class ColdMezeRecipe(MezeRecipe):
     )
     barostat: int = Field(
         2, ge=1, le=2, description="Type of barostat, 1: Berendsen, 2: MC"
-    )
-    nb_cutoff: float = Field(
-        12.0, ge=0, description="Cut-off for electrostatics interactions"
     )
     runtime: float = Field(
         100.0, description="Simulation time in picoseconds"
@@ -2167,7 +2167,7 @@ class ColdMeze(Meze):
             if recipe.start_temperature != recipe.end_temperature:
                 temperature = None
             else:
-                temperature = bss.Types.Temperature(recipe.temperature, "K")
+                temperature = recipe.temperature
 
             protocol = bss.Protocol.Equilibration(
                 timestep=bss.Types.Time(recipe.dt, "ps"),
