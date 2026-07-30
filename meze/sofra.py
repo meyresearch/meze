@@ -115,10 +115,10 @@ class MezeRecipe(BaseModel):
     solvent_closeness: float = Field(
         0.75, ge=0, le=1, description="Solvent closeness"
     )
-    temperature: Union[float, bss.Types.Temperature] = Field(
+    temperature: Union[float, bssTemperature] = Field(
         300.0, description="Simulation temperature in kelvin"
     )
-    pressure: Union[float, bss.Types.Pressure] = Field(
+    pressure: Union[float, bssPressure] = Field(
         1.0, description="Simulation pressure in atm"
     )   
 
