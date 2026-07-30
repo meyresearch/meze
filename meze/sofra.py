@@ -2694,8 +2694,6 @@ class QuantumMeze(Meze):
                 raise ValueError(
                     "additional_restraints must contain 'resids' or 'resnames' keys."
                 )
-        config_options["ntc"] = 1
-        config_options["ntf"] = 1
 
         if not additional_positional_restraints:
             disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
@@ -2790,7 +2788,7 @@ class ColdQuantumMeze(QuantumMeze):
         )
 
     def run(self,
-            protocol_type: Literal["minimisation", "nvt"],
+            protocol_type: Literal["minimisation", "nvt", "npt"],
             system: Optional[bssSystem],
             workdir: Optional[str],
             restart: Optional[bool] = False,
@@ -2811,6 +2809,7 @@ class ColdQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
             additional_positional_restraints: Optional[dict[str, Any]] = None,
             additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
+            qm_shake: Optional[bool] = False
     ) -> "ColdQuantumMeze":
         allowed_protocols = ["minimisation", "nvt", "npt"]
         if protocol_type not in allowed_protocols:
@@ -2834,16 +2833,28 @@ class ColdQuantumMeze(QuantumMeze):
             pressure=pressure or self.recipe.pressure,
             path_to_engine=engine_executable or self.recipe.path_to_engine
         )
-
+        
         config_options = {
             "cut": recipe.nb_cutoff,
             "ntpr": 50,
             "ntwx": 50,
             "ntwx": 50,
             "iwrap": 0,
-            "ifqnt": 1
+            "ifqnt": 1,
+            "qm_shake": int(qm_shake)
         }
         
+        if not qm_shake and recipe.dt > 1.0:
+            message = f"Cannot run a QM/MM MD simulation with a timestep larger than 1.0 fs without 'qm_shake' set to False."
+            log.error(message)
+            raise RuntimeError(message)
+        elif qm_shake and recipe.dt > 1.0:
+            message = f"QM shake is on, and the timestep is {recipe.dt} fs, which is not recommended for QM/MM equilibration."
+            log.warning(message)
+        else:
+            config_options["ntc"] = 1
+            config_options["ntf"] = 1
+
         if restart:
             config_options["irest"] = 1
             config_options["ntx"] = 5
@@ -2872,13 +2883,13 @@ class ColdQuantumMeze(QuantumMeze):
                 pressure=None,
             )
         else:
-            pressure = bss.Types.Pressure(recipe.pressure, "bar")
-            temperature = bss.Types.Temperature(recipe.temperature, "K")
+            pressure = recipe.pressure
+            temperature = recipe.temperature
             protocol = bss.Protocol.Equilibration(
-                timestep=bss.Types.Time(recipe.dt, "ps"),
-                runtime=bss.Types.Time(recipe.runtime, "ps"),
-                temperature=temperature,
-                pressure=pressure,
+                timestep=recipe.dt,
+                runtime=recipe.runtime,
+                temperature=recipe.temperature,
+                pressure=recipe.pressure,
             )            
 
         return super().run_qm(
@@ -3047,7 +3058,8 @@ class HotQuantumMeze(QuantumMeze):
             workdir: Optional[str],
             system: Optional[bssSystem] = None,
             process_name: Optional[str] = "qm-meze-run",
-            ensemble: Optional[Literal["nvt", "npt"]] = "nvt",            nb_cutoff: Optional[float] = None,
+            ensemble: Optional[Literal["nvt", "npt"]] = "nvt",            
+            nb_cutoff: Optional[float] = None,
             timestep: Optional[Union[float, bssTime]] = 0.001,
             runtime: Optional[Union[float, bssTime]] = None,
             temperature: Optional[Union[float, bssTemperature]] = 300,
@@ -3060,10 +3072,6 @@ class HotQuantumMeze(QuantumMeze):
             additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
     ) -> "HotQuantumMeze":
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
-        if ensemble == "npt" and not pressure:
-            message = f"Running in the {ensemble} ensemble requires 'pressure' to be set.\nGot {pressure}."
-            log.error(message)
-            raise RuntimeError(message)
 
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
@@ -3085,8 +3093,9 @@ class HotQuantumMeze(QuantumMeze):
             "ntx": 5,
             "ifqnt": 1
         }
-        if ensemble == "npt":
-            config_options["barostat"] = 2
+        # if ensemble == "npt":
+        #     config_options["barostat"] = 2
+        #     config_options["ntp"] = 1
         
         protocol = bss.Protocol.Production(
             timestep=recipe.dt,
@@ -3105,7 +3114,7 @@ class HotQuantumMeze(QuantumMeze):
             config_options=config_options,
             is_gpu=False,
             additional_positional_restraints=additional_positional_restraints,
-            additional_distance_restraints=additional_distance_restraints,
+            additional_distance_restraints=additional_distance_restraints
         )
 
 @dataclass
