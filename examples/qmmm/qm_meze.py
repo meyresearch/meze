@@ -49,7 +49,8 @@ minimised_qm_meze.pressurise(
     timestep=0.001,
     runtime=5,
     temperature=300,
-    pressure=1.0
+    pressure=1.0,
+    restart=True
 ) 
 
 print("Production")
@@ -77,5 +78,6 @@ hot_qm_meze.run(
     workdir=qmmm_dir,
     ensemble="npt",
     pressure=1.0,
-    temperature=300
+    temperature=300,
+    restart=True
 )
