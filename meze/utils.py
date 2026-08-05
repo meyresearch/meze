@@ -110,10 +110,6 @@ def _write_distance_restraints(
     return lines
 
 def _fix_afe_configurations(files: List[str]) -> None:
-    """Strip the hardcoded GPU index line BSS writes into SOMD cfg files for
-    cuda/opencl platforms (OpenBioSim/biosimspace#180), so jobs pick up
-    whichever device they were actually assigned instead of always index 0.
-    """
     for file in files:
         with open(file, "r") as f:
             lines = [line for line in f if "gpu" not in line]
