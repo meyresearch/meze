@@ -56,7 +56,8 @@ from .utils import (
     _get_mol2_charge,
     _edit_mcpbpy_tleap_input,
     pdb_to_sdf,
-    _set_n_somd_moves
+    _set_n_somd_moves,
+    _fix_afe_configurations
 )
 from .helpers import _check_ambertools
 import shutil
@@ -3881,41 +3882,33 @@ class AlchemicalSofra:
             "verbose": debug
         }
         
-        if "bound":
-            if self.recipe.model == 0 or self.first_meze.restraint_file:
-                config_options["use permanent distance restraints"] = True
-                config_options["distance restraints dictionary"] = None #FIXME
-                # permanent distance restraints dictionary = {} Dictionary of pair of atoms whose distance is restrained, and restraint parameters. Syntax is {(atom0,atom1):(reql, kl, Dl)} where atom0, atom1 are atomic indices. reql the equilibrium distance. Kl the force constant of the restraint. D the flat bottom radius. Permanent restraints are not affected by turn-on-restraints mode and are always at full strength.
+        if self.stage == "bound" and self.first_meze.restraint_file:
+            somd_restraints = {}
+            with open(self.first_meze.restraint_file, "r") as ifile:
+                for line in ifile:
+                    iat1 = int(line.split("iat=")[1].split(",")[0]) - 1
+                    iat2 = int(line.split("iat=")[1].split(",")[1]) - 1
+                    r2 = float(line.split("r2=")[1].split(",")[0])
+                    r3 = float(line.split("r3=")[1].split(",")[0])
+                    rk2 = float(line.split("rk2=")[1].split(",")[0])
+                    flat_bottom_radius = np.round((r3 - r2)/2, decimals=2)
+                    equilibrium_distance = np.round(r2 + flat_bottom_radius, decimals=2)
+                    force_constant = np.round(rk2, decimals=2)
 
-                # def set_somd_restraints():
-                somd_restraints = {}
-                with open(self.first_meze.restraint_file, "r") as ifile:
-                    for line in ifile:                    
-                        iat1 = int(line.split("iat=")[1].split(",")[0]) - 1
-                        iat2 = int(line.split("iat=")[1].split(",")[1]) - 1 
-                        r2 = float(line.split("r2=")[1].split(",")[0])
-                        r3 = float(line.split("r3=")[1].split(",")[0])
-                        rk2 = float(line.split("rk2=")[1].split(",")[0])
-                        flat_bottom_radius = np.round((r3 - r2)/2, decimals=2)
-                        equilibrium_distance = np.round(r2 + flat_bottom_radius, decimals=2)
-                        force_constant = np.round(rk2, decimals=2)
+                    atom_key = (iat1, iat2)
+                    restraint_value = (equilibrium_distance, force_constant, flat_bottom_radius)
+                    somd_restraints[atom_key] = restraint_value
 
-                        atom_key = (iat1, iat2)
-                        restraint_value = (equilibrium_distance, force_constant, flat_bottom_radius)
-                        somd_restraints[atom_key] = restraint_value                        
-
-    """
-            somd_restraints_file = self.somd_restraints(directory, somd_restraints_dict)
-        with open(somd_restraints_file, "r") as file:
-            restraints = file.readlines()
-
-        with open(directory + "somd.cfg", "a") as file:
-            file.writelines(restraints)
-"""
-
-
-
-
+            # "permanent distance restraints dictionary" pairs with "use permanent
+            # distance restraints"; permanent restraints are always at full strength
+            # regardless of lambda / turn-on-restraints mode.
+            config_options["use permanent distance restraints"] = True
+            config_options["permanent distance restraints dictionary"] = somd_restraints
+        elif self.stage == "bound" and self.recipe.model == 0:
+            log.warning(
+                f"Model 0 bound stage requested without a restraint_file on {self.first_name}; "
+                "no metal-coordinating distance restraints will be applied."
+            )
 
         free_energy_protocol = bss.Protocol.FreeEnergy(
             num_lam=self.recipe.n_lambdas,
@@ -3923,8 +3916,8 @@ class AlchemicalSofra:
             timestep=self.recipe.dt,
             temperature=self.recipe.temperature,
             pressure=self.recipe.pressure,
-            # restraint=None, #FIXME
-            # force_constant=None #FIXME
+            restart_interval=self.recipe.restart_interval,
+            report_interval=self.recipe.report_interval
         )
 
         bss.FreeEnergy.Relative(
@@ -3936,9 +3929,7 @@ class AlchemicalSofra:
             extra_options=config_options
         )
 
-        # after process, need to remove gpu index line
+        generated_configurations = glob.glob(os.path.join(self.working_directory, "*", "*.cfg"))
+        _fix_afe_configurations(generated_configurations)
 
-
-
-
-                
+        return merged_ligand_system
