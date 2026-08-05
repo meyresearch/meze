@@ -78,6 +78,5 @@ hot_qm_meze.run(
     workdir=qmmm_dir,
     ensemble="npt",
     pressure=1.0,
-    temperature=300,
-    restart=True
+    temperature=300
 )
