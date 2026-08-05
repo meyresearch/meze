@@ -4,7 +4,8 @@ import numpy as np
 from .ligand import Ligand
 from typing import (
     List,
-    Optional
+    Optional,
+    Dict
 )
 import os
 from dataclasses import fields, is_dataclass
@@ -109,7 +110,7 @@ def _write_distance_restraints(
         lines.append(line)
     return lines
 
-def _fix_afe_configurations(files: List[str]) -> None:
+def _remove_gpu_from_fep_configs(files: List[str]) -> None:
     for file in files:
         with open(file, "r") as f:
             lines = [line for line in f if "gpu" not in line]
@@ -447,3 +448,27 @@ def _set_n_somd_moves(
         time = sampling_time * 1000
         number_of_steps = int(time / stepsize)
         return  number_of_steps // n_somd_cycles
+
+def _write_somd_restraints(
+        amber_style_restraint_file: str
+) -> Dict[tuple[int, int], tuple[float, float, float]]:
+    if not os.path.isfile(amber_style_restraint_file):
+        message = f"Could not find AMBER-style restraint file: {amber_style_restraint_file}"
+        log.error(message)
+        raise FileNotFoundError
+    somd_restraints = {}
+    with open(amber_style_restraint_file, "r") as ifile:
+        for line in ifile:
+            iat1 = int(line.split("iat=")[1].split(",")[0]) - 1
+            iat2 = int(line.split("iat=")[1].split(",")[1]) - 1
+            r2 = float(line.split("r2=")[1].split(",")[0])
+            r3 = float(line.split("r3=")[1].split(",")[0])
+            rk2 = float(line.split("rk2=")[1].split(",")[0])
+            flat_bottom_radius = np.round((r3 - r2)/2, decimals=2)
+            equilibrium_distance = np.round(r2 + flat_bottom_radius, decimals=2)
+            force_constant = np.round(rk2, decimals=2)
+
+            atom_key = (iat1, iat2)
+            restraint_value = (equilibrium_distance, force_constant, flat_bottom_radius)
+            somd_restraints[atom_key] = restraint_value
+    return somd_restraints
