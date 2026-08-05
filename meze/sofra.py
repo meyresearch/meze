@@ -57,7 +57,8 @@ from .utils import (
     _edit_mcpbpy_tleap_input,
     pdb_to_sdf,
     _set_n_somd_moves,
-    _fix_afe_configurations
+    _remove_gpu_from_fep_configs,
+    _write_somd_restraints
 )
 from .helpers import _check_ambertools
 import shutil
@@ -3883,27 +3884,10 @@ class AlchemicalSofra:
         }
         
         if self.stage == "bound" and self.first_meze.restraint_file:
-            somd_restraints = {}
-            with open(self.first_meze.restraint_file, "r") as ifile:
-                for line in ifile:
-                    iat1 = int(line.split("iat=")[1].split(",")[0]) - 1
-                    iat2 = int(line.split("iat=")[1].split(",")[1]) - 1
-                    r2 = float(line.split("r2=")[1].split(",")[0])
-                    r3 = float(line.split("r3=")[1].split(",")[0])
-                    rk2 = float(line.split("rk2=")[1].split(",")[0])
-                    flat_bottom_radius = np.round((r3 - r2)/2, decimals=2)
-                    equilibrium_distance = np.round(r2 + flat_bottom_radius, decimals=2)
-                    force_constant = np.round(rk2, decimals=2)
-
-                    atom_key = (iat1, iat2)
-                    restraint_value = (equilibrium_distance, force_constant, flat_bottom_radius)
-                    somd_restraints[atom_key] = restraint_value
-
-            # "permanent distance restraints dictionary" pairs with "use permanent
-            # distance restraints"; permanent restraints are always at full strength
-            # regardless of lambda / turn-on-restraints mode.
+            somd_restraints = _write_somd_restraints(self.first_meze.restraint_file)
             config_options["use permanent distance restraints"] = True
             config_options["permanent distance restraints dictionary"] = somd_restraints
+
         elif self.stage == "bound" and self.recipe.model == 0:
             log.warning(
                 f"Model 0 bound stage requested without a restraint_file on {self.first_name}; "
@@ -3929,7 +3913,10 @@ class AlchemicalSofra:
             extra_options=config_options
         )
 
-        generated_configurations = glob.glob(os.path.join(self.working_directory, "*", "*.cfg"))
-        _fix_afe_configurations(generated_configurations)
+        generated_configurations = glob.glob(
+            os.path.join(self.working_directory, "*", "*.cfg")
+        )
+
+        _remove_gpu_from_fep_configs(generated_configurations)
 
         return merged_ligand_system
