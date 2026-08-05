@@ -194,6 +194,7 @@ class ColdMezeRecipe(MezeRecipe):
     barostat: int = Field(
         2, ge=1, le=2, description="Type of barostat, 1: Berendsen, 2: MC"
     )
+
     runtime: Union[float, bssTime] = Field(
         100.0, description="Simulation time in picoseconds"
     )
