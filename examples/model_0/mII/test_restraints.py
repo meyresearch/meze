@@ -3,8 +3,13 @@ from meze import ColdMeze, ColdMezeRecipe
 import os
 import json
 import sys
+from pathlib import Path
 
-project_dir = "/Users/af25016/projects/meze/data/"
+REPO_ROOT = Path().resolve()  
+EXAMPLES_DIR = REPO_ROOT / "examples"
+project_dir = REPO_ROOT / "data"
+
+
 system_name = "mII"
 ligand_name = "m5g0"
 

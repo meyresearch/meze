@@ -39,6 +39,7 @@ from BioSimSpace._SireWrappers import System as bssSystem
 from BioSimSpace.Types._time import Time as bssTime
 from BioSimSpace.Types._temperature import Temperature as bssTemperature
 from BioSimSpace.Types._pressure import Pressure as bssPressure
+from BioSimSpace.Types._length import Length as bssLength
 from .utils import (
     _residue_restraint_mask,
     _write_distance_restraints,
@@ -121,8 +122,8 @@ class MezeRecipe(BaseModel):
     pressure: Union[float, bssPressure] = Field(
         1.0, description="Simulation pressure in atm"
     )
-    nb_cutoff: float = Field(
-        12.0, ge=0, description="Cut-off for electrostatics interactions"
+    nb_cutoff: Union[float, bssLength] = Field(
+        12.0, description="Cut-off for electrostatics interactions"
     )
 
     @field_validator("model", mode="before")
@@ -135,6 +136,16 @@ class MezeRecipe(BaseModel):
         except (TypeError, ValueError):
             raise ValueError(f"Cannot covert model='{v}' to int")
         
+    @field_validator("temperature", mode="after")
+    @classmethod
+    def validate_temperature(cls, value):
+        if isinstance(value, bss.Types.Temperature):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"temperature must be greater than or equal to 0 K")
+        return bss.Types.Temperature(value, "kelvin")
+
     @field_validator("pressure", mode="after")
     @classmethod
     def validate_pressure(cls, value):
@@ -183,10 +194,11 @@ class ColdMezeRecipe(MezeRecipe):
     barostat: int = Field(
         2, ge=1, le=2, description="Type of barostat, 1: Berendsen, 2: MC"
     )
-    runtime: float = Field(
+
+    runtime: Union[float, bssTime] = Field(
         100.0, description="Simulation time in picoseconds"
     )
-    dt: float = Field(
+    dt: Union[float, bssTime] = Field(
         0.001, description="Integrator timestep, in picoseconds"
     )
     start_temperature: float = Field(
@@ -210,7 +222,7 @@ class ColdMezeRecipe(MezeRecipe):
 
     @field_validator("start_temperature", "end_temperature", mode="after")
     @classmethod
-    def validate_temperature(cls, value):
+    def validate_temperature_range(cls, value):
         if isinstance(value, bss.Types.Temperature):
             return value
         value = float(value)
@@ -222,10 +234,10 @@ class ColdMezeRecipe(MezeRecipe):
 class HotMezeRecipe(MezeRecipe):
     """Meze workflow recipe for production runs
     """
-    runtime: float = Field(
+    runtime: Union[float, bssTime] = Field(
         100.0, description="Simulation time in nanoseconds"
     )
-    dt: float = Field(
+    dt: Union[float, bssTime] = Field(
         0.002, description="Integrator timestep, in picoseconds"
     )
     @field_validator("runtime", mode="after")
@@ -314,7 +326,7 @@ class Meze:
             self._set_ligand()
         else:
             log.warning(
-                "Ligand not set by user in meze construction. Do you wish to continue without it?"
+                "Ligand not set by user in meze construction. Inferring from inputs."
             )
 
 
@@ -2134,7 +2146,7 @@ class ColdMeze(Meze):
         )
 
         config_options = {
-            "cut": recipe.nb_cutoff,
+            "cut": recipe.nb_cutoff._value,
             "ntpr": 1000,
             "iwrap": 0
         }
@@ -2417,7 +2429,7 @@ class HotMeze(Meze):
             model=self.recipe.model
         )
 
-        config_options = {"cut": recipe.nb_cutoff,
+        config_options = {"cut": recipe.nb_cutoff._value,
                           "ntpr": write_frequency,
                           "ntwx": write_frequency,
                           "ntwr": write_frequency,
@@ -2640,6 +2652,7 @@ class QuantumMeze(Meze):
     def _write_qm_namelist(
             self, 
             qm_theory: Optional[str] = "DFTB3", 
+            qm_shake: Optional[int] = 0
     ):
         parsed_whole_residues = _residue_restraint_mask(self.qm_region["whole_residues"])
         atom_ids = ",".join(list(map(str, self.qm_region["atom_ids"])))
@@ -2650,7 +2663,7 @@ class QuantumMeze(Meze):
             "writepdb": "1",
             "qmcharge": str(self.qm_charge),
             "qm_theory": f"'{qm_theory}'",
-            "qmshake": "0",
+            "qmshake": str(qm_shake),
             "qm_ewald": "1",
             "qm_pme": "1"
         }
@@ -2688,14 +2701,13 @@ class QuantumMeze(Meze):
         is_gpu: bool = False,
         additional_positional_restraints: Optional[dict[str, Any]] = None,
         additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
+        qm_shake: Optional[bool] = False
     ) -> "QuantumMeze":
         if additional_positional_restraints is not None:
             if not {"resids"} <= additional_positional_restraints.keys() and not {"resnames"} <= additional_positional_restraints.keys():
                 raise ValueError(
                     "additional_restraints must contain 'resids' or 'resnames' keys."
                 )
-        config_options["ntc"] = 1
-        config_options["ntf"] = 1
 
         if not additional_positional_restraints:
             disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
@@ -2717,7 +2729,7 @@ class QuantumMeze(Meze):
             additional_resids = list(additional_resids)
             disres = additional_resids
 
-        qm_namelist = self._write_qm_namelist(qm_theory=qm_theory)
+        qm_namelist = self._write_qm_namelist(qm_theory=qm_theory, qm_shake=int(qm_shake))
 
         if disres is not None:
             distance_restraints = self._prepare_distance_restraints(disres)
@@ -2790,7 +2802,7 @@ class ColdQuantumMeze(QuantumMeze):
         )
 
     def run(self,
-            protocol_type: Literal["minimisation", "nvt"],
+            protocol_type: Literal["minimisation", "nvt", "npt"],
             system: Optional[bssSystem],
             workdir: Optional[str],
             restart: Optional[bool] = False,
@@ -2811,8 +2823,9 @@ class ColdQuantumMeze(QuantumMeze):
             metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
             additional_positional_restraints: Optional[dict[str, Any]] = None,
             additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
+            qm_shake: Optional[bool] = False
     ) -> "ColdQuantumMeze":
-        allowed_protocols = ["minimisation", "nvt"]
+        allowed_protocols = ["minimisation", "nvt", "npt"]
         if protocol_type not in allowed_protocols:
             raise ValueError(
                 f"Unsupported protocol type '{protocol_type}'.\n"
@@ -2834,9 +2847,9 @@ class ColdQuantumMeze(QuantumMeze):
             pressure=pressure or self.recipe.pressure,
             path_to_engine=engine_executable or self.recipe.path_to_engine
         )
-
+        
         config_options = {
-            "cut": recipe.nb_cutoff,
+            "cut": recipe.nb_cutoff._value,
             "ntpr": 50,
             "ntwx": 50,
             "ntwx": 50,
@@ -2844,6 +2857,17 @@ class ColdQuantumMeze(QuantumMeze):
             "ifqnt": 1
         }
         
+        if not qm_shake and recipe.dt._value > 1.0:
+            message = f"Cannot run a QM/MM MD simulation with a timestep larger than 1.0 fs without 'qm_shake' set to False."
+            log.error(message)
+            raise RuntimeError(message)
+        elif qm_shake and recipe.dt._value > 1.0:
+            message = f"QM shake is on, and the timestep is {recipe.dt} fs, which is not recommended for QM/MM equilibration."
+            log.warning(message)
+        else:
+            config_options["ntc"] = 1
+            config_options["ntf"] = 1
+
         if restart:
             config_options["irest"] = 1
             config_options["ntx"] = 5
@@ -2871,6 +2895,14 @@ class ColdQuantumMeze(QuantumMeze):
                 temperature=temperature,
                 pressure=None,
             )
+        else:
+            config_options["barostat"] = recipe.barostat
+            protocol = bss.Protocol.Equilibration(
+                timestep=recipe.dt,
+                runtime=recipe.runtime,
+                temperature=recipe.temperature,
+                pressure=recipe.pressure,
+            )            
 
         return super().run_qm(
             protocol=protocol,
@@ -2882,7 +2914,8 @@ class ColdQuantumMeze(QuantumMeze):
             config_options=config_options,
             is_gpu=False,
             additional_positional_restraints=additional_positional_restraints,
-            additional_distance_restraints=additional_distance_restraints
+            additional_distance_restraints=additional_distance_restraints,
+            qm_shake=qm_shake
         )
     
     def minimise(
@@ -2953,6 +2986,40 @@ class ColdQuantumMeze(QuantumMeze):
             additional_positional_restraints=additional_positional_restraints,
             additional_distance_restraints=additional_distance_restraints,
         )
+
+    def pressurise(
+            self,
+            system: Optional[bssSystem] = None,
+            workdir: Optional[str] = None,
+            restart: Optional[bool] = False,
+            timestep: Optional[Union[float, bssTemperature]] = 0.001,
+            runtime: Optional[Union[float, bssTime]] = None,
+            temperature: Optional[Union[float, bssTemperature]] = 300,
+            pressure: Optional[Union[float, bssPressure]] = 1.0,
+            process_name: Optional[str] = "qm-npt",
+            engine_executable: Optional[str] = None,
+            qm_theory: Optional[str] = "DFTB3",
+            metal_resids_for_distance_restraints: Optional[Union[int, list[int]]] = None,
+            additional_positional_restraints: Optional[dict[str, Any]] = None,
+            additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
+    ) -> "ColdQuantumMeze":
+        disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
+        return self.run(
+            protocol_type="npt",
+            system=system,
+            workdir=workdir,
+            restart=restart,
+            process_name=process_name,
+            timestep=timestep,
+            temperature=temperature,
+            runtime=runtime,
+            pressure=pressure,
+            engine_executable=engine_executable,
+            qm_theory=qm_theory,
+            metal_resids_for_distance_restraints=disres,
+            additional_positional_restraints=additional_positional_restraints,
+            additional_distance_restraints=additional_distance_restraints,
+        )
     
 @dataclass
 class HotQuantumMeze(QuantumMeze):
@@ -3004,6 +3071,7 @@ class HotQuantumMeze(QuantumMeze):
             workdir: Optional[str],
             system: Optional[bssSystem] = None,
             process_name: Optional[str] = "qm-meze-run",
+            ensemble: Optional[Literal["nvt", "npt"]] = "nvt",            
             nb_cutoff: Optional[float] = None,
             timestep: Optional[Union[float, bssTime]] = 0.001,
             runtime: Optional[Union[float, bssTime]] = None,
@@ -3017,10 +3085,11 @@ class HotQuantumMeze(QuantumMeze):
             additional_distance_restraints: Optional[dict[tuple[int, int], tuple[float, float, float]]] = None,
     ) -> "HotQuantumMeze":
         disres=metal_resids_for_distance_restraints or self.metal_resids_for_distance_restraints
+
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
             nb_cutoff=nb_cutoff or self.recipe.nb_cutoff,
-            runtime= runtime or self.recipe.runtime,
+            runtime=runtime or self.recipe.runtime,
             dt=timestep or self.recipe.dt,
             temperature=temperature or self.recipe.temperature,
             pressure=pressure or self.recipe.pressure,
@@ -3028,7 +3097,7 @@ class HotQuantumMeze(QuantumMeze):
         )
 
         config_options = {
-            "cut": recipe.nb_cutoff,
+            "cut": recipe.nb_cutoff._value,
             "ntpr": write_frequency,
             "ntwx": write_frequency,
             "ntwx": write_frequency,
@@ -3037,12 +3106,14 @@ class HotQuantumMeze(QuantumMeze):
             "ntx": 5,
             "ifqnt": 1
         }
+        if ensemble == "npt":
+            config_options["barostat"] = 2
         
         protocol = bss.Protocol.Production(
             timestep=recipe.dt,
             runtime=recipe.runtime,
             temperature=recipe.temperature,
-            pressure=None
+            pressure=recipe.pressure
         )
 
         return super().run_qm(
@@ -3055,7 +3126,7 @@ class HotQuantumMeze(QuantumMeze):
             config_options=config_options,
             is_gpu=False,
             additional_positional_restraints=additional_positional_restraints,
-            additional_distance_restraints=additional_distance_restraints,
+            additional_distance_restraints=additional_distance_restraints
         )
 
 @dataclass
