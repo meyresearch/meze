@@ -5,10 +5,6 @@ import logging
 import multiprocessing
 if multiprocessing.get_start_method(allow_none=True) is None:
     multiprocessing.set_start_method("fork")
-from somd2 import(
-    config,
-    runner
-)
 import yaml
 warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
 logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
