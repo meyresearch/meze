@@ -91,16 +91,16 @@ alchemical_recipe = AlchemicalMezeRecipe(
     engine="SOMD"
 )
 
-# unbound_sofra = AlchemicalSofra(
-#     first_meze=unbound_ligand_1_meze,
-#     second_meze=unbound_ligand_2_meze,
-#     first_name=ligand_1,
-#     second_name=ligand_2,
-#     stage="unbound",
-#     directory=f"{project_dir}/outputs/model_0/",
-#     overwrite=True,
-#     recipe=alchemical_recipe
-# )
+unbound_sofra = AlchemicalSofra(
+    first_meze=unbound_ligand_1_meze,
+    second_meze=unbound_ligand_2_meze,
+    first_name=ligand_1,
+    second_name=ligand_2,
+    stage="unbound",
+    directory=f"{project_dir}/outputs/model_0/{system_name}",
+    overwrite=True,
+    recipe=alchemical_recipe
+)
 
 bound_sofra = AlchemicalSofra(
     first_meze=bound_ligand_1_meze,
@@ -113,10 +113,13 @@ bound_sofra = AlchemicalSofra(
     recipe=alchemical_recipe
 )
 
-# merged_unbound_system = unbound_sofra.setup_alchemistry()
+merged_unbound_system = unbound_sofra.setup_alchemistry(
+    compute_platform="cpu", # dev/testing only!
+    debug=True
+)
 
 merged_bound_system = bound_sofra.setup_alchemistry(
-    compute_platform="cpu", # dev/testing only! 
+    compute_platform="cpu", # dev/testing only!
     debug=True
 )
 # prep fep windows
