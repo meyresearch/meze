@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: dev-environment.yml
+          environment-name: meze-dev
+          cache-environment: true
+          cache-downloads: true
+
+      - name: Run tests
+        shell: bash -el {0}
+        run: |
+          pytest tests/ -m "not slow and not gpu" --cov=meze --cov-report=term-missing
