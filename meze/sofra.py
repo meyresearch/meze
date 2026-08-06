@@ -3866,7 +3866,7 @@ class AlchemicalSofra:
         merged_ligand_system = self.create_hybrid_molecule()
         
         n_somd_cycles = n_somd_cycles or int(self.recipe.sampling_time._value * 5)
-        n_somd_moves = n_somd_moves or _set_n_somd_moves(sampling_time=self.recipe.sampling_time, n_somd_cycles=n_somd_cycles, stepsize=self.recipe.dt)
+        n_somd_moves = n_somd_moves or _set_n_somd_moves(sampling_time=self.recipe.sampling_time._value, n_somd_cycles=n_somd_cycles, stepsize=self.recipe.dt._value)
         buffered_coordinates_frequency = buffered_coordinates_frequency or max(int(n_somd_moves / n_frames), 10000)
         n_cycles_per_saved_frame = max(1, self.recipe.restart_interval // n_somd_moves)
 
