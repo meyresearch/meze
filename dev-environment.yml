@@ -13,5 +13,8 @@ dependencies:
   - pygraphviz
   - rich
   - pip
+  - pytest
+  - pytest-cov
+  - ambertools
   - pip:
     - -e .
