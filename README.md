@@ -64,21 +64,6 @@ echo $AMBERHOME
 ```
 which should return a path to your `amber.sh` file.  
 
-# Developing
+# Developing and contributing
 
-Clone the repository:
-```
-git clone https://github.com/meyresearch/meze.git
-cd meze
-```
-
-Create a developer environment: 
-```
-mamba env create -f dev-environment.yml
-mamba activate meze-dev
-pip install -e .
-git pull
-```
-> [!IMPORTANT]
-> Make sure to `git pull` after new updates to the code!
-
+See the [CONTRIBUTING.md](https://github.com/meyresearch/meze/blob/chore/ci-and-community-files/CONTRIBUTING.md) page for detailed instructions on developing and contributing to meze. 
