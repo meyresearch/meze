@@ -1,0 +1,118 @@
+from meze import Ligand, ColdMezeRecipe, ColdMeze
+import json
+import os
+import meze
+from pathlib import Path
+
+REPO_ROOT = Path().resolve()  
+EXAMPLES_DIR = REPO_ROOT / "examples"
+DATA_DIR = REPO_ROOT / "data"
+
+system_name = "vim2"
+ligand_name = "ligand_11"
+
+repeat = 1
+
+project_dir = DATA_DIR
+
+# set ColdMezeRecipe including model (i.e. metal params), ligand(?)
+with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
+    json_recipe = json.load(file)
+
+json_recipe["path_to_engine"] = os.path.join(
+        os.environ["AMBERHOME"], "bin", "sander"
+    )
+json_recipe["model"] = None
+json_recipe["nb_cutoff"] = 10.0
+
+cold_ligand = Ligand(
+    file=f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{ligand_name}_bound/{ligand_name}.mol2",
+    charge=-1,
+    parameterised=True,
+    frcmod_file=f"{project_dir}/inputs/model_0/protein/{system_name}/solvate_{ligand_name}_bound/{ligand_name}.frcmod"
+)
+
+
+#TODO: put solvation options into MezeRecipe
+solvate_dir = f"{project_dir}/inputs/model_0/ligands/{system_name}/solvate_{ligand_name}_unbound/"
+
+
+solvated_ligand = cold_ligand.add_water(directory=solvate_dir)
+
+ligand_meze = ColdMeze.from_files(
+    topology=solvated_ligand.topology,
+    coordinates=solvated_ligand.coordinates,
+    recipe=ColdMezeRecipe(**json_recipe),
+    ligand=solvated_ligand,
+    stage="unbound"
+)
+
+equil_dir = os.path.join(project_dir, "equilibration", "model_0", system_name, "unbound", f"{ligand_name}", f"repeat_{repeat}")
+
+os.makedirs(equil_dir, exist_ok=True)
+
+print("Minimising")
+
+minimised_meze = ligand_meze.minimise(
+    process_name="01_min",
+    workdir=equil_dir,
+    position_restraints="solute",
+    max_cycles=1000,
+    is_gpu=True
+)
+
+print("02 - Heating with restrained solute")
+
+hot_meze = minimised_meze.heat(
+    process_name="02_heat",
+    workdir=equil_dir,
+    position_restraints="solute",
+    timestep=0.001,
+    start_temperature=100,
+    end_temperature=300            
+) 
+
+print("03 - Constant temperature with restrained solute")
+
+relax_meze = hot_meze.heat(
+    restart=True,
+    process_name="03_relax",
+    workdir=equil_dir,
+    position_restraints="solute",
+    timestep=0.001
+)
+
+print("04 - Add pressure with restrained solute")
+
+pressure_meze = relax_meze.pressurise(
+     restart=True,
+     process_name="04_pressure",
+     workdir=equil_dir, 
+     position_restraints="solute",
+     timestep=0.001
+)
+
+print("05 - Start lowering restraint weight on  solute")
+
+lower_restraint = pressure_meze.pressurise(
+     restart=True,
+     process_name="05_lower",
+     workdir=equil_dir,
+     position_restraints="solute",
+     timestep=0.001,
+     restraint_weight=10.0
+)
+
+print("06 - No restraint")
+
+reduce_restraint = lower_restraint.pressurise(
+     restart=True,
+     process_name="06_free",
+     workdir=equil_dir,
+     timestep=0.001
+)
+
+
+
+
+

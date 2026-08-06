@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 # Data -> add these manually as needed
+*.pert
 *.zip
 *.esp
 resp*.*

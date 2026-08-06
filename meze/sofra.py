@@ -1,7 +1,11 @@
-import glob 
+import glob
 import json
 import warnings
 import logging
+import multiprocessing
+if multiprocessing.get_start_method(allow_none=True) is None:
+    multiprocessing.set_start_method("fork")
+import yaml
 warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
 logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
 logging.getLogger("MDAnalysis").setLevel(logging.ERROR)
@@ -26,6 +30,7 @@ from typing import (
     Self,
     List
 )
+import pandas as pd
 import pickle
 import pathlib
 from .ligand import Ligand
@@ -50,14 +55,19 @@ from .utils import (
     _check_log_files,
     _get_mol2_charge,
     _edit_mcpbpy_tleap_input,
-    pdb_to_sdf
+    pdb_to_sdf,
+    _set_n_somd_moves,
+    _remove_gpu_from_fep_configs,
+    _write_somd_restraints
 )
 from .helpers import _check_ambertools
 import shutil
 from rich.logging import RichHandler
 from rich.console import Console
 from rdkit import Chem
-from sire.legacy.IO import renumberConstituents
+import subprocess
+import csv
+import sire
 
 console = Console(force_terminal=True, color_system="truecolor")
 
@@ -116,17 +126,19 @@ class MezeRecipe(BaseModel):
     solvent_closeness: float = Field(
         0.75, ge=0, le=1, description="Solvent closeness"
     )
-    temperature: Union[float, bssTemperature] = Field(
-        300.0, description="Simulation temperature in kelvin"
+    n_repeats: int = Field(
+        3, ge=1, description="Number of repeats"
     )
-    pressure: Union[float, bssPressure] = Field(
+    temperature: Union[float, bss.Types.Temperature] = Field(
+        300.0,  description="Simulation temperature in kelvin"
+    )
+    pressure: Union[float, bss.Types.Pressure] = Field(
         1.0, description="Simulation pressure in atm"
     )
-    nb_cutoff: Union[float, bssLength] = Field(
-        12.0, description="Cut-off for electrostatics interactions"
+    nb_cutoff: float = Field(
+        12.0, ge=0, description="Cut-off for electrostatics interactions"
     )
-
-    @field_validator("model", mode="before")
+    @field_validator("model", mode="after")
     @classmethod
     def validate_model(cls, v):
         if v is None:
@@ -166,6 +178,36 @@ class MezeRecipe(BaseModel):
             raise ValueError(f"nb_cutoff must be greater than or equal to 0 atm")
         return bss.Types.Length(value, "angstrom")    
 
+    @field_validator("temperature", mode="after")
+    @classmethod
+    def validate_temperature(cls, value):
+        if isinstance(value, bss.Types.Temperature):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"temperature must be greater than or equal to 0 K")
+        return bss.Types.Temperature(value, "kelvin")
+    
+    @field_validator("pressure", mode="after")
+    @classmethod
+    def validate_pressure(cls, value):
+        if isinstance(value, bss.Types.Pressure):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"pressure must be greater than or equal to 0 atm")
+        return bss.Types.Pressure(value, "atm")
+    
+    @field_validator("nb_cutoff", mode="after")
+    @classmethod
+    def validate_cutoff_distance(cls, value):
+        if isinstance(value, bss.Types.Length):
+            return value
+        value = float(value)
+        if value < 0:
+            raise ValueError(f"nb_cutoff must be greater than or equal to 0 atm")
+        return bss.Types.Length(value, "angstrom")    
+    
     def __str__(self) -> str:
         """Print recipe information as JSON
         """
@@ -230,7 +272,6 @@ class ColdMezeRecipe(MezeRecipe):
             raise ValueError(f"temperature must be greater than or equal to 0 K")
         return bss.Types.Temperature(value, "kelvin")
 
-
 class HotMezeRecipe(MezeRecipe):
     """Meze workflow recipe for production runs
     """
@@ -258,6 +299,63 @@ class HotMezeRecipe(MezeRecipe):
             raise ValueError(f"dt must be greater than or equal to 0 picoseconds")
         return bss.Types.Time(value, "picoseconds")
 
+class AlchemicalMezeRecipe(MezeRecipe):
+    """Meze workflow recipe for alchemical free energy calculations
+    """
+    model_config = ConfigDict(arbitrary_types_allowed=True, validate_default=True)
+    n_lambdas: int = Field(
+        16, ge=3, description="Number of lambda windows"
+    )
+    sampling_time: Union[float, bssTime] = Field(
+        4.0, description="Runtime for each lambda window in ns."
+    )
+    restart_interval: int = Field(
+        500, ge=1, description="N:o steps with which restart files are written"
+    )
+    report_interval: int = Field(
+        500, ge=1, description="N:o steps with which outputs are written"
+    )
+    flexible_align: bool = Field(
+        False, description="Whether to flexibly align ligands for single topology."
+    )
+    ring_breaks: bool = Field(
+        True, description="Whether to allow ring breaking in merging."
+    )
+    ring_size_changes: bool = Field(
+        True, description="Whether to allow ring sizes to change for merging."
+    )
+    engine: str = Field(
+        "SOMD", description="Which MD engine to use for the alchemistry"
+    )
+    dt: float = Field(
+        0.002, description="Integrator timestep, in picoseconds"
+    )    
+    minimise_lambda: bool = Field(
+        True, description="Whether to carry out minimisation at each lambda"
+    )
+    lambda_minimisation_steps: int = Field(
+        5000, description="Number of minimisation steps to do at each lambda minimisation."
+    )
+
+    @field_validator("sampling_time", mode="after")
+    @classmethod
+    def validate_sampling_time(cls, value):
+        if isinstance(value, bssTime):
+            return value
+        value = float(value)
+        if value <= 0:
+            raise ValueError(f"sampling_time must be greater than 0 ns")
+        return(bssTime(value, "nanoseconds"))
+
+    @field_validator("dt", mode="after")
+    @classmethod
+    def validate_picosecond_times(cls, value):
+        if isinstance(value, bss.Types.Time):
+            return value
+        if value < 0:
+            raise ValueError(f"dt must be greater than or equal to 0 picoseconds")
+        return bss.Types.Time(value, "picoseconds")
+
 
 @dataclass
 class Meze:
@@ -274,6 +372,7 @@ class Meze:
     restraint_file: Optional[str] = None
     exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
     ligand_resname: Optional[str] = None
+    stage: str = "bound"
 
     def __post_init__(self):
         coordinate_extension = os.path.splitext(self.coordinates)[1]
@@ -307,11 +406,22 @@ class Meze:
         except FileNotFoundError:
             print("Could not create meze object:\n")
             raise            
+        
+        if self.stage == "bound":
+            self._set_metal()
+            self.coordinating_residues = self._get_metal_coordinating_residues()
+        elif self.stage == "unbound":
+            self.metals = None
+            self.metal_resids = []
+            self.metal_atomids = []
+            self.coordinating_residues = {}
+        else:
+            raise ValueError(
+                f"Unrecognised stage set: {self.stage}"
+            )
 
-        self._set_metal()
-        self.coordinating_residues = self._get_metal_coordinating_residues()
-        self._setup_bss_system()
         self._set_waters()
+        self._setup_bss_system()
         self._set_protein()
 
         if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
@@ -319,6 +429,7 @@ class Meze:
         
         if self.ligand and self.ligand.parameterised and not self.ligand_resid:
             self.ligand_resid = self.get_ligand_resid()
+            self.ligand_resname = self.ligand.residue_name
         elif self.ligand and self.ligand.parameterised and self.ligand_resid:
             pass  
         elif not self.ligand and self.ligand_resname:
@@ -413,6 +524,7 @@ class Meze:
         restraint_file: Optional[str] = None,
         exclude_resids: Optional[Union[int, list[int]]] = None,
         ligand_resname: Optional[str] = None,
+        stage: Optional[str] = "bound",
         **kwargs
     ):
         """Construct Meze from Amber topology and coordinates
@@ -438,7 +550,8 @@ class Meze:
             restraint_file=restraint_file,
             exclude_resids=exclude_resids,
             ligand_resname=ligand_resname,
-            recipe=recipe
+            recipe=recipe,
+            stage=stage
         )
 
     def _set_waters(self):
@@ -462,7 +575,21 @@ class Meze:
             residue_name=self.ligand_resname
         )
         
-        
+    def get_mutatable_ligand_molecule(self):
+
+        if not self.ligand_resname:
+            raise RuntimeError(f"Ligand residue name not set. Cannot determine mutatable ligand.")
+
+        residues = self.system.getResidues()
+        if len(residues) == 0:
+            raise RuntimeError(f"No residues found in BioSimSpace system for meze with file:\n{self.coordinates}")
+        ligand_residues = [residue for residue in residues if residue.name().upper() == self.ligand_resname]
+        if not ligand_residues:
+            raise RuntimeError(f"Could not find any ligand residues for meze object with file:\n{self.coordinates}")
+        if len(ligand_residues) > 1:
+            raise NotImplementedError(f"Cannot extract ligand with multiple residues")
+        return ligand_residues[0].toMolecule()
+
 
     def get_small_molecule_resname(self) -> str | None:
 
@@ -1057,7 +1184,7 @@ class Meze:
 
     def add_water(
             self,
-            directory: str | None = None, 
+            directory: Optional[str] = None, 
             mcpbpy_tleap_file: str | None = None, 
             non_standard_parameterisation_method: Literal["antechamber", "tleap"] = "antechamber"
     ) -> Self:
@@ -1153,8 +1280,8 @@ class Meze:
             )
         
         except FileNotFoundError:
-            print("Failed to solvate meze.")
-            raise
+            log.error("Failed to solvate meze.")
+            raise RuntimeError
 
         os.chdir(workdir)
         
@@ -1981,6 +2108,7 @@ class ColdMeze(Meze):
         restraint_file: Optional[str] = None,
         exclude_resids: Optional[Union[int, list[int]]] = None,
         ligand_resname: Optional[str] = None,
+        stage: Optional[str] = "bound",
         **kwargs
     ) -> "ColdMeze":
         """
@@ -2018,7 +2146,8 @@ class ColdMeze(Meze):
             restraint_file=restraint_file,
             exclude_resids=exclude_resids,
             ligand_resname=ligand_resname,
-            recipe=recipe
+            recipe=recipe,
+            stage=stage
         )
 
     def _build_restraint_mask(
@@ -2051,14 +2180,17 @@ class ColdMeze(Meze):
             exclude_resids = [exclude_resids]
         exclude_resids = set(exclude_resids or [])
 
-        coordinating_atomgroups = next(iter(self.coordinating_residues.values()))
-        for atomgroup in list(self.coordinating_residues.values())[1:]:
-            coordinating_atomgroups += atomgroup
+        if self.coordinating_residues:
+            coordinating_atomgroups = next(iter(self.coordinating_residues.values()))
+            for atomgroup in list(self.coordinating_residues.values())[1:]:
+                coordinating_atomgroups += atomgroup
 
-        coordinating_resids = [
-            atom.resid for atom in coordinating_atomgroups
-            if atom.resid not in exclude_resids
-        ]
+            coordinating_resids = [
+                atom.resid for atom in coordinating_atomgroups
+                if atom.resid not in exclude_resids
+            ]
+        else:
+            coordinating_resids = []
         additional_resids = []
         if additional_restraints:
             if not {"resids"} <= additional_restraints.keys() and not {"resnames"} <= additional_restraints.keys():
@@ -2082,13 +2214,17 @@ class ColdMeze(Meze):
             additional_resids = list(additional_resids)
         if position_restraints == "solute":
             protein_resids = [atom.resid for atom in self.universe.select_atoms("protein")]
-            constraint_resids = protein_resids + coordinating_resids + self.metal_resids.tolist() + additional_resids
+            if not protein_resids:
+                solute_resids = [atom.resid for atom in self.universe.select_atoms(f"resname {self.ligand_resname}")]
+            else:      
+                solute_resids = protein_resids 
+            constraint_resids = solute_resids + coordinating_resids + list(self.metal_resids) + additional_resids
             return f"':{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "backbone":
-            constraint_resids = coordinating_resids + self.metal_resids.tolist() + additional_resids
+            constraint_resids = coordinating_resids + list(self.metal_resids) + additional_resids
             return f"'(@N,CA,C,O & !:WAT)|:{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints == "metal-coordination":
-            constraint_resids = coordinating_resids + self.metal_resids.tolist() + additional_resids
+            constraint_resids = coordinating_resids + list(self.metal_resids) + additional_resids
             return f"':{_residue_restraint_mask(constraint_resids)}'"
         elif position_restraints is None and additional_resids:
             return f"':{_residue_restraint_mask(additional_resids)}'"
@@ -2343,7 +2479,7 @@ class HotMeze(Meze):
                 )
         elif not self.restraint_file and self.recipe.model == 0:
             log.warning(
-                "No restraint file supplied while model is 0."
+                "No restraint file supplied while model is 0.\n"
                 "Restraints will be determined from input files."
             )
 
@@ -2364,6 +2500,7 @@ class HotMeze(Meze):
         restraint_file: Optional[str] = None,
         exclude_resids: Optional[Union[int, list[int]]] = None,
         ligand_resname: Optional[str] = None,
+        stage: Optional[str] = "bound",
         **kwargs
     ) -> "HotMeze":
         """
@@ -2400,7 +2537,8 @@ class HotMeze(Meze):
             restraint_file=restraint_file,
             exclude_resids=exclude_resids,
             ligand_resname=ligand_resname,
-            recipe=recipe
+            recipe=recipe,
+            stage=stage
         )
 
     def run(
@@ -3134,11 +3272,22 @@ class Sofra:
     mezes: dict[str, Meze]
     sofra_file: str
     sofra_contents: dict = field(default_factory=dict) 
-    transformations: Optional[list] = field(default=None)                                                                                         
+    transformations: Optional[list] = field(default=None)
     lomap_scores: Optional[list] = field(default=None) 
+    network_file: Optional[str] = field(default=None)
+    project_directory: str = field(default_factory=os.getcwd)
+    group_name: str = "meze"
+
+    def __str__(self) -> str:
+        return _pretty(self)
 
     @classmethod
-    def from_file(cls, sofra_file: str) -> "Sofra":
+    def from_file(
+        cls, 
+        sofra_file: str, 
+        directory: Optional[str] = None,
+        group_name: Optional[str] = None
+    ) -> "Sofra":
         if not os.path.isfile(sofra_file):
             message = f"Sofra file not found: {sofra_file}."
             log.error(message)
@@ -3147,7 +3296,14 @@ class Sofra:
             sofra_contents = json.load(file)
         mezes = {}
         for ligand_name, entry in sofra_contents.items():
-            
+            if not isinstance(entry, dict):
+                if ligand_name == "network_file":
+                    network_file = entry
+                    if not os.path.isfile(network_file):
+                        message = f"Could not find network file {network_file} from sofra file:\n{sofra_file}"
+                        log.error(message)
+                        raise FileNotFoundError(message)
+                continue
             try:
                 mezes[ligand_name] = Meze.load(entry["pickle_file"])
             except KeyError:
@@ -3159,7 +3315,34 @@ class Sofra:
         if len(mezes) == 1:
             message = f"Found only one meze in {sofra_file}. Are you sure you wish to continue?"
             log.warning(message)
-        return cls(mezes=mezes, sofra_file=sofra_file, sofra_contents=sofra_contents)
+        if directory:
+            if not os.path.isdir(directory):
+                message = f"Project directory {directory} does not exist."
+                log.error(message)
+                raise FileNotFoundError
+            project_directory = directory
+        else:
+            project_directory = os.getcwd()
+            log.info(
+                "Project directory not set, using current working directory: \n"
+                f"{project_directory}"
+            )
+        
+        if group_name:
+            sofra_group_name = group_name
+        else:
+            sofra_group_name = list(mezes.values())[0].recipe.group_name
+        
+        log.info(
+            f"Using group name {sofra_group_name} for the sofra object"
+        )
+
+        return cls(mezes=mezes, 
+                   sofra_file=sofra_file, 
+                   sofra_contents=sofra_contents, 
+                   project_directory=project_directory,
+                   group_name=sofra_group_name,
+                   network_file=network_file)
 
 
     def average_charges(self, 
@@ -3455,29 +3638,285 @@ class Sofra:
     
     def set_ligand_network(self, 
                            pdb_files: list[str],
-                           directory: Optional[str], plot: bool = True):
+                           directory: Optional[str] = None, 
+                           plot: bool = True,
+                           force_connected_ligands_file: Optional[str] = None):
+        #TODO
+        # have an option to input a network to allow users to use the same network accross models
+        if not pdb_files:
+            message = "Could not find any pdb files in the given path"
+            log.error(message)
+            raise RuntimeError(message)
         
         sdf_files = pdb_to_sdf(pdb_files)
 
-        # bss_molecules = [bss.IO.readMolecules(sdf_file).getMolecule(0) for sdf_file in sdf_files]
-
         ligand_names = list(self.mezes.keys())
 
-        # self.transformations, self.lomap_scores = bss.Align.generateNetwork(
-        #     molecules=bss_molecules,
-        #     names=ligand_names,
-        #     plot_network=plot,
-        #     work_dir=directory
-        # )
+        if directory:
+            lomap_directory = os.path.join(directory, "lomap")
+        else:
+            lomap_directory = "lomap"
+        
+        os.makedirs(lomap_directory, exist_ok=True)
+        log.info(
+            f"Created lomap directory at: \n"
+            f"{lomap_directory}"
+        )
+        for sdf_file in sdf_files:
+            shutil.copy(sdf_file, lomap_directory)
+        
+        workdir= os.getcwd()
+        os.chdir(lomap_directory)
+        lomap_command = f"lomap -d -n {self.group_name} "
+        if force_connected_ligands_file:
+            if not os.path.isfile(force_connected_ligands_file):
+                log.warning(
+                    f"Could not find links file: {force_connected_ligands_file}\n"
+                    "Continuing without it."
+                )
+            lomap_command += f"-l {force_connected_ligands_file} "
+        
+        lomap_command += ". "
+        log.info(
+            f"Running lomap with command: \n"
+            f"{lomap_command}"
+        )
 
-        # 1) use os.system(lomap sdf_files/) 
-        # 2) handle outputs: 
-            # out.txt
-            # out_score_with_connection.txt
-            # out.png
-            # out.eps
-            # out.pdf
-            # out.dot
-            # out.pickle
+        lomap_run_result = subprocess.run(
+            lomap_command,
+            shell=True,
+            capture_output=True,
+            text=True
+        )
 
-            
+        if lomap_run_result.returncode != 0:
+            log.warning(f"Lomap exited with a non-zero exit code {lomap_run_result.returncode}:")
+            log.warning(lomap_run_result.stderr)
+            log.warning("It's likely that the network was still generated succesfully, checking... ")
+        
+        scores_file = os.path.join(lomap_directory, f"{self.group_name}_score_with_connection.txt")
+        png_file = os.path.join(lomap_directory, f"{self.group_name}.png")
+        if not os.path.isfile(scores_file):                   
+            message = f"Lomap did not produce {scores_file}. Check lomap output for errors."
+            log.error(message)
+            raise RuntimeError 
+        if not os.path.isfile(png_file):                   
+            message = f"Lomap did not produce {png_file}. Check lomap output for errors."
+            log.error(message)
+            raise RuntimeError 
+
+        log.info("Lomap finished succesfully. Parsing outputs.")
+        self.transformations, self.lomap_scores, network_file = self._parse_lomap_output(scores_file, lomap_directory)
+        self.save_network_file(network_file)
+
+    def save_network_file(self, network_file: str):
+        self.network_file = network_file
+        self.sofra_contents["network_file"] = network_file
+        with open(self.sofra_file, "w") as file:
+            json.dump(self.sofra_contents, file, indent=4)
+        log.info(f"Saved network file path to {self.sofra_file}:\n{network_file}")
+    
+
+    def _parse_lomap_output(self, file: str, directory: str):
+        transformations, scores = [], []
+        cleaned_rows = []
+        row_i = 0
+        with open(file, "r") as ifile:
+            reader = csv.DictReader(ifile)
+            reader.fieldnames = [key.strip() for key in reader.fieldnames]
+            for row in reader:
+                name_1 = pathlib.Path(row["Filename_1"].strip()).stem
+                name_2 = pathlib.Path(row["Filename_2"].strip()).stem
+                score = float(row["Str_sim"].strip())
+                connect = pathlib.Path(row["Connect"].strip()).stem
+                
+                if connect.lower() == "yes":
+                    if row_i == 0:
+                        cleaned_rows.append("Name_1,Name_2,Score\n")
+                    transformations.append((name_1, name_2))
+                    scores.append(score)
+                    clean_row = f"{name_1},{name_2},{score}\n"
+                    cleaned_rows.append(clean_row)
+                    row_i += 1
+        
+        if not cleaned_rows:
+            message = "Lomap output did not contain any connected ligands. Check lomap outputs for any errors."
+            log.error(message)
+            raise RuntimeError
+        
+        connected_file = os.path.join(directory, f"{self.group_name}_lomap_network.csv")
+        with open(connected_file, "w") as ofile:
+            ofile.writelines(cleaned_rows)
+        log.info(f"Wrote lomap network to file:\n{connected_file}")
+
+        return transformations, scores, connected_file
+
+
+@dataclass
+class AlchemicalSofra:
+    first_meze: Meze
+    second_meze: Meze
+    stage: Literal["bound", "unbound"]
+    recipe: AlchemicalMezeRecipe
+    first_name: Optional[str] = "ligand_1"
+    second_name: Optional[str] = "ligand_2"
+    system_sofra: Optional[Sofra] = field(default=None)
+    directory: Optional[str] = field(default=None)
+    overwrite: bool = field(default=False)
+    bss_base_system: Optional[bssSystem] = field(default=None, init=False)
+    first_molecule: Optional[bss._SireWrappers.Molecule] = field(default=None, init=False)
+    second_molecule: Optional[bss._SireWrappers.Molecule] = field(default=None, init=False)
+    merged_molecule: Optional[bss._SireWrappers.Molecule] = field(default=None, init=False)
+    working_directory: Optional[str] = field(default=None, init=False)
+    transformation: Optional[str] = field(default=None, init=False)
+
+    def __post_init__(self):
+        if self.stage not in ["bound", "unbound"]:
+            message = f"stage must be 'bound' or 'unbound', got {self.stage}"
+            log.error(message)
+            raise ValueError(message)
+        
+        if self.recipe.engine.upper() not in ["SOMD"]:
+            message = f"Currently only supporting SOMD as the RBFE MD engine."
+            log.error(message)
+            raise RuntimeError(message)
+        
+        self._set_bss_molecules()
+        self._set_bss_base_system()
+        self._set_transformation()
+        self._set_working_directory()
+
+
+    def _set_working_directory(self):
+
+        directory = self.directory or os.getcwd()
+
+        if not os.path.isdir(directory):
+            message = f"Input directory {directory} does not exist."
+            log.warning(message)
+            os.makedirs(directory)
+
+        working_directory = os.path.join(directory, self.transformation, self.stage)
+        log.info(f"Creating {self.stage} stage in directory: {working_directory}")
+        try:
+            os.makedirs(working_directory, exist_ok=self.overwrite)
+        except OSError:
+            message = f"Directory {working_directory} already exists. Set overwrite=True or supply a different directory."
+            log.error(message)
+            raise FileExistsError
+        self.working_directory = working_directory
+        
+    def _set_bss_molecules(self):
+        self.first_molecule = self.first_meze.get_mutatable_ligand_molecule()
+        self.second_molecule = self.second_meze.get_mutatable_ligand_molecule()
+    
+    def _set_bss_base_system(self):
+        self.bss_base_system = self.first_meze.system
+        log.info(f"Setting base system from the first meze object.")
+
+    def _set_network(self, file: str):
+        self.network = pd.read_csv(file, sep=",", header=0, index_col=False)
+        log.info(f"Read in network:\n{self.network.head()}")
+
+    def _set_transformation(self):
+        self.transformation = f"{self.first_name}~{self.second_name}"
+        log.info(f"Setting up transformation: {self.transformation}")
+
+    def merge(
+            self,
+            flexible_align: bool = False, 
+            ring_breaks: bool = True, 
+            ring_size_changes: bool = True
+    ):
+        mapping = bss.Align.matchAtoms(self.first_molecule, self.second_molecule, complete_rings_only=True)
+        inverse_mapping = {value:key for key, value in mapping.items()}
+        if flexible_align:
+            aligned_ligand_2 = bss.Align.flexAlign(self.second_molecule, self.first_molecule, inverse_mapping)
+        else:
+            aligned_ligand_2 = bss.Align.rmsdAlign(self.second_molecule, self.first_molecule, inverse_mapping)
+        return bss.Align.merge(
+            self.first_molecule, 
+            aligned_ligand_2, 
+            mapping, allow_ring_breaking=ring_breaks, allow_ring_size_change=ring_size_changes
+        )
+    
+    def create_hybrid_molecule(self):
+        self.merged_molecule = self.merge(
+            self.recipe.flexible_align, 
+            self.recipe.ring_breaks, 
+            self.recipe.ring_size_changes
+        )
+        system = self.bss_base_system
+        system.removeMolecules(self.first_molecule)
+        system.addMolecules(self.merged_molecule)
+        return system
+
+    
+    def setup_alchemistry(
+            self, 
+            compute_platform: Literal["cuda", "opencl", "cpu"] = "cuda",
+            n_somd_cycles: Optional[int] = None,
+            n_somd_moves: Optional[int] = None,
+            n_frames: Optional[int] = 250,
+            buffered_coordinates_frequency: Optional[int] = None,
+            only_save_end_states: bool = False,
+            debug: bool = False
+    ):
+        
+        merged_ligand_system = self.create_hybrid_molecule()
+        
+        n_somd_cycles = n_somd_cycles or int(self.recipe.sampling_time._value * 5)
+        n_somd_moves = n_somd_moves or _set_n_somd_moves(sampling_time=self.recipe.sampling_time._value, n_somd_cycles=n_somd_cycles, stepsize=self.recipe.dt._value)
+        buffered_coordinates_frequency = buffered_coordinates_frequency or max(int(n_somd_moves / n_frames), 10000)
+        n_cycles_per_saved_frame = max(1, self.recipe.restart_interval // n_somd_moves)
+
+        config_options = {
+            "ncycles": n_somd_cycles,
+            "nmoves": n_somd_moves,
+            "buffered coordinates frequency": buffered_coordinates_frequency,
+            "ncycles_per_snap": n_cycles_per_saved_frame,
+            "minimal coordinate saving": only_save_end_states,
+            "minimise": self.recipe.minimise_lambda,
+            "minimise maximum iterations": self.recipe.lambda_minimisation_steps,
+            "cutoff distance": self.recipe.nb_cutoff,
+            "platform": compute_platform,
+            "verbose": debug
+        }
+        
+        if self.stage == "bound" and self.first_meze.restraint_file:
+            somd_restraints = _write_somd_restraints(self.first_meze.restraint_file)
+            config_options["use permanent distance restraints"] = True
+            config_options["permanent distance restraints dictionary"] = somd_restraints
+
+        elif self.stage == "bound" and self.recipe.model == 0:
+            log.warning(
+                f"Model 0 bound stage requested without a restraint_file on {self.first_name}; "
+                "no metal-coordinating distance restraints will be applied."
+            )
+
+        free_energy_protocol = bss.Protocol.FreeEnergy(
+            num_lam=self.recipe.n_lambdas,
+            runtime=self.recipe.sampling_time,
+            timestep=self.recipe.dt,
+            temperature=self.recipe.temperature,
+            pressure=self.recipe.pressure,
+            restart_interval=self.recipe.restart_interval,
+            report_interval=self.recipe.report_interval
+        )
+
+        bss.FreeEnergy.Relative(
+            system=merged_ligand_system,
+            protocol=free_energy_protocol,
+            work_dir=self.working_directory,
+            engine=self.recipe.engine,
+            setup_only=True,
+            extra_options=config_options
+        )
+
+        generated_configurations = glob.glob(
+            os.path.join(self.working_directory, "*", "*.cfg")
+        )
+
+        _remove_gpu_from_fep_configs(generated_configurations)
+
+        return merged_ligand_system

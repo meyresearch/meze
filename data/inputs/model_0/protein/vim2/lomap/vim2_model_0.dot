@@ -1,0 +1,10 @@
+strict graph "" {
+	0	[ID=0,
+		active=False,
+		fname_comp="ligand_11.sdf"];
+	1	[ID=1,
+		active=False,
+		fname_comp="ligand_12.sdf"];
+	0 -- 1	[similarity=0.7408182206817179,
+		strict_flag=True];
+}

@@ -1,0 +1,90 @@
+-I: Adding /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/prep to search path.
+-I: Adding /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/lib to search path.
+-I: Adding /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/parm to search path.
+-I: Adding /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/cmd to search path.
+-s: Ignoring all leaprc startup files.
+-f: Source /group/chem/oliveira2t/af25016/vim2-model-0//inputs/ligands/solvate_ligand_12_unbound/tleap_solvate.in.
+
+Welcome to LEaP!
+Sourcing: /group/chem/oliveira2t/af25016/vim2-model-0//inputs/ligands/solvate_ligand_12_unbound/tleap_solvate.in
+----- Source: /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/cmd/leaprc.gaff2
+----- Source of /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/cmd/leaprc.gaff2 done
+Log file: ./leap.log
+Loading parameters: /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/parm/gaff2.dat
+Reading title:
+AMBER General Force Field for organic molecules (Version 2.2.20, March 2021)
+----- Source: /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/cmd/leaprc.water.tip3p
+----- Source of /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/cmd/leaprc.water.tip3p done
+Loading library: /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/lib/atomic_ions.lib
+Loading library: /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/lib/solvents.lib
+Loading parameters: /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/parm/frcmod.tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+This is the additional/replacement parameter set for TIP3P water
+Loading parameters: /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/parm/frcmod.ionsjc_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Monovalent ion parameters for Ewald and TIP3P water from Joung & Cheatham JPCB (2008)
+Loading parameters: /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/parm/frcmod.ions234lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of divalent to tetravalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /software/local/apps/amber24-tools25-MPI-CUDA-GCC/ambertools25/dat/leap/parm/frcmod.ions1lm_126_tip3p
+Reading force field modification type file (frcmod)
+Reading title:
+Li/Merz ion parameters of monovalent ions for TIP3P water model (12-6 normal usage set)
+Loading parameters: /group/chem/oliveira2t/af25016/vim2-model-0//inputs/ligands/solvate_ligand_12_unbound/ligand_12.frcmod
+Reading force field modification type file (frcmod)
+Reading title:
+Remark line goes here
+Loading Mol2 file: /group/chem/oliveira2t/af25016/vim2-model-0//inputs/ligands/solvate_ligand_12_unbound/ligand_12.mol2
+Reading MOLECULE named MOL
+Scaling up box by a factor of 1.190090 to meet diagonal cut criterion
+  Solute vdw bounding box:              10.579 13.454 7.632
+  Total bounding box for atom centers:  42.016 42.016 42.016
+      (box expansion for 'iso' is  24.6%)
+  Solvent unit box:                     18.774 18.774 18.774
+  Volume: 39798.586 A^3 (oct)
+  Total mass 20208.004 amu,  Density 0.843 g/cc
+  Added 1107 residues.
+1 Na+ ion required to neutralize.
+Adding 1 counter ions to "lig" using 1A grid
+Grid extends from solute vdw + 1.48  to  7.38
+Resolution:      1.00 Angstrom.
+Calculating grid charges
+Placed Na+ in lig at (-18.49, 0.53, -15.81).
+
+Done adding ions.
+ 0.000000 0 1 0
+0 Cl- ion required to neutralize.
+Adding 0 counter ions to "lig" using 1A grid
+Writing pdb file: ligand_12_solv.pdb
+   printing CRYST1 record to PDB file with box info
+Checking Unit.
+Building topology.
+Building atom parameters.
+Building bond parameters.
+Building angle parameters.
+Building proper torsion parameters.
+Building improper torsion parameters.
+ total 16 improper torsions applied
+Building H-Bond parameters.
+Incorporating Non-Bonded adjustments.
+Not Marking per-residue atom chain types.
+Marking per-residue atom chain types.
+  (Residues lacking connect0/connect1 - 
+   these don't have chain types marked:
+
+	res	total affected
+
+	MOL	1
+	WAT	1107
+  )
+ (no restraints)
+	Quit
+
+Exiting LEaP: Errors = 0; Warnings = 0; Notes = 0.

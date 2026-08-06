@@ -11,5 +11,8 @@
     "dt": 0.001,
     "model": 0,
     "non_standard_residues": ["MOH", "DOH"],
-    "ligand_charge": -1
+    "ligand_charge": -1,
+    "n_lambdas": 16,
+    "lambda_sampling_time": 4.0,
+    "n_repeats": 3
 }

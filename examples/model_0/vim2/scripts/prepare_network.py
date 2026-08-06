@@ -8,15 +8,14 @@ import glob
 REPO_ROOT = Path().resolve()
 EXAMPLES_DIR = REPO_ROOT / "examples"
 DATA_DIR = REPO_ROOT / "data"
+project_dir = DATA_DIR
 
 system_name = "vim2"
 
-project_dir = DATA_DIR
-
-#DEBUGGING
-project_dir = "/Users/af25016/projects/vim2-model-0/"
-
-model_0_sofra = Sofra.from_file(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json")
+model_0_sofra = Sofra.from_file(
+    sofra_file=f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_sofra.json",
+    directory=project_dir
+)
 
 with open(f"{project_dir}/inputs/model_0/protein/{system_name}/model_0_recipe.json", "r") as file:
     json_recipe = json.load(file)
@@ -33,3 +32,5 @@ model_0_sofra.set_ligand_network(
     pdb_files=ligand_files,
     directory=f"{project_dir}/inputs/model_0/protein/{system_name}/"
 )
+
+print(model_0_sofra)
