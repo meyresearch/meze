@@ -16,5 +16,6 @@ dependencies:
   - pytest
   - pytest-cov
   - ambertools
+  - flake8
   - pip:
     - -e .
