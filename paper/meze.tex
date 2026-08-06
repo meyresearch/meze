@@ -1,0 +1,131 @@
+\chapter{meze: Metalloenzyme-parameterisation program}\label{chapter:meze}
+
+\section{Summary}
+
+Computational methods such as molecular dynamics (MD) simulations and relative binding free energy (RBFE) calculations are widely used in drug discovery applications both in academia and industry. However, applying these methods to proteins containing transition metals is often a convoluted and time-consuming process. In this chapter, we introduce a metalloenzyme-parameterisation program \textsc{meze}\footnote[1]{Meze is a Turkish side dish or appetizer.}, with the goal of simplifying the setup of MD simulations and RBFE calculations for systems consisting of small molecules binding to metalloenzymes.
+
+\section{Statement of need}
+
+Metalloproteins -- proteins containing transition metals -- are abundant in nature and important in pharmaceutical research. Despite their importance as drug discovery targets, computational methods for preparing accurate models for proteins containing transition metals are scarce. Metal models in MD are generally grouped into \textit{bonded}, \textit{nonbonded} and \textit{cationic dummy atom} models. In bonded models, covalent bond and angle terms are added to the force field to describe the coordination bonds between a metal and its ligands. An example of a bonded zinc force field is the zinc Amber force field (ZAFF)~\cite{peters_structural_2010}. ZAFF contains parameters for 12 tetrahedrally coordinated zinc metalloproteins, and it was built with one of the more widely used open-source metalloproteins parameterisation tools, called the metal center parameter builder (MCPB.py)~\cite{li_mcpbpy_2016}, part of AmberTools~24~\cite{case_ambertools_2023}. MCPB.py is a Python-based tool for developing and generating force field parameters for running molecular dynamics (MD) simulations with metalloproteins. With MCPB.py, bespoke bonded force field terms may be generated for many transition metals. Alternatively, the user may choose the extended zinc Amber force field (eZAFF)~\cite{yu_extended_2018} bonded model, which contains empirically determined bonded force field terms for zinc-coordinating residues. The partial charges of atoms in the metal-containing active site have to be determined from quantum mechanical (QM) density functional theory (DFT) calculations. 
+
+Currently, there is no direct Python interface for including MCPB.py-developed force fields, or other metal modelling options, in open-source RBFE tools, such as BioSimSpace~\cite{hedges_biosimspace_2019}. Furthermore, these bonded models are not directly applicable to RBFE workflows focused on small molecule transformations. Nonbonded metal models are more readily applied to these pipelines, because they do not contain bonded parameters between the metal and its coordinating residues, and often replace them with e.g. harmonic distance restraints or redefined electrostatics and van der Waals terms~\cite{peters_structural_2010}. For example, Li and Merz Jr. developed a restrained nonbonded model to complement MCPB.py-developed force fields~\cite{li_building_2015}, where distance restraints are applied in place of zinc-ligand coordination bonds, while the partial charges obtained from DFT calculations are retained. In~\cite{guven_protocols_2024}, we applied this model to RBFE calculations with a metallo-$\beta$-lactamase (MBL), by applying flat-bottomed distance restraints to zinc coordination, while keeping the partial charges of the underlying force field unchanged. In~\cite{guven_protocols_2024}, we also used another nonbonded zinc force field developed by Macchiagodena et al.~\cite{macchiagodena_upgrading_2019,macchiagodena_upgraded_2020} in RBFE calculations. In this `upgraded Amber force field' (UAFF), the partial charges and van der Waals terms of zinc-coordinating amino acids are redefined. The zinc ion is given a charge of $+2$e, while its van der Waals radius is adjusted. The `restraint approach' and the UAFF model are discussed in more detail in Chapter~\ref{chapter:vim2-md-results}.
+
+Parameterising metalloproteins for MD simulations and RBFE calculations is a convoluted and time-consuming process, often requiring manual input and computationally expensive QM calculations. Here, we introduce the metalloenzyme-parameterisation program, \textsc{meze} which can be used to prepare and run a BioSimSpace-based MD or RBFE workflow for a system of small molecules binding to a zinc-metalloprotein, using either the restraint approach or the UAFF model. The goal of \textsc{meze} is to simplify the setup of these models, and enable them to be easily applied to MD and RBFE workflows at scale. While \textsc{meze} currently only contains options for the two nonbonded models discussed above, future features include the addition of angle restraints as well as the development of a hybrid bonded model applicable to RBFE calculations.
+
+\section{Workflow}\label{sec:meze-general-steps}
+
+Currently, \textsc{meze} includes workflows for preparing and carrying out both MD and RBFE workflows with zinc-containing metalloproteins. Figure~\ref{fig:md-and-meze-workflow}~a) shows an overview of the general steps of an MD or RBFE workflow, and b) shows where \textsc{meze} fits in these workflows. Both MD and RBFE workflows start with selecting either an experimental X-ray or NMR structure, or a machine learning (ML) predicted structure of the protein. For MD simulations with small molecules bound, and for RBFE calculations, a high-quality experimental crystal structure with the small molecule bound to the active site of the protein is desirable. The user has to then decide on e.g. which protonation states to use for amino acid side chains and the small molecule, or whether to retain crystallised waters or co-factors such as transition metals or other molecules. These steps are also pre-requisites for using \textsc{meze}. Depending on the system, preprocessing may also include fixing gaps in the amino acid sequence and adding terminal caps. A guide to preprocessing protein files can be found in~\cite{degiacomi_course_2025}. 
+
+\begin{figure}[tb]
+    \centering
+    \includegraphics[width=\textwidth]{figures/meze/md_and_meze_workflow.png}
+    \caption{a) The general steps for a molecular dynamics (MD) or relative binding free energy (RBFE) workflow. b) The metalloenzyme parameterisation program \textsc{meze} covers a part of the system preparation stages and has scripts to carry out system equilibration, production runs and basic analysis of MD simulations or RBFE calculations for systems containing small molecules bound to a metalloprotein.}
+    \label{fig:md-and-meze-workflow}
+\end{figure}
+
+The molecules in the system, i.e. protein, water, ions, small molecule, etc., have to then be parameterised with a force field. Currently, the default protein force field included in \textsc{meze} is ff14SB~\cite{maier_ff14sb_2015}. Since the code has been built on top of BioSimSpace functions and includes wrapper functions for running AmberTools-based parameterisations, changing the underlying protein force field is relatively easy. As discussed above, \textsc{meze} has two nonbonded metal modelling options included: 1) the restraint-based approach~\cite{guven_protocols_2024} and the 2) upgraded Amber force field (UAFF) by Macchiagodena~et.~al.~\cite{macchiagodena_upgraded_2020, macchiagodena_upgrading_2019}. These parameters can be defined before the RBFE preparation step (described below). Furthermore, the usage of UAFF requires some manual input from the user for the renaming of zinc-bound residues. We have corrected some missing atom types in the force field parameter files, as described in~\cite{guven_protocols_2024}. These parameter files are shared in the GitHub repository \url{https://github.com/meyresearch/alchemistry_with_betalactamases/tree/main/input_data/vim2/uaff/protein/parameters}.
+
+Following the system preparation, both MD and RBFE workflows include a system minimisation and equilibration stage. As was discussed in Chapter~\ref{chapter:theory}, this step ensures that the system is at a local energy minimum, and at the correct temperature and pressure. Then, if this is an RBFE workflow, the alchemical transformation network, merged small molecule topologies as well as the $\lambda$ window simulation directories have to be prepared. Then, either the MD or individual $\lambda$ production simulations are carried out, often including repeat runs. These three steps, equilibration, RBFE preparation and production simulations can all be carried out within \textsc{meze}. The user can also input options for each of the steps, such as the length of equilibration simulations, number of $\lambda$ windows and number of repeat simulations. Depending on computational resources, the whole pipeline can be submitted entirely using one command. Finally, at the end of the workflow, the simulations can be analysed. For RBFE calculations, \textsc{meze} contains scripts and functions for obtaining $\Delta\Delta$G estimates from MBAR within BioSimSpace. When the $\lambda$ simulations are analysed, \textsc{meze} will also produce analysis figures for the phase space overlap and forward-backward time convergence from the alchemlyb~\cite{wu_alchemlyb_2024} software package. 
+
+\section{Code structure and features}
+
+The code may be installed by downloading the source code from \url{https://github.com/meyresearch/meze}. \textsc{meze} is built in a modular and object-oriented way, using both BioSimSpace~\cite{hedges_biosimspace_2019} and MDAnalysis~\cite{michaud-agrawal_mdanalysis_2011} objects and methods. Figure~\ref{fig:meze-classes}~a) shows the structure of the main two classes used in \textsc{meze}. Sofra\footnote[2]{Sofra, meaning table or a meal (often consisting many mezes) in Turkish.} is a parent class which can be used to construct an object based on a protein-small molecule system with the desired attributes. For example, the project path and the directories created by \textsc{meze} are held by the attributes of Sofra. Similarly, the protocol options, i.e. choice of force fields, water model, minimisation, NVT and NPT as well as production run options are set as Sofra attributes. The class contains methods for creating the directories shown above, preparing the transformation network using LOMAP and carrying out the RBFE calculation preparation through BioSimSpace functions. Furthermore, Sofra has a `protein' and a `ligands' attribute, which themselves are new objects based on the Protein and Ligand classes, respectively. In the Sofra constructor, the small molecule input files found in the input directory are looped over to create a list of Ligand objects, whose attributes are shown in Fig.~\ref{fig:meze-classes}~b). Both the Protein and Ligand classes have methods for parameterisation using \textsc{tleap} (for proteins) and \textsc{antechamber} and \textsc{parmchk} (for small molecules) from AmberTools~\cite{case_ambertools_2023}. 
+
+The Sofra base class can be used to carry out \textsc{meze} workflows for non-metal containing protein systems. For setting up metalloproteins, an object is created using the Meze class. This is a child class of the Sofra parent class, and contains additional attributes and methods for defining the transition metal and its coordinating residues, using the MDAnalysis Universe object. Furthermore, methods exist for automatic building of the flat-bottomed restraints for the restraint approach. The RBFE preparation method \texttt{prepare\_afe()} in Sofra is overwritten by Meze to include the optional flat-bottomed restraints in the bound stages of the RBFE production runs.
+
+\begin{figure}[tb]
+    \centering
+    \includegraphics[width=\textwidth]{figures/meze/classes.png}
+    \caption{a) Sofra is a parent class inherited by Meze. The Sofra constructor creates a protein attribute and a list of ligands, based on the Protein and Ligand classes, shown in b).}
+    \label{fig:meze-classes}
+\end{figure}
+
+\section{Example}
+
+A more detailed view of the \textsc{meze} workflow is given in Fig.~\ref{fig:meze-structure}, where we show the hierarchy of the bash script wrappers generated by the first step of \textsc{meze}, discussed below. By executing \texttt{slurm\_all.sh} from the command line, the user is able to run the entire workflow with a single command. Alternatively, users can run each of the steps separately through either the bash script wrappers, or the Python scripts shown inside the boxes in Fig.~\ref{fig:meze-structure}. The bash scripts will be edited by \textsc{meze} to use the user input to automatically include the project directories, number of small molecules in the network, number of repeats etc. We now give examples of the individual steps of the \textsc{meze} workflow.
+
+\begin{figure}[tb]
+    \centering
+    \includegraphics[width=\textwidth]{figures/meze/slurm_all_structure.png}
+    \caption{The hierarchy of contained in the \texttt{slurm\_all.sh} bash script wrapper, also giving the correct order in which the \textsc{meze} workflow steps should be carried out. }
+    \label{fig:meze-structure}
+\end{figure}
+
+Before starting the \textsc{meze} workflow, the user should have a preprocessed protein pdb file, as discussed in Section~\ref{sec:meze-general-steps}. 
+The preprocessed protein file should be placed in an \texttt{inputs/protein/} directory. Finally, for RBFE calculations and MD simulations with small molecules bound to a protein, the sdf or mol2 files of the small molecules or ligands should be placed in \texttt{inputs/ligands/}, such that the user set-up directory tree should have the following structure:
+
+\begin{tcolorbox}
+[title=User set-up directory tree:, colframe=myframecolour]
+\dirtree{%
+.1 path/to/project/.
+.2 inputs/.
+.3 ligands/\DTcomment{Ligand sdf and/or mol2 files}.
+.3 protein/\DTcomment{Protein pdb file}.
+}
+\end{tcolorbox}
+
+The preprocessed pdb file of the target protein and other options can be supplied to the Python script \texttt{prepare.py}:
+
+\begin{tcolorbox}[title=Preparing meze:,breakable, colframe=myframecolour]
+\begin{minted}{bash}
+python $MEZEHOME/prepare.py --group-name vim2 
+    --input-file inputs/protein/vim2.input.pdb 
+    --ligand-charge -2 
+\end{minted}
+\end{tcolorbox}
+\noindent where \texttt{vim2.input.pdb} is an example input protein file, the formal charge of the ligands is $-2$e and the outputs will be saved with the group name `vim2'. The environment variable \texttt{\$MEZEHOME} can be set to point to the directory in which \textsc{meze} was installed. The code will use the \texttt{inputs/ligands/} directory to automatically recognise any sdf or mol2 files. It will then create an RBFE protocol file, a list of small molecules, details for the LOMAP~\cite{liu_lead_2013} transformation network and the desired protein parameters. Providing further command line options to \texttt{prepare.py} will allow the user to define which protein force field to use, equilibration, RBFE and MD options. This step will also output bash scripts for the next steps of the workflow, shown in Fig.~\ref{fig:meze-structure}. These steps include bash script wrappers for solvation (\texttt{02\_add\_water.sh}), equilibration (\texttt{03\_heat\_meze.sh}), RBFE preparation (\texttt{04\_meze.sh}), RBFE production (\texttt{run\_SOMD.sh}) and analysis (\texttt{06\_analyse.sh}). Finally, a \texttt{slurm\_all.sh} bash script is generated, with calls to the previous scripts, and will submit the RBFE calculations via Slurm. Running \texttt{slurm\_all.sh} is optional, and can be edited by the user as required. If run, this step will then carry out RBFE calculations and output $\Delta\Delta$G estimates for the user to plot and analyse further. Additionally, the project directory will be updated by \texttt{prepare.py} with new directories, shown below:
+
+\begin{tcolorbox}
+[title=Meze-updated directory tree, colframe=myframecolour]
+\dirtree{%
+.1 path/to/project.
+.2 inputs/\DTcomment{Input files (set-up by user)}.
+.3 ligands/\DTcomment{Ligand .sdf or .mol2 files (set-up by user)}.
+.3 protein/\DTcomment{Protein .pdb file (set-up by user)}.
+.2 outputs/\DTcomment{Folder for saving the results of RBFE runs}.
+.2 afe/\DTcomment{Input files for running the \textsc{meze} workflow and RBFE runs}.
+.3 protocol.dat\DTcomment{Datafile with network information}.
+.3 ligands.dat\DTcomment{Datafile containing ligand names}.
+.3 meze\_network.csv\DTcomment{Dataframe of transformations from LOMAP}.
+.3 02\_add\_water.sh\DTcomment{Bash script to carry out solvation}.
+.3 03\_heat\_meze.sh\DTcomment{Bash script to carry out equilibration}.
+.3 04\_meze.sh\DTcomment{Bash script to carry out RBFE preparation}.
+.3 run\_SOMD.sh\DTcomment{Bash script to run an individual RBFE transformation}.
+.3 slurm\_all.sh\DTcomment{SLURM script which executes above scripts}.
+.2 equilibration/\DTcomment{Equilibration outputs}.
+.2 logs/\DTcomment{SLURM log files}.
+}
+\end{tcolorbox}
+
+In the first step shown in Fig.~\ref{fig:meze-structure}, the Python script \texttt{solvate.py} is called from inside the \texttt{02\_add\_water.sh} wrapper. The input argument \texttt{\$ligand} refers to the name of the small molecule for which the solvation step is carried out. In the existing wrapper scripts, Slurm is used to loop over the ligands in the network, but this can be overwritten by a `for'-loop either in bash or in Python, as \textsc{meze} can be imported as a Python package after downloading the source code. For example, for a small molecule named `ligand\_1', the solvation step would be run as:
+
+\begin{tcolorbox}[title=Solvation:,breakable, colframe=myframecolour]
+\begin{minted}{bash}
+python $MEZEHOME/solvate.py ligand_1 protocol.dat 
+\end{minted}
+\end{tcolorbox}
+\noindent where \texttt{protocol.dat} is the \textsc{meze} protocol file generated by \texttt{prepare.py}. This step creates a new Sofra object with this small molecule and runs either the default BioSimSpace Gromacs solvation or a \textsc{tleap} solvation as a subprocess for both unbound and bound stages. The user may change the solvation parameters, such as the water model, solvent closeness as well as solvation engine in the \texttt{prepare.py} step, or by manually editing \texttt{protocol.dat}. 
+
+Following the solvation of every small molecule-protein system in the network, the \texttt{03\_heat\_meze.sh} script is called to carry out the minimisation, as well as NVT and NPT equilibration steps for the bound and unbound stages. Similar to the solvation step above, this stage calls a Python script, which may be called for one small molecule with:
+
+\begin{tcolorbox}[title=Minimisation and equilibration:,breakable, colframe=myframecolour]
+\begin{minted}{bash}
+python $MEZEHOME/equilibrate.py ligand_1 protocol.dat 
+\end{minted}
+\end{tcolorbox}
+
+\noindent In this Python script, a new object from a class called coldMeze is created. If the target system does not contain transition metals (read from \texttt{protocol.dat}) this class inherits directly from Sofra. Conversely, if the target is a metalloprotein, the parent class is Meze. The coldMeze class constructor is used to initialise the temperature, pressure, minimisation steps and runtimes for each of the equilibration stages. Then, coldMeze methods are used to carry out the unbound and bound minimisation and equilibration stages. The equilibration stage is run for a single small molecule at a time, such that it can be parallelised or serialised for the whole network.
+
+The next step (\texttt{04\_meze.sh}) carries out the RBFE preparation step for each alchemical transformation in the network. For example, for a transformation from a `ligand\_1' to a `ligand\_2', we can call: 
+
+\begin{tcolorbox}[title=Heating meze:,breakable, colframe=myframecolour]
+\begin{minted}{bash}
+python $MEZEHOME/meze.py protocol.dat ligand_1~ligand_2 
+                        (--no-restraints)
+\end{minted}
+\end{tcolorbox}
+\noindent where \texttt{ligand\_1$\sim$ligand\_2} is the name of the transformation used to create the directory containing its $\lambda$ production run directories. Once again, a Sofra object is created for non-metals, and a Meze object for metalloproteins. If the \texttt{{-}{-}no-restraints} flag is not set, the Meze method for adding flat-bottomed restraints between metals and their coordinating residues will be used. Then, in both cases, BioSimSpace will be used to create the RBFE protocols and $\lambda$ directories. These directories will then be copied $N$ times, where $N$ is the number of replicate runs defined by the default value of 3 or by the user in the \texttt{prepare.py} input. Finally, the \texttt{run\_SOMD.sh} will be called for each transformation. This script contains the code to carry out the repeat runs for both unbound and bound stages of each transformation. Similarly, the \texttt{06\_analyse.sh} script will call on \texttt{analyse.py} to carry out the MBAR analysis on each transformation and output both raw (per repeat) and averaged RBFE data, which can be plotted by the user. At this step, the overlap matrices of each transformation are also computed and saved in the transformation directories. 
+
+\section{Past and ongoing research using meze}
+
+We have used \textsc{meze} to prepare the restraint approach and the UAFF model for the MBL VIM-2 to carry out MD and RBFE workflows~\cite{guven_protocols_2024}. We also used \textsc{meze} to prepare the serine-$\beta$-lactamase (SBL) KPC-2 for both MD simulations and RBFE calculations. The results of these simulations are described in Chapters \ref{chapter:kpc2-md-results}, \ref{chapter:vim2-md-results} and \ref{chapter:beta-lactamase-rbfe-results}. While these results show that the code works for its intended purpose, i.e. preparing metalloproteins for RBFE calculations, some improvements in usability and code design are needed. For example, for greater accessibility, the code should be made available for installation via pip or conda. This would also help to ensure the installation of correct dependencies. Furthermore, due to the object-oriented structure of the code, it would be helpful to make use of Python's data classes and either replace or supplement the command line arguments with JSON-file inputs and outputs. Such structures have been used for example by the Open Force Field initiative's BespokeFit~\cite{horton_open_2022} to improve reproducibility of workflows across users. Additionally, future versions of \textsc{meze} will further automate the existing non-bonded options and include new metal modelling options, such as including angle restraints as well as distance restraints, as well as preparing a hybrid nonbonded model for MD and RBFE calculations. Finally, the code could also include other transition metals in a semi-automated way for both molecular dynamics and RBFE calculations. While it has only been tested with an SBL and a zinc MBL, expanding the code's scope to include other transition metals and metal modelling options is simple due to the modular, and object oriented structure of the code.
