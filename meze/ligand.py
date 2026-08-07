@@ -43,52 +43,73 @@ class Ligand():
     coordinates: Optional[str] = None
 
     def __post_init__(self):
-        if isinstance(self.file, str):
-            self.file = [self.file]
-        elif isinstance(self.file, list):
-            if len(self.file) > 2:
-                raise ValueError(
-                    f"Too many values for 'file': {self.file}."
-                    f"Expected a 'str' or a list of at most 2 input files."
-                )
-            self.file = self.file
-        else:
-            raise TypeError(
-                f"Expected str or list[str], got {type(self.file)}"
-            )
+        self.file = self._validate_file(self.file)
+        self._check_files_exist(self.file)
+        self.charge = self._validate_charge(self.charge)
 
-        for file in self.file:
-            if not os.path.isfile(file):
-                raise FileNotFoundError(f"Ligand file not found: {file}")
-
-        if not isinstance(self.charge, float):
-            try:
-                self.charge = float(self.charge)
-            except (TypeError, ValueError):
-                raise TypeError(
-                    f"Ligand charge must be an integer or float \
-                    (got {self.charge} of type {type(self.charge)})."
-                )
         if not self.name:
-            self.name = Path(self.file[0]).stem
-            warnings.warn(
-                f"Ligand name not set, inferring from file name: {self.file}",
-                UserWarning
-            )
+            self.name = self._infer_ligand_name(self.file)
 
         self.system = bss.IO.readMolecules(self.file)
 
         if not self.residue_name:
-            residues = self.system.getResidues()
-            if len(residues) > 1:
-                log.warning(
-                    f"Found multiple residues in ligand file {self.file}: \
-                    \n{residues}"
+            self.residue_name = self._infer_residue_name()
+
+    @staticmethod
+    def _validate_file(file):
+        if isinstance(file, str):
+            return [file]
+        elif isinstance(file, list):
+            if len(file) > 2:
+                raise ValueError(
+                    f"Too many values for 'file': {file}."
+                    f"Expected a 'str' or a list of at most 2 input files."
                 )
-                log.warning("Choosing residue name based on first residue.")
-            residue = residues[0]
-            self.residue_name = residue.name()
-            log.info(f"Ligand residue name set to {self.residue_name}")
+            return file
+
+        raise TypeError(
+                f"Expected str or list[str], got {type(file)}"
+        )
+
+    @staticmethod
+    def _check_files_exist(files):
+        for file in files:
+            if not os.path.isfile(file):
+                raise FileNotFoundError(f"Ligand file not found: {file}")
+
+    @staticmethod
+    def _validate_charge(charge):
+        if isinstance(charge, float):
+            return charge
+        try:
+            return float(charge)
+        except (TypeError, ValueError):
+            raise TypeError(
+                f"Ligand charge must be an integer or float "
+                f"(got {charge} of type {type(charge)})."
+            )
+
+    @staticmethod
+    def _infer_ligand_name(file):
+        name = Path(file[0]).stem
+        warnings.warn(
+            f"Ligand name not set, inferring from file name: {file}",
+            UserWarning
+        )
+        return name
+
+    def _infer_residue_name(self):
+        residues = self.system.getResidues()
+        if len(residues) > 1:
+            log.warning(
+                f"Found multiple residues in ligand file {self.file}:"
+                f"\n{residues}"
+            )
+            log.warning("Choosing residue name based on first residue.")
+        residue = residues[0]
+        residue_name = residue.name()
+        log.info(f"Ligand residue name set to {residue_name}")
+        return residue_name
 
     def parameterise(self,
                      directory: Optional[str] = None,
