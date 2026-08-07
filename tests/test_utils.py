@@ -81,6 +81,7 @@ def test_write_somd_restraints_missing_file_raises():
     with pytest.raises(FileNotFoundError):
         _write_somd_restraints("/nonexistent/restraints.RST")
 
+
 def test_remove_gpu_from_fep_configs(tmp_path):
     cfg_file = tmp_path / "somd.cfg"
     cfg_file.write_text("ncycles = 100\ngpu = 0\nnmoves = 25000\nGPU = 1\n")
@@ -93,11 +94,12 @@ def test_remove_gpu_from_fep_configs(tmp_path):
     assert "nmoves = 25000" in remaining
 
 
-# ---------------------------------------------------------------------------
-# _write_tleap_solvation_input
-# ---------------------------------------------------------------------------
-
-def _fake_ligand(name="MOL", frcmod_file="MOL.frcmod", file=("MOL.mol2",), residue_name=None):
+def _fake_ligand(
+        name="MOL",
+        frcmod_file="MOL.frcmod",
+        file=("MOL.mol2",),
+        residue_name=None
+):
     return SimpleNamespace(
         name=name,
         frcmod_file=frcmod_file,
@@ -118,8 +120,9 @@ def test_write_tleap_solvation_input_basic():
     assert "lig = loadmol2 MOL.mol2\n" in lines
     assert "protein = loadpdb protein.pdb\n" in lines
     assert "complex = combine {protein lig}\n" in lines
-    # default box_shape is octahedral -> "iso" solvation
-    assert any(line.startswith("solvateoct") and "iso" in line for line in lines)
+    assert any(
+        line.startswith("solvateoct") and "iso" in line for line in lines
+    )
     assert "addions2 complex Na+ 0\n" in lines
     assert "addions2 complex Cl- 0\n" in lines
     assert "saveamberparm complex MOL_complex_solv.prmtop MOL_complex_solv.inpcrd\n" in lines
@@ -135,6 +138,7 @@ def test_write_tleap_solvation_input_non_octahedral_box():
     solvate_lines = [line for line in lines if line.startswith("solvate")]
     assert len(solvate_lines) == 1
     assert "iso" not in solvate_lines[0]
+    assert "solvatebox" in solvate_lines[0].lower()
 
 
 def test_write_tleap_solvation_input_disulfide_bridges():
@@ -151,16 +155,14 @@ def test_write_tleap_solvation_input_non_standard_residues():
         protein_file="protein.pdb",
         ligand=_fake_ligand(),
         non_standard_residues=[
-            _fake_ligand(name="MOH", frcmod_file="MOH.frcmod", file=("MOH.mol2",))
+            _fake_ligand(
+                name="MOH", frcmod_file="MOH.frcmod", file=("MOH.mol2",)
+            )
         ],
     )
     assert "loadamberparams MOH.frcmod\n" in lines
     assert "MOH = loadmol2 MOH.mol2\n" in lines
 
-
-# ---------------------------------------------------------------------------
-# _edit_mcpbpy_tleap_input
-# ---------------------------------------------------------------------------
 
 def test_edit_mcpbpy_tleap_input_substitutes_solvate_line(tmp_path):
     tleap_file = tmp_path / "mcpbpy_tleap.in"
@@ -175,7 +177,7 @@ def test_edit_mcpbpy_tleap_input_substitutes_solvate_line(tmp_path):
     solvate_lines = [line for line in new_lines if line.startswith("solvate")]
     assert len(solvate_lines) == 1
     # box_shape[:3] is used verbatim in the solvate command: "cubic" -> "cub"
-    assert solvate_lines[0] == "solvatecub mol TIP3PBOX 10.0 0.75\n"
+    assert solvate_lines[0] == "solvateBox mol TIP3PBOX 10.0 0.75\n"
     assert "source leaprc.gaff2\n" in new_lines
 
 
