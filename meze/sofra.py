@@ -223,8 +223,10 @@ class ColdMezeRecipe(MezeRecipe):
     min_method: int = Field(
         1,
         ge=0,
-        description="Run steepest descent for n_sd_cycles, "
-        "then conjugate gradient"
+        description=(
+            "Run steepest descent for n_sd_cycles, "
+            "then conjugate gradient"
+        )
     )
     barostat: int = Field(
         2, ge=1, le=2, description="Type of barostat, 1: Berendsen, 2: MC"
@@ -344,8 +346,10 @@ class AlchemicalMezeRecipe(MezeRecipe):
     )
     lambda_minimisation_steps: int = Field(
         5000,
-        description="Number of minimisation steps to do "
-        "at each lambda minimisation."
+        description=(
+            "Number of minimisation steps to do "
+            "at each lambda minimisation."
+        )
     )
 
     @field_validator("sampling_time", mode="after")
@@ -1147,8 +1151,10 @@ class Meze:
         process.wait()
 
         if process.isError():
-            error_message = f"The run {process_name} exited with an error."
-            "\n\nCheck the log/error files at:\n\t\t{run_directory}\n"
+            error_message = (
+                f"The run {process_name} exited with an error."
+                f"\n\nCheck the log/error files at:\n\t\t{run_directory}\n"
+            )
             log.error(error_message)
             info_message = "Outputting the last error and output lines:\n"
             log.info(info_message)
@@ -3457,13 +3463,17 @@ class ColdQuantumMeze(QuantumMeze):
         }
 
         if not qm_shake and recipe.dt._value > 1.0:
-            message = "Cannot run a QM/MM MD simulation with a "
-            "timestep larger than 1.0 fs without 'qm_shake' set to False."
+            message = (
+                "Cannot run a QM/MM MD simulation with a "
+                "timestep larger than 1.0 fs without 'qm_shake' set to False."
+            )
             log.error(message)
             raise RuntimeError(message)
         elif qm_shake and recipe.dt._value > 1.0:
-            message = f"QM shake is on, and the timestep is {recipe.dt} fs,"
-            "which is not recommended for QM/MM equilibration."
+            message = (
+                f"QM shake is on, and the timestep is {recipe.dt} fs,"
+                "which is not recommended for QM/MM equilibration."
+            )
             log.warning(message)
         else:
             config_options["ntc"] = 1
@@ -3803,8 +3813,10 @@ class Sofra:
                 if ligand_name == "network_file":
                     network_file = entry
                     if not os.path.isfile(network_file):
-                        message = "Could not find network file "
-                        f"{network_file} from sofra file:\n{sofra_file}"
+                        message = (
+                            "Could not find network file "
+                            f"{network_file} from sofra file:\n{sofra_file}"
+                        )
                         log.error(message)
                         raise FileNotFoundError(message)
                 continue
@@ -3813,13 +3825,17 @@ class Sofra:
             except KeyError:
                 log.error(f"Could not find pickle file for {ligand_name}: ")
         if not mezes:
-            message = f"No pickle mezes found in {sofra_file}. "
-            "Cannot construct Sofra object."
+            message = (
+                f"No pickle mezes found in {sofra_file}. "
+                "Cannot construct Sofra object."
+            )
             log.error(message)
             raise RuntimeError
         if len(mezes) == 1:
-            message = f"Found only one meze in {sofra_file}."
-            " Are you sure you wish to continue?"
+            message = (
+                f"Found only one meze in {sofra_file}."
+                " Are you sure you wish to continue?"
+            )
             log.warning(message)
         if directory:
             if not os.path.isdir(directory):
@@ -4304,13 +4320,17 @@ class Sofra:
         )
         png_file = os.path.join(lomap_directory, f"{self.group_name}.png")
         if not os.path.isfile(scores_file):
-            message = f"Lomap did not produce {scores_file}. "
-            "Check lomap output for errors."
+            message = (
+                f"Lomap did not produce {scores_file}. "
+                "Check lomap output for errors."
+            )
             log.error(message)
             raise RuntimeError
         if not os.path.isfile(png_file):
-            message = f"Lomap did not produce {png_file}. "
-            "Check lomap output for errors."
+            message = (
+                f"Lomap did not produce {png_file}. "
+                "Check lomap output for errors."
+            )
             log.error(message)
             raise RuntimeError
 
@@ -4352,8 +4372,10 @@ class Sofra:
                     row_i += 1
 
         if not cleaned_rows:
-            message = "Lomap output did not contain any connected ligands. "
-            "Check lomap outputs for any errors."
+            message = (
+                "Lomap output did not contain any connected ligands. "
+                "Check lomap outputs for any errors."
+            )
             log.error(message)
             raise RuntimeError
 
@@ -4425,8 +4447,10 @@ class AlchemicalSofra:
         try:
             os.makedirs(working_directory, exist_ok=self.overwrite)
         except OSError:
-            message = f"Directory {working_directory} already exists. "
-            "Set overwrite=True or supply a different directory."
+            message = (
+                f"Directory {working_directory} already exists. "
+                "Set overwrite=True or supply a different directory."
+            )
             log.error(message)
             raise FileExistsError
         self.working_directory = working_directory
