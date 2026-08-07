@@ -40,7 +40,7 @@ def test_list_rindex_match_only_at_last_position():
         ([1, 2, 3], "1-3"),
         ([1, 3, 5], "1,3,5"),
         ([1, 2, 3, 5, 7, 8, 9], "1-3,5,7-9"),
-        ([3, 1, 2, 2], "1-3"),  # unsorted + duplicate input is deduped and sorted
+        ([3, 1, 2, 2], "1-3")
     ],
 )
 def test_residue_restraint_mask(residue_ids, expected):
