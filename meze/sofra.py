@@ -20,7 +20,8 @@ from typing import (
     Optional,
     Literal,
     Union,
-    Self
+    Self,
+    TYPE_CHECKING
 )
 import pandas as pd
 import pickle
@@ -36,7 +37,8 @@ from BioSimSpace._SireWrappers import System as bssSystem
 from BioSimSpace.Types._time import Time as bssTime
 from BioSimSpace.Types._temperature import Temperature as bssTemperature
 from BioSimSpace.Types._pressure import Pressure as bssPressure
-from BioSimSpace.Protocol._protocol import Protocol as bssProtocol
+if TYPE_CHECKING:
+    from BioSimSpace.Protocol._protocol import Protocol as bssProtocol
 from .utils import (
     _residue_restraint_mask,
     _write_distance_restraints,
@@ -3249,7 +3251,7 @@ class QuantumMeze(Meze):
     def run_qm(
         self,
         recipe: MezeRecipe,
-        protocol: bssProtocol,
+        protocol: "bssProtocol",
         system: Optional[bssSystem] = None,
         process_name: Optional[str] = "qm-meze-run",
         config_options: Optional[dict] = None,
