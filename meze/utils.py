@@ -1,6 +1,5 @@
 import warnings
-
-import numpy as np 
+import numpy as np
 from .ligand import Ligand
 from typing import (
     List,
@@ -32,7 +31,7 @@ log = logging.getLogger("rich")
 def _list_rindex(list_to_search: list[str], word: str) -> int:
     """
      Source - https://stackoverflow.com/a
-     Posted by wim, modified by community. 
+     Posted by wim, modified by community.
      See post 'Timeline' for change history
      Retrieved 2026-01-20, License - CC BY-SA 4.0
      """
@@ -44,17 +43,19 @@ def _list_rindex(list_to_search: list[str], word: str) -> int:
             break
     if not rindex:
         raise ValueError(f"{word} is not in list")
-     
+
     rlist = [line for line in reversed(list_to_search)]
-    return [i for i, line in enumerate(list_to_search) if line == rlist[rindex]][-1]
- 
+    return [
+        i for i, line in enumerate(list_to_search) if line == rlist[rindex]
+    ][-1]
+
 
 def _residue_restraint_mask(residue_ids: list[int]) -> str:
     """Generate an Amber-style restraint mask.
 
-    Adapted from: 
+    Adapted from:
     https://github.com/OpenBioSim/biosimspace/blob/devel/python/BioSimSpace/_Config/_amber.py#L203
-    
+
     Args:
         residue_ids (list[int]): list of residue ids that should be restrained
 
@@ -90,13 +91,16 @@ def _residue_restraint_mask(residue_ids: list[int]) -> str:
 
     return restraint_mask
 
+
 def _write_distance_restraints(
         restraints: dict[tuple[int, int], tuple[float, float, float]]
 ) -> list[str]:
     lines = []
 
-    for (metal_id, ligating_atom_id), (distance, force_constant, flat_bottom_radius) in restraints.items():
-        
+    for (metal_id, ligating_atom_id), (
+        distance, force_constant, flat_bottom_radius
+    ) in restraints.items():
+
         r1 = np.round(distance - flat_bottom_radius, 2)
         r2 = np.round(distance - flat_bottom_radius / 2, 2)
         r3 = np.round(distance + flat_bottom_radius / 2, 2)
@@ -110,6 +114,7 @@ def _write_distance_restraints(
         lines.append(line)
     return lines
 
+
 def _remove_gpu_from_fep_configs(files: List[str]) -> None:
     for file in files:
         with open(file, "r") as f:
@@ -117,12 +122,13 @@ def _remove_gpu_from_fep_configs(files: List[str]) -> None:
         with open(file, "w") as f:
             f.writelines(lines)
 
+
 def _write_tleap_solvation_input(
         protein_file: str,
         ligand: Ligand,
         non_standard_residues: Optional[List[Ligand]] = None,
         disulfide_bridges: Optional[List[dict[str, int]]] = None,
-        workdir: Optional[str] = "", #TODO move the below to model recipe: 
+        workdir: Optional[str] = "",  # TODO move the below to model recipe:
         protein_ff: Optional[str] = "ff14SB",
         water_model: Optional[str] = "tip3p",
         box_shape: Optional[str] = "octahedral",
@@ -134,7 +140,7 @@ def _write_tleap_solvation_input(
         os.chdir(workdir)
     lines = [
         f"source leaprc.protein.{protein_ff}\n",
-        f"source leaprc.water.{water_model.lower()}\n",       
+        f"source leaprc.water.{water_model.lower()}\n",
     ]
     if "tip3p" in water_model.lower():
         lines.append(
@@ -145,12 +151,12 @@ def _write_tleap_solvation_input(
             f"source leaprc.{ligand_ff}\n",
             f"loadamberparams {ligand.frcmod_file}\n",
             f"lig = loadmol2 {ligand.file[0]}\n",
-            f"\n"
+            "\n"
         ])
     if non_standard_residues:
         res_names = []
         for _, res in enumerate(non_standard_residues, start=1):
-            var = res.residue_name 
+            var = res.residue_name
             res_names.append(var)
 
             lines.extend([
@@ -175,17 +181,19 @@ def _write_tleap_solvation_input(
     lines.extend([
         "complex = combine {protein lig}\n",
         f"savepdb complex {ligand.name}_complex_dry.pdb\n",
-        f"check complex\n"
+        "check complex\n"
         "\n"
     ])
-        
+
     if "oct" in box_shape.lower():
         lines.append(
-            f"solvate{box_shape[:3]} complex {water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
+            f"solvate{box_shape[:3]} complex {water_model.upper()}BOX "
+            f"{box_edges} iso {solvent_closeness}\n"
         )
     else:
         lines.append(
-            f"solvate{box_shape[:3]} complex {water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
+            f"solvate{box_shape[:3]} complex {water_model.upper()}BOX "
+            f"{box_edges} {solvent_closeness}\n"
         )
 
     lines.extend([
@@ -193,14 +201,16 @@ def _write_tleap_solvation_input(
         "addions2 complex Cl- 0\n",
         "\n"
         f"savepdb complex {ligand.name}_complex_solv.pdb\n",
-        f"saveamberparm complex {ligand.name}_complex_solv.prmtop {ligand.name}_complex_solv.inpcrd\n",
+        f"saveamberparm complex {ligand.name}_complex_solv.prmtop "
+        f"{ligand.name}_complex_solv.inpcrd\n",
         "quit"
     ])
     return lines
 
+
 def _edit_mcpbpy_tleap_input(
         tleap_input_file: str,
-        workdir: Optional[str] = "", #TODO move the below to model recipe: 
+        # TODO move the below to model recipe:
         box_shape: Optional[str] = "octahedral",
         box_edges: Optional[float] = 10.0,
         water_model: Optional[str] = "tip3p",
@@ -212,24 +222,32 @@ def _edit_mcpbpy_tleap_input(
             f"Could not find tleap input file: "
             f"{tleap_input_file}"
         )
-    
+
     with open(tleap_input_file, "r") as ifile:
         tleap_lines = ifile.readlines()
 
     if not f"source leaprc.{ligand_ff}\n" in tleap_lines:
         tleap_lines.insert(0, f"source leaprc.{ligand_ff}\n")
 
-    old_solvate_line = [line for line in tleap_lines if "solvate" in line.lower()][0]
+    old_solvate_line = [
+        line for line in tleap_lines if "solvate" in line.lower()
+    ][0]
     pdb_line = [line for line in tleap_lines if "loadpdb" in line.lower()][0]
     variable_name = pdb_line.split("=")[0].strip()
     if "oct" in box_shape.lower():
-        new_solvate_line = f"solvate{box_shape[:3]} {variable_name} {water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
-        
+        new_solvate_line = f"solvate{box_shape[:3]} {variable_name} "
+        f"{water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
+
     else:
-        new_solvate_line = f"solvate{box_shape[:3]} {variable_name} {water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
-    
-    tleap_lines = [line.replace(old_solvate_line, new_solvate_line) for line in tleap_lines]
-        
+        new_solvate_line = f"solvate{box_shape[:3]} {variable_name} "
+        f"{water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
+
+    tleap_lines = [
+        line.replace(
+            old_solvate_line, new_solvate_line
+        ) for line in tleap_lines
+    ]
+
     return tleap_lines
 
 
@@ -241,30 +259,31 @@ def _write_gaussian_script(
         directory: str,
         sbatch_options: dict[str] = None,
         additional_lines: list[str] = None
-    ) -> str:
-    
+) -> str:
+
     gaussian_script_file = os.path.join(directory, script_name)
 
     with open(gaussian_script_file, "w") as gscript:
         gscript.write("#!/bin/bash\n")
-        
+
         gscript.write("\n")
         gscript.write(f"#SBATCH --job-name={job_name}\n")
         if sbatch_options:
             for key, value in sbatch_options.items():
                 gscript.write(f"#SBATCH {key}={value}\n")
             gscript.write("\n")
-        
+
         if additional_lines:
             for line in additional_lines:
                 gscript.write(f"{line}\n")
             gscript.write("\n")
-        
+
         gscript.write(
             f"{gaussian_version} {com_file}"
         )
-    
+
     return gaussian_script_file
+
 
 def _pretty(obj, indent=0, step=2):
     pad = " " * indent
@@ -301,10 +320,11 @@ def _pretty(obj, indent=0, step=2):
 
     return repr(obj)
 
+
 def _parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
-    
+
     if not mcpbpy_input_file:
-        raise RuntimeError(f"mcpbpy.in file is not set")
+        raise RuntimeError("mcpbpy.in file is not set")
     elif not os.path.isfile(mcpbpy_input_file):
         raise FileNotFoundError(
             f"mcpbpy.in file does not exist: "
@@ -319,7 +339,7 @@ def _parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
             else:
                 (key, value) = parts[0], parts[1:]
             mcpb_input_options[key] = value
-    
+
     if {"cut_off"} <= mcpb_input_options.keys():
         mcpb_input_options["cut_off"] = float(mcpb_input_options["cut_off"])
     if {"ion_ids"} <= mcpb_input_options.keys():
@@ -334,11 +354,12 @@ def _parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
         mcpb_input_options["large_opt"] = int(mcpb_input_options["large_opt"])
     return mcpb_input_options
 
+
 def _check_log_files(directory: str) -> List[str]:
     log_files = glob.glob(
-    f"{directory}/*.log"
+        f"{directory}/*.log"
     )
-    if len(log_files) == 0: 
+    if len(log_files) == 0:
         warnings.warn(
             "Could not find any log files in: "
             f"{directory}",
@@ -359,7 +380,7 @@ def _check_log_files(directory: str) -> List[str]:
             if not lines:
                 raise IOError(
                     f"Log file {log_file} is empty."
-            )
+                )
             if "Normal termination of Gaussian" not in contents:
                 warnings.warn(
                     f"Log file {log_file} did not terminate normally",
@@ -373,10 +394,12 @@ def _check_log_files(directory: str) -> List[str]:
                 max_displacement_line = lines[i+3]
                 rms_displacement_line = lines[i+4]
 
-                if ("YES" not in max_force_line and 
-                    "YES" not in rms_force_line and 
-                    "YES" not in max_displacement_line and 
-                    "YES" not in rms_displacement_line):
+                if (
+                    "YES" not in max_force_line and
+                    "YES" not in rms_force_line and
+                    "YES" not in max_displacement_line and
+                    "YES" not in rms_displacement_line
+                ):
                     warnings.warn(
                         f"Log file {log_file} did not converge:"
                         f"{convergence_lines}",
@@ -384,16 +407,17 @@ def _check_log_files(directory: str) -> List[str]:
                     )
     return log_files
 
+
 def _get_mol2_charge(file: str) -> int | float:
     with open(file, "r") as ifile:
         lines = ifile.readlines()
-    
+
     for i, line in enumerate(lines):
         if "ATOM" in line:
             start = i + 1
-        if "BOND" in line: 
+        if "BOND" in line:
             end = i
-    
+
     if not start and not end:
         raise RuntimeError(
             "Could not read mol2 file: "
@@ -404,11 +428,12 @@ def _get_mol2_charge(file: str) -> int | float:
     charges = [float(line.split()[-1].strip()) for line in atom_lines]
     return sum(charges)
 
+
 def pdb_to_sdf(files: str | list[str]):
 
     if isinstance(files, str):
         files = [files]
-    
+
     output_files = []
 
     for ligand_file in files:
@@ -417,21 +442,23 @@ def pdb_to_sdf(files: str | list[str]):
         log.info(f"Read in file: {ligand_file}")
         log.info(f"Using name {name} for output")
         output_file = os.path.join(
-            os.path.dirname(ligand_file), 
+            os.path.dirname(ligand_file),
             f"{name}.sdf"
         )
-        obabel_command = f"obabel -i {extension.strip('.')} {ligand_file} -o sdf -O {output_file}"
+        obabel_command = f"obabel -i {extension.strip('.')} "
+        "{ligand_file} -o sdf -O {output_file}"
         log.info("Converting to sdf with obabel command: \n")
         log.info(obabel_command)
         os.system(obabel_command)
         output_files.append(output_file)
-    
+
     if not output_files:
-        message = f"Could not convert files to sdf"
+        message = "Could not convert files to sdf"
         log.error(message)
         raise RuntimeError(message)
-    
+
     return output_files
+
 
 def _set_n_somd_moves(
         sampling_time: float,
@@ -439,21 +466,23 @@ def _set_n_somd_moves(
         stepsize: float = 0.002,
 
 ) -> int:
-        """
-        Set SOMD nmoves in a reasonable way for better performance.
-        See reference to: https://github.com/michellab/BioSimSpace/issues/258 and
-        https://github.com/OpenBioSim/biosimspace/issues/18 
-        """
-         
-        time = sampling_time * 1000
-        number_of_steps = int(time / stepsize)
-        return  number_of_steps // n_somd_cycles
+    """
+    Set SOMD nmoves in a reasonable way for better performance.
+    See reference to: https://github.com/michellab/BioSimSpace/issues/258
+    and
+    https://github.com/OpenBioSim/biosimspace/issues/18
+    """
+    time = sampling_time * 1000
+    number_of_steps = int(time / stepsize)
+    return number_of_steps // n_somd_cycles
+
 
 def _write_somd_restraints(
         amber_style_restraint_file: str
 ) -> Dict[tuple[int, int], tuple[float, float, float]]:
     if not os.path.isfile(amber_style_restraint_file):
-        message = f"Could not find AMBER-style restraint file: {amber_style_restraint_file}"
+        message = "Could not find AMBER-style restraint file: "
+        f"{amber_style_restraint_file}"
         log.error(message)
         raise FileNotFoundError
     somd_restraints = {}
@@ -465,10 +494,14 @@ def _write_somd_restraints(
             r3 = float(line.split("r3=")[1].split(",")[0])
             rk2 = float(line.split("rk2=")[1].split(",")[0])
             flat_bottom_radius = np.round((r3 - r2)/2, decimals=2)
-            equilibrium_distance = np.round(r2 + flat_bottom_radius, decimals=2)
+            equilibrium_distance = np.round(
+                r2 + flat_bottom_radius, decimals=2
+            )
             force_constant = np.round(rk2, decimals=2)
 
             atom_key = (iat1, iat2)
-            restraint_value = (equilibrium_distance, force_constant, flat_bottom_radius)
+            restraint_value = (
+                equilibrium_distance, force_constant, flat_bottom_radius
+            )
             somd_restraints[atom_key] = restraint_value
     return somd_restraints
