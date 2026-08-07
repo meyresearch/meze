@@ -30,8 +30,8 @@ log = logging.getLogger("rich")
 
 def _list_rindex(list_to_search: list[str], word: str) -> int:
     """
-     Source - https://stackoverflow.com/a
-     Posted by wim, modified by community.
+     Source - https://stackoverflow.com/a/3940144
+     Posted by wim, modified by community. 
      See post 'Timeline' for change history
      Retrieved 2026-01-20, License - CC BY-SA 4.0
      """
@@ -41,9 +41,8 @@ def _list_rindex(list_to_search: list[str], word: str) -> int:
         if word in item:
             rindex = i
             break
-    if not rindex:
-        raise ValueError(f"{word} is not in list")
-
+    if rindex is None:
+        raise ValueError(f"'{word}' is not in list")
     rlist = [line for line in reversed(list_to_search)]
     return [
         i for i, line in enumerate(list_to_search) if line == rlist[rindex]
@@ -391,7 +390,12 @@ def _check_log_files(directory: str) -> List[str]:
                     UserWarning
                 )
             if "large_opt" in log_file:
-                i = _list_rindex(lines, "Converged")
+                try:
+                    i = _list_rindex(lines, "Converged")
+                except ValueError as e:
+                    message = str(e) + f"\nLog file {log_file} may not have converged."
+                    log.error(message) 
+                    raise RuntimeError
                 convergence_lines = " ".join(lines[i+1:i+5])
                 max_force_line = lines[i+1]
                 rms_force_line = lines[i+2]
