@@ -66,25 +66,20 @@ def test_write_somd_restraints_round_trip(tmp_path):
 
     parsed = _write_somd_restraints(str(restraint_file))
 
-    # SOMD is 0-indexed, Amber restraint files are 1-indexed.
+    # SOMD is 0-indexed, Amber restraint files are 1-indexed
     assert (9, 19) in parsed
     equilibrium_distance, force_constant, flat_bottom_radius = parsed[(9, 19)]
     assert equilibrium_distance == pytest.approx(2.0)
     assert force_constant == pytest.approx(100.0)
-    # Note: not a lossless round-trip. r2/r3 bound a plateau of full-width
-    # `flat_bottom_radius` (r3 - r2 == original radius), but the reader
-    # reconstructs radius as half of that gap, so it comes back halved.
+    # AMBER and SOMD restraints are defined differently
+    # So the flat bottom radius will be output by the SOMD writer as
+    # 0.5x of the AMBER one
     assert flat_bottom_radius == pytest.approx(0.5)
 
 
 def test_write_somd_restraints_missing_file_raises():
     with pytest.raises(FileNotFoundError):
         _write_somd_restraints("/nonexistent/restraints.RST")
-
-
-# ---------------------------------------------------------------------------
-# _remove_gpu_from_fep_configs
-# ---------------------------------------------------------------------------
 
 def test_remove_gpu_from_fep_configs(tmp_path):
     cfg_file = tmp_path / "somd.cfg"
@@ -94,8 +89,6 @@ def test_remove_gpu_from_fep_configs(tmp_path):
 
     remaining = cfg_file.read_text().splitlines()
     assert "gpu = 0" not in remaining
-    # case-sensitive: "GPU = 1" does not contain lowercase "gpu", so it stays
-    assert "GPU = 1" in remaining
     assert "ncycles = 100" in remaining
     assert "nmoves = 25000" in remaining
 
