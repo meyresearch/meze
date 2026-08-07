@@ -389,41 +389,27 @@ class Meze:
     stage: str = "bound"
 
     def __post_init__(self):
-        coordinate_extension = os.path.splitext(self.coordinates)[1]
-        if coordinate_extension in [".rst7"]:
-            coordinate_format = "RESTRT"
-        else:
-            coordinate_format = None
-        topology_extension = os.path.splitext(self.topology)[1]
-        try:
-            if coordinate_extension == topology_extension:
-                with warnings.catch_warnings(record=True) as caught_warnings:
-                    warnings.filterwarnings(
-                        "always",
-                        message=r"Unknown element.*empty element record",
-                        category=UserWarning,
-                        module=r"MDAnalysis\.topology\.PDBParser",
-                    ) 
-                    self.universe = mda.Universe(
-                        self.topology,
-                    )   
-                    guessed_elements = guess_types(self.universe.atoms.names)
-                    self.universe.add_TopologyAttr("elements", guessed_elements)
-            else:         
-                self.universe = mda.Universe(
-                    self.topology,
-                    self.coordinates,
-                    topology_format="PARM7",
-                    format=coordinate_format
-                )
 
-        except FileNotFoundError:
-            print("Could not create meze object:\n")
-            raise            
-        
+        self._check_file_exists(self.topology)
+        self._check_file_exists(self.coordinates)
+
+        coordinate_extension = os.path.splitext(self.coordinates)[1]
+        coordinate_format = self._get_coordinate_fileformat(
+            coordinate_file_extension=coordinate_extension
+        )
+        topology_extension = os.path.splitext(self.topology)[1]
+
+        self.universe = self._set_universe(
+            coordinate_extension=coordinate_extension,
+            topology_extension=topology_extension,
+            coordinate_format=coordinate_format
+        )
+
         if self.stage == "bound":
             self._set_metal()
-            self.coordinating_residues = self._get_metal_coordinating_residues()
+            self.coordinating_residues = (
+                self._get_metal_coordinating_residues()
+            )
         elif self.stage == "unbound":
             self.metals = None
             self.metal_resids = []
@@ -438,7 +424,9 @@ class Meze:
         self._setup_bss_system()
         self._set_protein()
 
-        if self.non_standard_residues and isinstance(self.non_standard_residues, dict):
+        if self.non_standard_residues and isinstance(
+            self.non_standard_residues, dict
+        ):
             self._validate_non_standard_residues()
         
         if self.ligand and self.ligand.parameterised and not self.ligand_resid:
@@ -447,13 +435,60 @@ class Meze:
         elif self.ligand and self.ligand.parameterised and self.ligand_resid:
             pass  
         elif not self.ligand and self.ligand_resname:
-            log.info(f"Inferring ligand from ligand residue name: {self.ligand_resname}")
+            log.info(
+                "Inferring ligand from ligand residue name: "
+                f"{self.ligand_resname}"
+            )
             self._set_ligand()
         else:
             log.warning(
-                "Ligand not set by user in meze construction. Inferring from inputs."
+                "Ligand not set by user in meze construction. "
+                "Inferring from inputs."
             )
 
+    @staticmethod
+    def _check_file_exists(file):
+        if not os.path.isfile(file):
+            message = f"File '{file}' not found."
+            log.error(message)
+            raise FileNotFoundError(message)
+
+    @staticmethod
+    def _get_coordinate_fileformat(coordinate_file_extension):
+        if coordinate_file_extension in [".rst7"]:
+            return "RESTRT"
+        else:
+            return None
+        
+    def _set_universe(
+            self,
+            coordinate_extension,
+            topology_extension,
+            coordinate_format
+    ):
+        if coordinate_extension == topology_extension:
+            with warnings.catch_warnings(record=True):
+                warnings.filterwarnings(
+                    "always",
+                    message=r"Unknown element.*empty element record",
+                    category=UserWarning,
+                    module=r"MDAnalysis\.topology\.PDBParser",
+                )
+                universe = mda.Universe(
+                    self.topology,
+                )
+                guessed_elements = guess_types(self.universe.atoms.names)
+                universe.add_TopologyAttr(
+                    "elements", guessed_elements
+                )
+        else:
+            universe = mda.Universe(
+                self.topology,
+                self.coordinates,
+                topology_format="PARM7",
+                format=coordinate_format
+            )
+        return universe
 
     def __str__(self) -> str:
         return _pretty(self)
