@@ -77,11 +77,16 @@ logging.basicConfig(
 
 log = logging.getLogger("rich")
 
+
 class MezeRecipe(BaseModel):
     """Meze workflow recipe
     """
-    model_config = ConfigDict(arbitrary_types_allowed=True, validate_default=True)
-    workdir: str = Field(default_factory=os.getcwd, description="Working directory")
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True, validate_default=True
+    )
+    workdir: str = Field(
+        default_factory=os.getcwd, description="Working directory"
+    )
     metal: str = Field("ZN", description="Metal element")
     metal_charge: int = Field(2, description="Metal charge")
     group_name: str = Field("meze", description="Group name for project")
@@ -97,9 +102,13 @@ class MezeRecipe(BaseModel):
     gaussian_version: str = Field(
         "g16", description="Gaussian version"
     )
-    memory: float = Field(12000, description="Memory for Gaussian calculations in MB")
+    memory: float = Field(
+        12000, description="Memory for Gaussian calculations in MB"
+    )
 
-    nprocshared: int = Field(8, description="Number of processors for Gaussian calculations")
+    nprocshared: int = Field(
+        8, description="Number of processors for Gaussian calculations"
+    )
 
     only_optimise_hydrogens: bool = Field(
         True, description="Only optimise hydrogen atoms"
@@ -134,6 +143,7 @@ class MezeRecipe(BaseModel):
     nb_cutoff: float = Field(
         12.0, ge=0, description="Cut-off for electrostatics interactions"
     )
+
     @field_validator("model", mode="after")
     @classmethod
     def validate_model(cls, v):
@@ -143,7 +153,7 @@ class MezeRecipe(BaseModel):
             return int(v)
         except (TypeError, ValueError):
             raise ValueError(f"Cannot covert model='{v}' to int")
-        
+
     @field_validator("temperature", mode="after")
     @classmethod
     def validate_temperature(cls, value):
@@ -151,7 +161,9 @@ class MezeRecipe(BaseModel):
             return value
         value = float(value)
         if value < 0:
-            raise ValueError(f"temperature must be greater than or equal to 0 K")
+            raise ValueError(
+                "temperature must be greater than or equal to 0 K"
+            )
         return bss.Types.Temperature(value, "kelvin")
 
     @field_validator("pressure", mode="after")
@@ -161,39 +173,11 @@ class MezeRecipe(BaseModel):
             return value
         value = float(value)
         if value < 0:
-            raise ValueError(f"pressure must be greater than or equal to 0 atm")
+            raise ValueError(
+                "pressure must be greater than or equal to 0 atm"
+            )
         return bss.Types.Pressure(value, "atm")
-    
-    @field_validator("nb_cutoff", mode="after")
-    @classmethod
-    def validate_cutoff_distance(cls, value):
-        if isinstance(value, bss.Types.Length):
-            return value
-        value = float(value)
-        if value < 0:
-            raise ValueError(f"nb_cutoff must be greater than or equal to 0 atm")
-        return bss.Types.Length(value, "angstrom")    
 
-    @field_validator("temperature", mode="after")
-    @classmethod
-    def validate_temperature(cls, value):
-        if isinstance(value, bss.Types.Temperature):
-            return value
-        value = float(value)
-        if value < 0:
-            raise ValueError(f"temperature must be greater than or equal to 0 K")
-        return bss.Types.Temperature(value, "kelvin")
-    
-    @field_validator("pressure", mode="after")
-    @classmethod
-    def validate_pressure(cls, value):
-        if isinstance(value, bss.Types.Pressure):
-            return value
-        value = float(value)
-        if value < 0:
-            raise ValueError(f"pressure must be greater than or equal to 0 atm")
-        return bss.Types.Pressure(value, "atm")
-    
     @field_validator("nb_cutoff", mode="after")
     @classmethod
     def validate_cutoff_distance(cls, value):
@@ -201,17 +185,19 @@ class MezeRecipe(BaseModel):
             return value
         value = float(value)
         if value < 0:
-            raise ValueError(f"nb_cutoff must be greater than or equal to 0 atm")
-        return bss.Types.Length(value, "angstrom")    
-    
+            raise ValueError(
+                "nb_cutoff must be greater than or equal to 0 atm"
+            )
+        return bss.Types.Length(value, "angstrom")
+
     def __str__(self) -> str:
         """Print recipe information as JSON
         """
         return self.model_dump_json(indent=4, fallback=str, warnings="none")
-    
+
     def __getitem__(self, key: str):
         return getattr(self, key)
-                                                                        
+
     def __setitem__(self, key: str, value):
         setattr(self, key, value)
 
@@ -219,15 +205,23 @@ class MezeRecipe(BaseModel):
         with open(file, "w") as ofile:
             ofile.write(self.model_dump_json(indent=2))
 
+
 class ColdMezeRecipe(MezeRecipe):
     """Meze workflow recipe for minimisation and equilibration
     """
-    max_cycles: int = Field(1000, ge=0, description="Number of minimisation cycles")
+    max_cycles: int = Field(
+        1000, ge=0, description="Number of minimisation cycles"
+    )
     n_sd_cycles: int = Field(
-        1000, ge=0, description="Number of steepest descent cycles (if min_method=1)"
+        1000, 
+        ge=0, 
+        description="Number of steepest descent cycles (if min_method=1)"
     ) 
     min_method: int = Field(
-        1, ge=0, description="Run steepest descent for n_sd_cycles, then conjugate gradient"
+        1, 
+        ge=0, 
+        description="Run steepest descent for n_sd_cycles, "
+        "then conjugate gradient"
     )
     barostat: int = Field(
         2, ge=1, le=2, description="Type of barostat, 1: Berendsen, 2: MC"
@@ -246,7 +240,9 @@ class ColdMezeRecipe(MezeRecipe):
         300.0, description="Simulation end temperature in kelvin"
     )
     restraint_weight: float = Field(
-        100.0, ge=0, description="Force constant for positional restraints in kcal/(mol*Å^2)"
+        100.0, ge=0, 
+        description="Force constant for positional restraints "
+        "in kcal/(mol*Å^2)"
     )
 
     @field_validator("dt", "runtime", mode="after")
@@ -255,7 +251,9 @@ class ColdMezeRecipe(MezeRecipe):
         if isinstance(value, bss.Types.Time):
             return value
         if value < 0:
-            raise ValueError(f"dt, time must be greater than or equal to 0 picoseconds")
+            raise ValueError(
+                "dt, time must be greater than or equal to 0 picoseconds"
+            )
         return bss.Types.Time(value, "picoseconds")
 
     @field_validator("start_temperature", "end_temperature", mode="after")
@@ -265,8 +263,11 @@ class ColdMezeRecipe(MezeRecipe):
             return value
         value = float(value)
         if value < 0:
-            raise ValueError(f"temperature must be greater than or equal to 0 K")
+            raise ValueError(
+                "temperature must be greater than or equal to 0 K"
+            )
         return bss.Types.Temperature(value, "kelvin")
+
 
 class HotMezeRecipe(MezeRecipe):
     """Meze workflow recipe for production runs
@@ -277,28 +278,36 @@ class HotMezeRecipe(MezeRecipe):
     dt: Union[float, bssTime] = Field(
         0.002, description="Integrator timestep, in picoseconds"
     )
+
     @field_validator("runtime", mode="after")
     @classmethod
     def validate_time(cls, value):
         if isinstance(value, bss.Types.Time):
             return value
         if value < 0:
-            raise ValueError(f"dt must be greater than or equal to 0 nanoseconds")
+            raise ValueError(
+                "dt must be greater than or equal to 0 nanoseconds"
+            )
         return bss.Types.Time(value, "nanoseconds")
-    
+
     @field_validator("dt", mode="after")
     @classmethod
     def validate_timestep(cls, value):
         if isinstance(value, bss.Types.Time):
             return value
         if value < 0:
-            raise ValueError(f"dt must be greater than or equal to 0 picoseconds")
+            raise ValueError(
+                "dt must be greater than or equal to 0 picoseconds"
+            )
         return bss.Types.Time(value, "picoseconds")
+
 
 class AlchemicalMezeRecipe(MezeRecipe):
     """Meze workflow recipe for alchemical free energy calculations
     """
-    model_config = ConfigDict(arbitrary_types_allowed=True, validate_default=True)
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True, validate_default=True
+    )
     n_lambdas: int = Field(
         16, ge=3, description="Number of lambda windows"
     )
@@ -312,7 +321,8 @@ class AlchemicalMezeRecipe(MezeRecipe):
         500, ge=1, description="N:o steps with which outputs are written"
     )
     flexible_align: bool = Field(
-        False, description="Whether to flexibly align ligands for single topology."
+        False, 
+        description="Whether to flexibly align ligands for single topology."
     )
     ring_breaks: bool = Field(
         True, description="Whether to allow ring breaking in merging."
@@ -330,7 +340,9 @@ class AlchemicalMezeRecipe(MezeRecipe):
         True, description="Whether to carry out minimisation at each lambda"
     )
     lambda_minimisation_steps: int = Field(
-        5000, description="Number of minimisation steps to do at each lambda minimisation."
+        5000, 
+        description="Number of minimisation steps to do "
+        "at each lambda minimisation."
     )
 
     @field_validator("sampling_time", mode="after")
@@ -340,8 +352,8 @@ class AlchemicalMezeRecipe(MezeRecipe):
             return value
         value = float(value)
         if value <= 0:
-            raise ValueError(f"sampling_time must be greater than 0 ns")
-        return(bssTime(value, "nanoseconds"))
+            raise ValueError("sampling_time must be greater than 0 ns")
+        return bssTime(value, "nanoseconds")
 
     @field_validator("dt", mode="after")
     @classmethod
@@ -349,7 +361,9 @@ class AlchemicalMezeRecipe(MezeRecipe):
         if isinstance(value, bss.Types.Time):
             return value
         if value < 0:
-            raise ValueError(f"dt must be greater than or equal to 0 picoseconds")
+            raise ValueError(
+                "dt must be greater than or equal to 0 picoseconds"
+            )
         return bss.Types.Time(value, "picoseconds")
 
 
@@ -361,12 +375,16 @@ class Meze:
     disulfide_bridges: Optional[List[dict[str, int]]] = None
     ligand: Optional[Ligand] = None 
     ligand_resid: Optional[int] = None
-    non_standard_residues: dict[dict] | List[Ligand] = field(default_factory=dict)   
+    non_standard_residues: dict[dict] | List[Ligand] = field(
+        default_factory=dict
+    )   
     parameterisation_directory: Optional[str] = None
     mcpbpy_input_file: Optional[str] = None
     tleap_input_file: Optional[str] = None
     restraint_file: Optional[str] = None
-    exclude_resids: Optional[Union[int, list[int]]] = field(default_factory=list)
+    exclude_resids: Optional[Union[int, list[int]]] = field(
+        default_factory=list
+    )
     ligand_resname: Optional[str] = None
     stage: str = "bound"
 
