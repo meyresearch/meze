@@ -22,8 +22,6 @@ from meze.utils import (
 )
 
 def test_list_rindex_returns_last_matching_index():
-    # last list element ("d") must NOT match `word`, or this hits the same
-    # falsy-zero bug documented in test_list_rindex_match_only_at_last_position
     assert _list_rindex(["a", "bx", "c", "bx", "d"], "b") == 3
 
 
