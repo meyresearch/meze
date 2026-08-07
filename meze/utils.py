@@ -395,7 +395,7 @@ def _check_log_files(directory: str) -> List[str]:
                 except ValueError as e:
                     message = str(e) + f"\nLog file {log_file} may not have converged."
                     log.error(message) 
-                    raise RuntimeError
+                    raise RuntimeError(message) from e
                 convergence_lines = " ".join(lines[i+1:i+5])
                 max_force_line = lines[i+1]
                 rms_force_line = lines[i+2]
