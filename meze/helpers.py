@@ -1,13 +1,14 @@
 import shutil
 import os
 
+
 def _check_ambertools():
     required = [
         "antechamber",
-        "parmchk2", 
-        "tleap", 
-        "MCPB.py", 
-        "metalpdb2mol2.py", 
+        "parmchk2",
+        "tleap",
+        "MCPB.py",
+        "metalpdb2mol2.py",
         "pdb4amber"
     ]
 
@@ -19,4 +20,6 @@ def _check_ambertools():
         if amberhome and os.path.exists(os.path.join(amberhome, "bin", tool)):
             continue
 
-        raise RuntimeError(f"{tool} not found. AmberTools installation required.")
+        raise RuntimeError(
+            f"{tool} not found. AmberTools installation required."
+        )

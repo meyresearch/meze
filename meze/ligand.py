@@ -1,5 +1,4 @@
 import logging
-
 import BioSimSpace as bss
 from BioSimSpace._SireWrappers import System as bssSystem
 from pathlib import Path
@@ -29,12 +28,13 @@ logging.basicConfig(
 
 log = logging.getLogger("rich")
 
+
 @dataclass
 class Ligand():
     file: Union[str, List[str]]
     name: Optional[str] = None
     charge: int = 0
-    system: Optional[bssSystem] = None 
+    system: Optional[bssSystem] = None
     atom_type: Optional[str] = "gaff2"
     parameterised: bool = False
     frcmod_file: Optional[str] = None
@@ -53,7 +53,9 @@ class Ligand():
                 )
             self.file = self.file
         else:
-            raise TypeError(f"Expected str or list[str], got {type(self.file)}")
+            raise TypeError(
+                f"Expected str or list[str], got {type(self.file)}"
+            )
 
         for file in self.file:
             if not os.path.isfile(file):
@@ -64,7 +66,8 @@ class Ligand():
                 self.charge = float(self.charge)
             except (TypeError, ValueError):
                 raise TypeError(
-                    f"Ligand charge must be an integer or float (got {self.charge} of type {type(self.charge)})."
+                    f"Ligand charge must be an integer or float \
+                    (got {self.charge} of type {type(self.charge)})."
                 )
         if not self.name:
             self.name = Path(self.file[0]).stem
@@ -72,27 +75,30 @@ class Ligand():
                 f"Ligand name not set, inferring from file name: {self.file}",
                 UserWarning
             )
-        
+
         self.system = bss.IO.readMolecules(self.file)
 
         if not self.residue_name:
             residues = self.system.getResidues()
             if len(residues) > 1:
-                log.warning(f"Found multiple residues in ligand file {self.file}: \n{residues}")
-                log.warning(f"Choosing residue name based on first residue.")
+                log.warning(
+                    f"Found multiple residues in ligand file {self.file}: \
+                    \n{residues}"
+                )
+                log.warning("Choosing residue name based on first residue.")
             residue = residues[0]
             self.residue_name = residue.name()
             log.info(f"Ligand residue name set to {self.residue_name}")
 
-    def parameterise(self, 
+    def parameterise(self,
                      directory: Optional[str] = None,
-                     method: Literal["antechamber", "tleap"] = "antechamber",  
+                     method: Literal["antechamber", "tleap"] = "antechamber",
                      atom_type: str = "gaff2",
-                     charge_method: str = "bcc", 
+                     charge_method: str = "bcc",
                      residue_name: str = "MOL",
-                     force_field: Optional[str] = None, 
+                     force_field: Optional[str] = None,
                      filename: Optional[str] = None) -> "Ligand":
-        
+
         if not directory:
             directory = os.getcwd()
 
@@ -100,14 +106,17 @@ class Ligand():
             raise UserWarning(f"Expected one ligand file but got {self.file}")
         else:
             file = self.file[0]
-        
+
         output_filename = filename or f"{self.name}"
 
         with open(file, "r") as ifile:
             lines = ifile.readlines()
-        old_resname = [line.split()[3] for line in lines if "HETATM" in line or "ATOM" in line][0]
+        old_resname = [
+            line.split()[3] for line in lines if "HETATM" in line
+            or "ATOM" in line
+        ][0]
         new_lines = [line.replace(old_resname, residue_name) for line in lines]
-        
+
         with open(f"{directory}/{residue_name}.pdb", "w") as ofile:
             ofile.writelines(new_lines)
 
@@ -148,14 +157,14 @@ class Ligand():
             system=new_system,
             frcmod_file=output_frcmod_file,
             residue_name=residue_name
-        )       
-        
-    def _run_antechamber(self, 
-                         parameterisation_directory: str, 
+        )
+
+    def _run_antechamber(self,
+                         parameterisation_directory: str,
                          input_file: str,
                          output_file: str,
                          atom_type: str = "gaff2",
-                         charge_method: str = "bcc", 
+                         charge_method: str = "bcc",
                          residue_name: str = "MOL",):
         _check_ambertools()
         charge = int(self.charge)
@@ -170,12 +179,12 @@ class Ligand():
         logging.info(antechamber_cmd)
         os.chdir(parameterisation_directory)
         os.system(antechamber_cmd)
-        if not os.path.isfile(output_file): 
+        if not os.path.isfile(output_file):
             warnings.warn(
                 f"antechamber failed: missing output files for {output_file}",
                 UserWarning
             )
-        
+
         with open(output_file, "r") as ifile:
             mol2_lines = ifile.readlines()
         new_lines = []
@@ -192,11 +201,11 @@ class Ligand():
             ofile.writelines(new_lines)
         os.chdir(workdir)
         return output_file
-    
-    def _run_parmchk2(self, 
-                      parameterisation_directory: str, 
-                      input_file: str, 
-                      output_file: str, 
+
+    def _run_parmchk2(self,
+                      parameterisation_directory: str,
+                      input_file: str,
+                      output_file: str,
                       atom_type: str = "gaff2"):
         _check_ambertools()
         workdir = os.getcwd()
@@ -216,9 +225,9 @@ class Ligand():
             )
         os.chdir(workdir)
         return output_file
-    
+
     def run_ligand_tleap(self,
-                         parameterisation_directory: str, 
+                         parameterisation_directory: str,
                          coordinate_file: str,
                          force_field: str,
                          residue_name: str = "MAN",
@@ -233,15 +242,18 @@ class Ligand():
                  f"lig = loadpdb {coordinate_file}\n",
                  f"savemol2 lig {residue_name}.mol2 {atom_type}\n",
                  "quit"]
-        with open(f"{parameterisation_directory}/{residue_name}_tleap.in", "w") as ofile: 
+        with open(
+            f"{parameterisation_directory}/{residue_name}_tleap.in", "w"
+        ) as ofile:
             ofile.writelines(lines)
-        tleap_cmd = f"tleap -s -f {parameterisation_directory}/{residue_name}_tleap.in"
+        tleap_cmd = f"tleap -s -f \
+            {parameterisation_directory}/{residue_name}_tleap.in"
         logging.info("Running tleap with command:")
         logging.info(tleap_cmd)
         os.chdir(parameterisation_directory)
         os.system(tleap_cmd)
         output_file = f"{parameterisation_directory}/{residue_name}.mol2"
-        if not os.path.isfile(output_file): 
+        if not os.path.isfile(output_file):
             warnings.warn(
                 f"tleap failed: missing output files for {output_file}",
                 UserWarning
@@ -263,7 +275,9 @@ class Ligand():
         if directory:
             os.makedirs(directory, exist_ok=True)
 
-        ligand = self.parameterise(directory) if not self.parameterised else self
+        ligand = (
+            self.parameterise(directory) if not self.parameterised else self
+        )
 
         ligand_mol2 = os.path.join(directory, f"{ligand.name}.mol2")
         ligand_frcmod = os.path.join(directory, f"{ligand.name}.frcmod")
@@ -272,63 +286,69 @@ class Ligand():
         if not os.path.isfile(ligand_frcmod):
             shutil.copy(ligand.frcmod_file, ligand_frcmod)
 
-        tleap_input_file = os.path.join(directory, f"tleap_solvate.in")
-        tleap_output_file = os.path.join(directory, f"tleap_solvate.out")        
+        tleap_input_file = os.path.join(directory, "tleap_solvate.in")
+        tleap_output_file = os.path.join(directory, "tleap_solvate.out")
 
         lines = [f"source leaprc.{force_field}\n",
                  f"source leaprc.water.{water_model.lower()}\n"]
-        
+
         if "tip3p" in water_model.lower():
             lines.append(
                 "loadamberparams frcmod.ions1lm_126_tip3p\n"
-            )       
-        
+            )
+
         lines.extend([
             f"loadamberparams {ligand_frcmod}\n",
             f"lig = loadmol2 {ligand_mol2}\n"
-            f"\n"  
+            f"\n"
         ])
 
         if "oct" in box_shape.lower():
             lines.append(
-                f"solvate{box_shape[:3]} lig {water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
+                f"solvate{box_shape[:3]} lig "
+                f"{water_model.upper()}BOX {box_edges} iso "
+                f"{solvent_closeness}\n"
             )
         else:
             lines.append(
-                f"solvate{box_shape[:3]} lig {water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
+                f"solvate{box_shape[:3]} lig "
+                f"{water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
             )
 
         lines.extend([
             "addions2 lig Na+ 0\n",
             "addions2 lig Cl- 0\n",
-            "\n"
+            "\n",
             f"savepdb lig {ligand.name}_solv.pdb\n",
-            f"saveamberparm lig {ligand.name}_solv.prmtop {ligand.name}_solv.inpcrd\n",
+            f"saveamberparm lig {ligand.name}_solv.prmtop "
+            f"{ligand.name}_solv.inpcrd\n",
             "quit"
         ])
 
         with open(tleap_input_file, "w") as ifile:
-            ifile.writelines(lines)       
+            ifile.writelines(lines)
         solvated_topology = f"{ligand.name}_solv.prmtop"
         solvated_coordinates = f"{ligand.name}_solv.inpcrd"
 
         workdir = os.getcwd()
         os.chdir(directory)
         tleap_command = f"tleap -s -f {tleap_input_file} > {tleap_output_file}"
-        log.info(f"Running tleap with command:")
+        log.info("Running tleap with command:")
         log.info(tleap_command)
-        os.system(tleap_command)        
+        os.system(tleap_command)
 
         try:
             solvated_topology = os.path.join(
-                directory, 
+                directory,
                 solvated_topology
             )
             solvated_coordinates = os.path.join(
-                directory, 
+                directory,
                 solvated_coordinates
             )
-            system = bss.IO.readMolecules([solvated_topology, solvated_coordinates])
+            system = bss.IO.readMolecules(
+                [solvated_topology, solvated_coordinates]
+            )
 
             solvated_ligand = dataclasses.replace(
                 ligand,
