@@ -6,7 +6,6 @@ channels:
 dependencies:
   - python=3.12
   - openbiosim/label/dev::biosimspace
-  - openbiosim/label/dev::somd2
   - numpy<2
   - mdanalysis
   - openbabel
