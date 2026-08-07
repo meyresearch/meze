@@ -3,7 +3,7 @@ from .sofra import (
     ColdMezeRecipe,
     HotMezeRecipe,
     Meze,
-    ColdMeze, 
+    ColdMeze,
     HotMeze,
     QuantumMeze,
     ColdQuantumMeze,
@@ -14,8 +14,8 @@ from .sofra import (
     AlchemicalMezeRecipe
 )
 __all__ = [
-    "MezeRecipe", 
-    "ColdMezeRecipe", 
+    "MezeRecipe",
+    "ColdMezeRecipe",
     "HotMezeRecipe",
     "Meze",
     "ColdMeze",
@@ -27,4 +27,4 @@ __all__ = [
     "Ligand",
     "AlchemicalSofra",
     "AlchemicalMezeRecipe"
-]  
+]
