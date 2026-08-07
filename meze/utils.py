@@ -117,7 +117,7 @@ def _write_distance_restraints(
 def _remove_gpu_from_fep_configs(files: List[str]) -> None:
     for file in files:
         with open(file, "r") as f:
-            lines = [line for line in f if "gpu" not in line]
+            lines = [line for line in f if "gpu" not in line.lower()]
         with open(file, "w") as f:
             f.writelines(lines)
 
