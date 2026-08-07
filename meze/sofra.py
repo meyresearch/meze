@@ -1910,8 +1910,10 @@ class Meze:
         step_2e_output_file = os.path.join(
             self.parameterisation_directory, "mcpb_step2e.out"
         )
-        step_2e_command = f"MCPB.py -i {mcpbpy_input_file} "
-        f"-s 2e > {step_2e_output_file}"
+        step_2e_command = (
+            f"MCPB.py -i {mcpbpy_input_file} "
+            f"-s 2e > {step_2e_output_file}"
+        )
         log.info(f"Running MCPB.py step 2e with command:\n{step_2e_command}")
         os.system(step_2e_command)
         os.chdir(workdir)
