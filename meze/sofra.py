@@ -1,19 +1,12 @@
+from dataclasses import (
+    dataclass,
+    field
+)
+import dataclasses
 import glob
 import json
 import warnings
 import logging
-import multiprocessing
-if multiprocessing.get_start_method(allow_none=True) is None:
-    multiprocessing.set_start_method("fork")
-import yaml
-warnings.filterwarnings("ignore", message="to-Python converter for std::__1::vector")
-logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
-logging.getLogger("MDAnalysis").setLevel(logging.ERROR)
-from dataclasses import (
-    dataclass, 
-    field
-)
-import dataclasses
 import numpy as np
 from pydantic import (
     Field,
@@ -27,8 +20,7 @@ from typing import (
     Optional,
     Literal,
     Union,
-    Self,
-    List
+    Self
 )
 import pandas as pd
 import pickle
@@ -44,7 +36,6 @@ from BioSimSpace._SireWrappers import System as bssSystem
 from BioSimSpace.Types._time import Time as bssTime
 from BioSimSpace.Types._temperature import Temperature as bssTemperature
 from BioSimSpace.Types._pressure import Pressure as bssPressure
-from BioSimSpace.Types._length import Length as bssLength
 from .utils import (
     _residue_restraint_mask,
     _write_distance_restraints,
@@ -64,11 +55,16 @@ from .helpers import _check_ambertools
 import shutil
 from rich.logging import RichHandler
 from rich.console import Console
-from rdkit import Chem
 import subprocess
 import csv
-import sire
-
+import multiprocessing
+if multiprocessing.get_start_method(allow_none=True) is None:
+    multiprocessing.set_start_method("fork")
+warnings.filterwarnings(
+    "ignore", message="to-Python converter for std::__1::vector"
+)
+logging.getLogger("numexpr.utils").setLevel(logging.ERROR)
+logging.getLogger("MDAnalysis").setLevel(logging.ERROR)
 console = Console(force_terminal=True, color_system="truecolor")
 
 logging.basicConfig(
