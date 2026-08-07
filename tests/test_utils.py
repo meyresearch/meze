@@ -1,9 +1,6 @@
-import os
 from types import SimpleNamespace
 from unittest.mock import patch
-
 import pytest
-
 from meze.utils import (
     _check_log_files,
     _edit_mcpbpy_tleap_input,
@@ -21,15 +18,19 @@ from meze.utils import (
     pdb_to_sdf,
 )
 
+
 def test_list_rindex_returns_last_matching_index():
     assert _list_rindex(["a", "bx", "c", "bx", "d"], "b") == 3
+
 
 def test_list_rindex_raises_when_word_not_found():
     with pytest.raises(ValueError):
         _list_rindex(["a", "b", "c"], "z")
 
+
 def test_list_rindex_match_only_at_last_position():
     assert _list_rindex(["a", "b", "c"], "c") == 2
+
 
 @pytest.mark.parametrize(
     "residue_ids,expected",
@@ -47,15 +48,12 @@ def test_residue_restraint_mask(residue_ids, expected):
     assert _residue_restraint_mask(residue_ids) == expected
 
 
-# ---------------------------------------------------------------------------
-# _write_distance_restraints / _write_somd_restraints (round-trip)
-# ---------------------------------------------------------------------------
-
 def test_write_distance_restraints_exact_line():
     restraints = {(10, 20): (2.0, 100.0, 1.0)}
     lines = _write_distance_restraints(restraints)
     assert lines == [
-        "&rst iat=10,20, r1=1.0, r2=1.5, r3=2.5, r4=3.0, rk2=100.0, rk3=100.0, /\n"
+        "&rst iat=10,20, r1=1.0, r2=1.5, "
+        "r3=2.5, r4=3.0, rk2=100.0, rk3=100.0, /\n"
     ]
 
 
