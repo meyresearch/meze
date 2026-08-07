@@ -24,18 +24,12 @@ from meze.utils import (
 def test_list_rindex_returns_last_matching_index():
     assert _list_rindex(["a", "bx", "c", "bx", "d"], "b") == 3
 
-
 def test_list_rindex_raises_when_word_not_found():
     with pytest.raises(ValueError):
         _list_rindex(["a", "b", "c"], "z")
 
-
 def test_list_rindex_match_only_at_last_position():
-    # Known bug: `if not rindex:` treats a match at reversed-index 0 (i.e. the
-    # match is the *last* element of the original list) as falsy, so this
-    # wrongly raises ValueError even though "c" is clearly present.
-    with pytest.raises(ValueError):
-        _list_rindex(["a", "b", "c"], "c")
+    assert _list_rindex(["a", "b", "c"], "c") == 2
 
 @pytest.mark.parametrize(
     "residue_ids,expected",
