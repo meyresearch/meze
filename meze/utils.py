@@ -445,8 +445,10 @@ def pdb_to_sdf(files: str | list[str]):
             os.path.dirname(ligand_file),
             f"{name}.sdf"
         )
-        obabel_command = f"obabel -i {extension.strip('.')} "
-        "{ligand_file} -o sdf -O {output_file}"
+        obabel_command = (
+            f"obabel -i {extension.strip('.')} "
+            "{ligand_file} -o sdf -O {output_file}"
+        )
         log.info("Converting to sdf with obabel command: \n")
         log.info(obabel_command)
         os.system(obabel_command)
