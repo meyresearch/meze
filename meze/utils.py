@@ -4,7 +4,8 @@ from .ligand import Ligand
 from typing import (
     List,
     Optional,
-    Dict
+    Dict,
+    Literal
 )
 import os
 from dataclasses import fields, is_dataclass
@@ -130,11 +131,15 @@ def _write_tleap_solvation_input(
         workdir: Optional[str] = "",  # TODO move the below to model recipe:
         protein_ff: Optional[str] = "ff14SB",
         water_model: Optional[str] = "tip3p",
-        box_shape: Optional[str] = "octahedral",
+        box_shape: Literal["octahedral", "cubic"] = "octahedral",
         box_edges: Optional[float] = 10.0,
         solvent_closeness: Optional[float] = 0.75,
         ligand_ff: Optional[str] = "gaff2"
 ):
+    allowed_shapes = ["octahedral", "cubic"]
+    if box_shape not in allowed_shapes:
+        message = f"Box shape '{box_shape}' not allowed."
+        f"Must be one of {allowed_shapes}"
     if workdir:
         os.chdir(workdir)
     lines = [
@@ -184,14 +189,14 @@ def _write_tleap_solvation_input(
         "\n"
     ])
 
-    if "oct" in box_shape.lower():
+    if box_shape == "octahedral":
         lines.append(
             f"solvate{box_shape[:3]} complex {water_model.upper()}BOX "
             f"{box_edges} iso {solvent_closeness}\n"
         )
     else:
         lines.append(
-            f"solvate{box_shape[:3]} complex {water_model.upper()}BOX "
+            f"solvateBox complex {water_model.upper()}BOX "
             f"{box_edges} {solvent_closeness}\n"
         )
 
