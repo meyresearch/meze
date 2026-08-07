@@ -235,12 +235,16 @@ def _edit_mcpbpy_tleap_input(
     pdb_line = [line for line in tleap_lines if "loadpdb" in line.lower()][0]
     variable_name = pdb_line.split("=")[0].strip()
     if "oct" in box_shape.lower():
-        new_solvate_line = f"solvate{box_shape[:3]} {variable_name} "
-        f"{water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
+        new_solvate_line = (
+            f"solvate{box_shape[:3]} {variable_name} "
+            f"{water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
+        )
 
     else:
-        new_solvate_line = f"solvate{box_shape[:3]} {variable_name} "
-        f"{water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
+        new_solvate_line = (
+            f"solvate{box_shape[:3]} {variable_name} "
+            f"{water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
+        )
 
     tleap_lines = [
         line.replace(
@@ -483,8 +487,10 @@ def _write_somd_restraints(
         amber_style_restraint_file: str
 ) -> Dict[tuple[int, int], tuple[float, float, float]]:
     if not os.path.isfile(amber_style_restraint_file):
-        message = "Could not find AMBER-style restraint file: "
-        f"{amber_style_restraint_file}"
+        message = (
+            "Could not find AMBER-style restraint file: "
+            f"{amber_style_restraint_file}"
+        )
         log.error(message)
         raise FileNotFoundError
     somd_restraints = {}
