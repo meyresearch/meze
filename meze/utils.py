@@ -344,7 +344,7 @@ def _pretty(obj, indent=0, step=2):
 def _parse_mcpbpy_input(mcpbpy_input_file: str) -> dict:
 
     if not mcpbpy_input_file:
-        raise RuntimeError("mcpbpy.in file is not set")
+        raise ValueError("mcpbpy.in file is not set")
     elif not os.path.isfile(mcpbpy_input_file):
         raise FileNotFoundError(
             f"mcpbpy.in file does not exist: "
