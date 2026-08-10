@@ -119,8 +119,6 @@ def test_alchemical_recipe_sampling_time_coerced_to_nanoseconds():
 
 
 def test_alchemical_recipe_zero_sampling_time_raises():
-    # Unlike temperature/pressure/nb_cutoff/dt (which reject only < 0,
-    # so 0 is accepted), sampling_time specifically rejects <= 0.
     with pytest.raises(ValueError, match="greater than 0"):
         AlchemicalMezeRecipe(sampling_time=0)
 
@@ -131,8 +129,6 @@ def test_alchemical_recipe_negative_sampling_time_raises():
 
 
 def test_zero_is_valid_for_other_bounded_fields():
-    # Documents the asymmetry with sampling_time above: these fields use
-    # a strict "< 0 raises" check, so exactly 0 is accepted.
     recipe = MezeRecipe(pressure=0.0, temperature=0.0, nb_cutoff=0.0)
     assert recipe.pressure.atm().value() == pytest.approx(0.0)
     assert recipe.temperature.kelvin().value() == pytest.approx(0.0)

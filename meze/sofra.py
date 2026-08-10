@@ -367,7 +367,7 @@ class AlchemicalMezeRecipe(MezeRecipe):
     def validate_picosecond_times(cls, value):
         if isinstance(value, bss.Types.Time):
             return value
-        if value < 0:
+        if value <= 0:
             raise ValueError(
                 "dt must be greater than or equal to 0 picoseconds"
             )
