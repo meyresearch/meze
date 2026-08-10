@@ -482,7 +482,7 @@ class Meze:
                 universe = mda.Universe(
                     self.topology,
                 )
-                guessed_elements = guess_types(self.universe.atoms.names)
+                guessed_elements = guess_types(universe.atoms.names)
                 universe.add_TopologyAttr(
                     "elements", guessed_elements
                 )
