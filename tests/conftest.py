@@ -3,7 +3,7 @@ import json
 from meze import ColdMeze, ColdMezeRecipe
 from pathlib import Path
 
-DATA = Path(__file__).parent.parent / "data"
+DATA = Path(__file__).parent.parent / "tests" / "data"
 
 
 @pytest.fixture(scope="session")
@@ -16,11 +16,11 @@ def vim2_recipe_json():
 def vim2_cold_meze(vim2_recipe_json):
     meze = ColdMeze.from_files(
         recipe=ColdMezeRecipe(**vim2_recipe_json),
-        pdb_file=DATA / "vim2/vim2.fixed.pdb",
+        pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
         non_standard_residues={"MOH": {"charge": -1, "atom_type": "amber"}}
     )
-    meze.add_ligand(
-        ligand_file=DATA / "ligands/ligand_11.pdb",
+    return meze.add_ligand(
+        ligand_file=str(DATA / "ligands/ligand_11.pdb"),
         name="ligand_11",
         ligand_charge=-1
     )
