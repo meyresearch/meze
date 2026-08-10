@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 from unittest.mock import patch
 import pytest
+import warnings
 from meze.utils import (
     _check_log_files,
     _edit_mcpbpy_tleap_input,
@@ -273,13 +274,9 @@ def test_parse_mcpbpy_input_missing_file_raises():
 
 
 def test_parse_mcpbpy_input_empty_path_raises():
-    with pytest.raises(RuntimeError):
-        _parse_mcpbpy_input("")
+    with pytest.raises(ValueError):
+        _parse_mcpbpy_input(mcpbpy_input_file=None)
 
-
-# ---------------------------------------------------------------------------
-# _check_log_files
-# ---------------------------------------------------------------------------
 
 def test_check_log_files_warns_when_none_found(tmp_path):
     with pytest.warns(UserWarning, match="Could not find any log files"):
@@ -308,9 +305,50 @@ def test_check_log_files_empty_log_raises_ioerror(tmp_path):
         _check_log_files(str(tmp_path))
 
 
-# ---------------------------------------------------------------------------
-# _get_mol2_charge
-# ---------------------------------------------------------------------------
+def test_check_log_file_all_not_converged(tmp_path):
+    (tmp_path / "large_opt.log").write_text(
+        "         Item               Value     Threshold  Converged?\n"
+        "Maximum Force            0.225680     0.000450     NO\n"
+        "RMS     Force            0.049275     0.000300     NO\n"
+        "Maximum Displacement     0.051861     0.001800     NO\n"
+        "RMS     Displacement     0.010123     0.001200     NO\n"
+    )
+    with pytest.warns(UserWarning, match="did not converge"):
+        _check_log_files(str(tmp_path))
+
+
+def test_check_log_file_some_not_converged(tmp_path):
+    (tmp_path / "large_opt.log").write_text(
+        "         Item               Value     Threshold  Converged?\n"
+        "Maximum Force            0.225680     0.000450     NO\n"
+        "RMS     Force            0.049275     0.000300     NO\n"
+        "Maximum Displacement     0.051861     0.001800     YES\n"
+        "RMS     Displacement     0.010123     0.001200     YES\n"
+    )
+    with pytest.warns(UserWarning, match="did not converge"):
+        _check_log_files(str(tmp_path))
+
+
+def test_check_log_file_converged(tmp_path):
+    (tmp_path / "large_opt.log").write_text(
+        "         Item               Value     Threshold  Converged?\n"
+        "Maximum Force            0.225680     0.000450     NO\n"
+        "RMS     Force            0.049275     0.000300     NO\n"
+        "Maximum Displacement     0.051861     0.001800     NO\n"
+        "RMS     Displacement     0.010123     0.001200     NO\n"
+        "         Item               Value     Threshold  Converged?\n"
+        "Maximum Force            0.225680     0.000450     YES\n"
+        "RMS     Force            0.049275     0.000300     YES\n"
+        "Maximum Displacement     0.051861     0.001800     YES\n"
+        "RMS     Displacement     0.010123     0.001200     YES\n"
+    )
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        _check_log_files(str(tmp_path))
+    assert not any(
+        "did not converge" in str(warning.message) for warning in caught
+    )
+
 
 def test_get_mol2_charge_sums_atom_charges(tmp_path):
     mol2_file = tmp_path / "MOL.mol2"
