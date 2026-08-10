@@ -34,11 +34,11 @@ from MDAnalysis.topology.guessers import guess_types
 from MDAnalysis.core.groups import Residue as mdaResidue
 import BioSimSpace as bss
 from BioSimSpace._SireWrappers import System as bssSystem
-from BioSimSpace.Types._time import Time as bssTime
-from BioSimSpace.Types._temperature import Temperature as bssTemperature
-from BioSimSpace.Types._pressure import Pressure as bssPressure
 if TYPE_CHECKING:
     from BioSimSpace.Protocol._protocol import Protocol as bssProtocol
+    from BioSimSpace.Types._time import Time as bssTime
+    from BioSimSpace.Types._temperature import Temperature as bssTemperature
+    from BioSimSpace.Types._pressure import Pressure as bssPressure
 from .utils import (
     _residue_restraint_mask,
     _write_distance_restraints,
@@ -232,10 +232,10 @@ class ColdMezeRecipe(MezeRecipe):
         2, ge=1, le=2, description="Type of barostat, 1: Berendsen, 2: MC"
     )
 
-    runtime: Union[float, bssTime] = Field(
+    runtime: Union[float, bss.Types.Time] = Field(
         100.0, description="Simulation time in picoseconds"
     )
-    dt: Union[float, bssTime] = Field(
+    dt: Union[float, bss.Types.Time] = Field(
         0.001, description="Integrator timestep, in picoseconds"
     )
     start_temperature: float = Field(
@@ -277,10 +277,10 @@ class ColdMezeRecipe(MezeRecipe):
 class HotMezeRecipe(MezeRecipe):
     """Meze workflow recipe for production runs
     """
-    runtime: Union[float, bssTime] = Field(
+    runtime: Union[float, bss.Types.Time] = Field(
         100.0, description="Simulation time in nanoseconds"
     )
-    dt: Union[float, bssTime] = Field(
+    dt: Union[float, bss.Types.Time] = Field(
         0.002, description="Integrator timestep, in picoseconds"
     )
 
@@ -316,7 +316,7 @@ class AlchemicalMezeRecipe(MezeRecipe):
     n_lambdas: int = Field(
         16, ge=3, description="Number of lambda windows"
     )
-    sampling_time: Union[float, bssTime] = Field(
+    sampling_time: Union[float, bss.Types.Time] = Field(
         4.0, description="Runtime for each lambda window in ns."
     )
     restart_interval: int = Field(
@@ -355,12 +355,12 @@ class AlchemicalMezeRecipe(MezeRecipe):
     @field_validator("sampling_time", mode="after")
     @classmethod
     def validate_sampling_time(cls, value):
-        if isinstance(value, bssTime):
+        if isinstance(value, bss.Types.Time):
             return value
         value = float(value)
         if value <= 0:
             raise ValueError("sampling_time must be greater than 0 ns")
-        return bssTime(value, "nanoseconds")
+        return bss.Types.Time(value, "nanoseconds")
 
     @field_validator("dt", mode="after")
     @classmethod
@@ -2610,12 +2610,12 @@ class ColdMeze(Meze):
             barostat: Optional[int] = None,
             n_sd_cycles: Optional[int] = None,
             nb_cutoff: Optional[float] = None,
-            timestep: Optional[Union[float, bssTime]] = None,
-            runtime: Optional[Union[float, bssTime]] = None,
-            temperature: Optional[Union[float, bssTemperature]] = None,
-            start_temperature: Optional[Union[float, bssTemperature]] = 300,
-            end_temperature: Optional[Union[float, bssTemperature]] = 300,
-            pressure: Optional[Union[float, bssPressure]] = None,
+            timestep: Optional[Union[float, "bssTime"]] = None,
+            runtime: Optional[Union[float, "bssTime"]] = None,
+            temperature: Optional[Union[float, "bssTemperature"]] = None,
+            start_temperature: Optional[Union[float, "bssTemperature"]] = 300,
+            end_temperature: Optional[Union[float, "bssTemperature"]] = 300,
+            pressure: Optional[Union[float, "bssPressure"]] = None,
             is_gpu: Optional[bool] = True,
             engine_executable: Optional["str"] = None,
             additional_positional_restraints: Optional[dict[str, Any]] = None,
@@ -2768,11 +2768,11 @@ class ColdMeze(Meze):
             ] = None,
             restart: Optional[bool] = False,
             restraint_weight: Optional[float] = None,
-            timestep: Optional[Union[float, bssTemperature]] = None,
-            runtime: Optional[Union[float, bssTime]] = None,
-            temperature: Optional[Union[float, bssTemperature]] = None,
-            start_temperature: Optional[Union[float, bssTemperature]] = 300,
-            end_temperature: Optional[Union[float, bssTemperature]] = 300,
+            timestep: Optional[Union[float, "bssTemperature"]] = None,
+            runtime: Optional[Union[float, "bssTime"]] = None,
+            temperature: Optional[Union[float, "bssTemperature"]] = None,
+            start_temperature: Optional[Union[float, "bssTemperature"]] = 300,
+            end_temperature: Optional[Union[float, "bssTemperature"]] = 300,
             process_name: Optional[str] = "nvt",
             is_gpu: Optional[bool] = True,
             engine_executable: Optional[str] = None,
@@ -2811,10 +2811,10 @@ class ColdMeze(Meze):
             ] = None,
             restart: Optional[bool] = False,
             restraint_weight: Optional[float] = None,
-            timestep: Optional[Union[float, bssTemperature]] = None,
-            runtime: Optional[Union[float, bssTime]] = None,
-            temperature: Optional[Union[float, bssTemperature]] = 300,
-            pressure: Optional[Union[float, bssPressure]] = 1.0,
+            timestep: Optional[Union[float, "bssTemperature"]] = None,
+            runtime: Optional[Union[float, "bssTime"]] = None,
+            temperature: Optional[Union[float, "bssTemperature"]] = 300,
+            pressure: Optional[Union[float, "bssPressure"]] = 1.0,
             process_name: Optional[str] = "npt",
             is_gpu: Optional[bool] = True,
             engine_executable: Optional[str] = None,
@@ -2930,10 +2930,10 @@ class HotMeze(Meze):
             system: Optional[bssSystem] = None,
             process_name: Optional[str] = "meze-run",
             nb_cutoff: Optional[float] = None,
-            timestep: Optional[Union[float, bssTime]] = None,
-            runtime: Optional[Union[float, bssTime]] = None,
-            temperature: Optional[Union[float, bssTemperature]] = 300,
-            pressure: Optional[Union[float, bssPressure]] = 1,
+            timestep: Optional[Union[float, "bssTime"]] = None,
+            runtime: Optional[Union[float, "bssTime"]] = None,
+            temperature: Optional[Union[float, "bssTemperature"]] = 300,
+            pressure: Optional[Union[float, "bssPressure"]] = 1,
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 100000,
             distance_write_frequency: Optional[int] = 10000,
@@ -3413,12 +3413,12 @@ class ColdQuantumMeze(QuantumMeze):
             barostat: Optional[int] = None,
             n_sd_cycles: Optional[int] = None,
             nb_cutoff: Optional[float] = None,
-            timestep: Optional[Union[float, bssTime]] = None,
-            runtime: Optional[Union[float, bssTime]] = None,
-            temperature: Optional[Union[float, bssTemperature]] = None,
-            start_temperature: Optional[Union[float, bssTemperature]] = 300,
-            end_temperature: Optional[Union[float, bssTemperature]] = 300,
-            pressure: Optional[Union[float, bssPressure]] = None,
+            timestep: Optional[Union[float, "bssTime"]] = None,
+            runtime: Optional[Union[float, "bssTime"]] = None,
+            temperature: Optional[Union[float, "bssTemperature"]] = None,
+            start_temperature: Optional[Union[float, "bssTemperature"]] = 300,
+            end_temperature: Optional[Union[float, "bssTemperature"]] = 300,
+            pressure: Optional[Union[float, "bssPressure"]] = None,
             engine_executable: Optional[str] = None,
             qm_theory: Optional[str] = "DFTB3",
             metal_resids_for_distance_restraints: Optional[
@@ -3577,11 +3577,11 @@ class ColdQuantumMeze(QuantumMeze):
             system: Optional[bssSystem] = None,
             workdir: Optional[str] = None,
             restart: Optional[bool] = False,
-            timestep: Optional[Union[float, bssTemperature]] = 0.001,
-            runtime: Optional[Union[float, bssTime]] = None,
-            temperature: Optional[Union[float, bssTemperature]] = None,
-            start_temperature: Optional[Union[float, bssTemperature]] = 300,
-            end_temperature: Optional[Union[float, bssTemperature]] = 300,
+            timestep: Optional[Union[float, "bssTemperature"]] = 0.001,
+            runtime: Optional[Union[float, "bssTime"]] = None,
+            temperature: Optional[Union[float, "bssTemperature"]] = None,
+            start_temperature: Optional[Union[float, "bssTemperature"]] = 300,
+            end_temperature: Optional[Union[float, "bssTemperature"]] = 300,
             process_name: Optional[str] = "qm-nvt",
             engine_executable: Optional[str] = None,
             qm_theory: Optional[str] = "DFTB3",
@@ -3620,10 +3620,10 @@ class ColdQuantumMeze(QuantumMeze):
             system: Optional[bssSystem] = None,
             workdir: Optional[str] = None,
             restart: Optional[bool] = False,
-            timestep: Optional[Union[float, bssTemperature]] = 0.001,
-            runtime: Optional[Union[float, bssTime]] = None,
-            temperature: Optional[Union[float, bssTemperature]] = 300,
-            pressure: Optional[Union[float, bssPressure]] = 1.0,
+            timestep: Optional[Union[float, "bssTemperature"]] = 0.001,
+            runtime: Optional[Union[float, "bssTime"]] = None,
+            temperature: Optional[Union[float, "bssTemperature"]] = 300,
+            pressure: Optional[Union[float, "bssPressure"]] = 1.0,
             process_name: Optional[str] = "qm-npt",
             engine_executable: Optional[str] = None,
             qm_theory: Optional[str] = "DFTB3",
@@ -3718,10 +3718,10 @@ class HotQuantumMeze(QuantumMeze):
             process_name: Optional[str] = "qm-meze-run",
             ensemble: Optional[Literal["nvt", "npt"]] = "nvt",
             nb_cutoff: Optional[float] = None,
-            timestep: Optional[Union[float, bssTime]] = 0.001,
-            runtime: Optional[Union[float, bssTime]] = None,
-            temperature: Optional[Union[float, bssTemperature]] = 300,
-            pressure: Optional[Union[float, bssPressure]] = None,
+            timestep: Optional[Union[float, "bssTime"]] = 0.001,
+            runtime: Optional[Union[float, "bssTime"]] = None,
+            temperature: Optional[Union[float, "bssTemperature"]] = 300,
+            pressure: Optional[Union[float, "bssPressure"]] = None,
             engine_executable: Optional[str] = None,
             write_frequency: Optional[int] = 500,
             qm_theory: Optional[str] = "DFTB3",
