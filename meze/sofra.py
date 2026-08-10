@@ -448,7 +448,6 @@ class Meze:
         else:
             log.warning(
                 "Ligand not set by user in meze construction. "
-                "Inferring from inputs."
             )
 
     @staticmethod
