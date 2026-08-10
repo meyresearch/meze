@@ -167,7 +167,7 @@ def test_write_tleap_solvation_input_non_standard_residues():
     assert "MOH = loadmol2 MOH.mol2\n" in lines
 
 
-def test_solvation_wrong_box_shape_raises():
+def test_write_tleap_input_wrong_box_shape_raises():
     with pytest.raises(ValueError):
         _write_tleap_solvation_input(
             protein_file="protein.pdb",
@@ -195,6 +195,19 @@ def test_edit_mcpbpy_tleap_input_substitutes_solvate_line(tmp_path):
 def test_edit_mcpbpy_tleap_input_missing_file_raises():
     with pytest.raises(FileNotFoundError):
         _edit_mcpbpy_tleap_input("/nonexistent/tleap.in")
+
+
+def test_edit_mcpbpy_tleap_input_wrong_box_shape_raises(tmp_path):
+    tleap_file = tmp_path / "mcpbpy_tleap.in"
+    tleap_file.write_text(
+        "mol = loadpdb complex.pdb\n"
+        "solvateoct mol TIP3PBOX 10.0 iso 0.75\n"
+        "quit\n"
+    )
+    with pytest.raises(ValueError):
+        _edit_mcpbpy_tleap_input(
+            str(tleap_file), box_shape="orthorhomic dodecahedron"
+        )
 
 
 # ---------------------------------------------------------------------------
