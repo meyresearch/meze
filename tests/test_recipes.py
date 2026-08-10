@@ -193,7 +193,7 @@ def test_recipe_to_json_round_trip(tmp_path):
 def test_default_meze_recipe(tmp_path):
     os.chdir(tmp_path)
     recipe = MezeRecipe()
-    assert recipe.workdir == tmp_path
+    assert recipe.workdir == str(tmp_path)
     assert recipe.metal == "ZN"
     assert recipe.metal_charge == 2
     assert recipe.coordination_cut_off == 2.8
@@ -212,7 +212,7 @@ def test_default_meze_recipe(tmp_path):
     assert recipe.n_repeats == 3
     assert recipe.temperature._value == 300.0
     assert recipe.pressure._value == 1.0
-    assert recipe.nb_cutoff == 12.0
+    assert recipe.nb_cutoff._value == 12.0
 
 
 def test_cold_recipe_inherits_coerced_temperature_and_pressure():
