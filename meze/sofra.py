@@ -106,13 +106,11 @@ class MezeRecipe(BaseModel):
         "g16", description="Gaussian version"
     )
     memory: float = Field(
-        12000, description="Memory for Gaussian calculations in MB"
+        12_000, description="Memory for Gaussian calculations in MB"
     )
-
     nprocshared: int = Field(
         8, description="Number of processors for Gaussian calculations"
     )
-
     only_optimise_hydrogens: bool = Field(
         True, description="Only optimise hydrogen atoms"
     )
@@ -206,7 +204,7 @@ class MezeRecipe(BaseModel):
 
     def to_json(self, file: str):
         with open(file, "w") as ofile:
-            ofile.write(self.model_dump_json(indent=2))
+            ofile.write(self.model_dump_json(indent=2, fallback=str))
 
 
 class ColdMezeRecipe(MezeRecipe):
