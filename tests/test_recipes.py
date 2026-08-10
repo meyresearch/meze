@@ -2,16 +2,13 @@ import json
 import pytest
 import BioSimSpace as bss
 from pydantic import ValidationError
+import os
 from meze import (
     MezeRecipe,
     ColdMezeRecipe,
     HotMezeRecipe,
     AlchemicalMezeRecipe,
 )
-
-
-def test_model_none_passthrough():
-    assert MezeRecipe(model=None).model is None
 
 
 def test_model_coerced_to_int():
@@ -191,3 +188,40 @@ def test_recipe_to_json_round_trip(tmp_path):
         data = json.load(f)
     assert data["group_name"] == "vim2"
     assert data["metal"] == "ZN"
+
+
+def test_default_meze_recipe(tmp_path):
+    os.chdir(tmp_path)
+    recipe = MezeRecipe()
+    assert recipe.workdir == tmp_path
+    assert recipe.metal == "ZN"
+    assert recipe.metal_charge == 2
+    assert recipe.coordination_cut_off == 2.8
+    assert recipe.path_to_engine is None
+    assert recipe.model is None
+    assert recipe.gaussian_version == "g16"
+    assert recipe.memory == 12_000
+    assert recipe.nprocshared == 8
+    assert recipe.only_optimise_hydrogens is True
+    assert recipe.protein_forcefield == "ff14SB"
+    assert recipe.ligand_forcefield == "gaff2"
+    assert recipe.water_model == "tip3p"
+    assert recipe.box_shape == "octahedral"
+    assert recipe.box_edges == 10.0
+    assert recipe.solvent_closeness == 0.75
+    assert recipe.n_repeats == 3
+    assert recipe.temperature._value == 300.0
+    assert recipe.pressure._value == 1.0
+    assert recipe.nb_cutoff == 12.0
+
+
+def test_cold_recipe_inherits_coerced_temperature_and_pressure():
+    recipe = ColdMezeRecipe()
+    assert isinstance(recipe.temperature, bss.Types.Temperature)
+    assert isinstance(recipe.pressure, bss.Types.Pressure)
+
+
+def test_hot_recipe_inherits_coerced_temperature_and_pressure():
+    recipe = HotMezeRecipe()
+    assert isinstance(recipe.temperature, bss.Types.Temperature)
+    assert isinstance(recipe.pressure, bss.Types.Pressure)
