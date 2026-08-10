@@ -138,8 +138,10 @@ def _write_tleap_solvation_input(
 ):
     allowed_shapes = ["octahedral", "cubic"]
     if box_shape not in allowed_shapes:
-        message = f"Box shape '{box_shape}' not allowed."
-        f"Must be one of {allowed_shapes}"
+        message = (
+            f"Box shape '{box_shape}' not allowed. "
+            f"Must be one of {allowed_shapes}"
+        )
         log.error(message)
         raise ValueError(message)
     if workdir:
@@ -193,7 +195,7 @@ def _write_tleap_solvation_input(
 
     if box_shape == "octahedral":
         lines.append(
-            f"solvate{box_shape[:3]} complex {water_model.upper()}BOX "
+            f"solvateOct complex {water_model.upper()}BOX "
             f"{box_edges} iso {solvent_closeness}\n"
         )
     else:
@@ -217,7 +219,7 @@ def _write_tleap_solvation_input(
 def _edit_mcpbpy_tleap_input(
         tleap_input_file: str,
         # TODO move the below to model recipe:
-        box_shape: Optional[str] = "octahedral",
+        box_shape: Literal["octahedral", "cubic"] = "octahedral",
         box_edges: Optional[float] = 10.0,
         water_model: Optional[str] = "tip3p",
         solvent_closeness: Optional[float] = 0.75,
@@ -228,6 +230,14 @@ def _edit_mcpbpy_tleap_input(
             f"Could not find tleap input file: "
             f"{tleap_input_file}"
         )
+    allowed_shapes = ["octahedral", "cubic"]
+    if box_shape not in allowed_shapes:
+        message = (
+            f"Box shape '{box_shape}' not allowed. "
+            f"Must be one of {allowed_shapes}"
+        )
+        log.error(message)
+        raise ValueError(message)
 
     with open(tleap_input_file, "r") as ifile:
         tleap_lines = ifile.readlines()
@@ -242,13 +252,13 @@ def _edit_mcpbpy_tleap_input(
     variable_name = pdb_line.split("=")[0].strip()
     if "oct" in box_shape.lower():
         new_solvate_line = (
-            f"solvate{box_shape[:3]} {variable_name} "
+            f"solvateOct {variable_name} "
             f"{water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
         )
 
     else:
         new_solvate_line = (
-            f"solvate{box_shape[:3]} {variable_name} "
+            f"solvateBox {variable_name} "
             f"{water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
         )
 
