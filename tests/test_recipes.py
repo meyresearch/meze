@@ -25,7 +25,7 @@ def test_temperature_coerced_to_bss_type():
     assert isinstance(recipe.temperature, bss.Types.Temperature)
 
 
-def test_temperature_bss_type_passthrough():
+def test_temperature_bss_type():
     temperature = bss.Types.Temperature(310.0, "kelvin")
     recipe = MezeRecipe(temperature=temperature)
     assert recipe.temperature is temperature
