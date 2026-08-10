@@ -4336,7 +4336,7 @@ class Sofra:
 
         log.info("Lomap finished succesfully. Parsing outputs.")
         self.transformations, self.lomap_scores, network_file = (
-            lomap_directory, f"{self.group_name}_score_with_connection.txt"
+            self._parse_lomap_output(scores_file, lomap_directory)
         )
         self.save_network_file(network_file)
 
