@@ -440,6 +440,8 @@ def _get_mol2_charge(file: str) -> int | float:
     with open(file, "r") as ifile:
         lines = ifile.readlines()
 
+    start = None
+    end = None
     for i, line in enumerate(lines):
         if "ATOM" in line:
             start = i + 1
@@ -447,10 +449,9 @@ def _get_mol2_charge(file: str) -> int | float:
             end = i
 
     if not start and not end:
-        raise RuntimeError(
-            "Could not read mol2 file: "
-            f"{file}"
-        )
+        message = f"Could not read mol2 file: {file}"
+        log.error(message)
+        raise RuntimeError(message)
 
     atom_lines = lines[start:end]
     charges = [float(line.split()[-1].strip()) for line in atom_lines]
