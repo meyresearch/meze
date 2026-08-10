@@ -32,7 +32,7 @@ log = logging.getLogger("rich")
 def _list_rindex(list_to_search: list[str], word: str) -> int:
     """
      Source - https://stackoverflow.com/a/3940144
-     Posted by wim, modified by community. 
+     Posted by wim, modified by community.
      See post 'Timeline' for change history
      Retrieved 2026-01-20, License - CC BY-SA 4.0
      """
@@ -193,7 +193,7 @@ def _write_tleap_solvation_input(
         "\n"
     ])
 
-    if box_shape == "octahedral":
+    if box_shape.lower() == "octahedral":
         lines.append(
             f"solvateOct complex {water_model.upper()}BOX "
             f"{box_edges} iso {solvent_closeness}\n"
@@ -250,7 +250,7 @@ def _edit_mcpbpy_tleap_input(
     ][0]
     pdb_line = [line for line in tleap_lines if "loadpdb" in line.lower()][0]
     variable_name = pdb_line.split("=")[0].strip()
-    if "oct" in box_shape.lower():
+    if box_shape.lower() == "octahedral":
         new_solvate_line = (
             f"solvateOct {variable_name} "
             f"{water_model.upper()}BOX {box_edges} iso {solvent_closeness}\n"
@@ -410,9 +410,12 @@ def _check_log_files(directory: str) -> List[str]:
                 try:
                     i = _list_rindex(lines, "Converged")
                 except ValueError as e:
-                    message = str(e) + f"\nLog file {log_file} may not have converged."
-                    log.error(message) 
-                    raise RuntimeError(message) from e  
+                    message = (
+                        str(e) +
+                        f"\nLog file {log_file} may not have converged."
+                    )
+                    log.error(message)
+                    raise RuntimeError(message) from e
                 convergence_lines = " ".join(lines[i+1:i+5])
                 max_force_line = lines[i+1]
                 rms_force_line = lines[i+2]
@@ -472,7 +475,7 @@ def pdb_to_sdf(files: str | list[str]):
         )
         obabel_command = (
             f"obabel -i {extension.strip('.')} "
-            "{ligand_file} -o sdf -O {output_file}"
+            f"{ligand_file} -o sdf -O {output_file}"
         )
         log.info("Converting to sdf with obabel command: \n")
         log.info(obabel_command)
