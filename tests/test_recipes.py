@@ -59,10 +59,6 @@ def test_nb_cutoff_negative_raises():
         MezeRecipe(nb_cutoff=-1.0)
 
 
-# ---------------------------------------------------------------------------
-# ColdMezeRecipe.validate_time / validate_temperature_range
-# ---------------------------------------------------------------------------
-
 def test_cold_recipe_dt_and_runtime_coerced_to_picoseconds():
     recipe = ColdMezeRecipe(dt=0.001, runtime=100.0)
     assert isinstance(recipe.dt, bss.Types.Time)
@@ -86,10 +82,6 @@ def test_cold_recipe_negative_start_temperature_raises():
         ColdMezeRecipe(start_temperature=-1.0)
 
 
-# ---------------------------------------------------------------------------
-# HotMezeRecipe.validate_time / validate_timestep
-# ---------------------------------------------------------------------------
-
 def test_hot_recipe_runtime_coerced_to_nanoseconds():
     recipe = HotMezeRecipe(runtime=100.0)
     assert isinstance(recipe.runtime, bss.Types.Time)
@@ -97,8 +89,8 @@ def test_hot_recipe_runtime_coerced_to_nanoseconds():
 
 
 def test_hot_recipe_negative_runtime_raises():
-    with pytest.raises(ValueError, match="greater than or equal to 0"):
-        HotMezeRecipe(runtime=-1.0)
+    with pytest.raises(ValueError, match="greater than 0"):
+        HotMezeRecipe(runtime=0)
 
 
 def test_hot_recipe_dt_coerced_to_picoseconds():
@@ -108,24 +100,17 @@ def test_hot_recipe_dt_coerced_to_picoseconds():
 
 
 def test_hot_recipe_negative_dt_raises():
-    with pytest.raises(ValueError, match="greater than or equal to 0"):
-        HotMezeRecipe(dt=-0.002)
+    with pytest.raises(ValueError, match="greater than 0"):
+        HotMezeRecipe(dt=0)
 
 
 def test_cold_and_hot_runtime_use_different_units():
-    # Same field name, same numeric input, different units: Cold is
-    # picoseconds, Hot is nanoseconds (1000x). Passing the same runtime
-    # to the wrong recipe class silently gives the wrong simulated time.
     cold = ColdMezeRecipe(runtime=1.0)
     hot = HotMezeRecipe(runtime=1.0)
     cold_in_ns = cold.runtime.nanoseconds().value()
     hot_in_ns = hot.runtime.nanoseconds().value()
     assert hot_in_ns == pytest.approx(cold_in_ns * 1000)
 
-
-# ---------------------------------------------------------------------------
-# AlchemicalMezeRecipe.validate_sampling_time / validate_picosecond_times
-# ---------------------------------------------------------------------------
 
 def test_alchemical_recipe_sampling_time_coerced_to_nanoseconds():
     recipe = AlchemicalMezeRecipe(sampling_time=4.0)

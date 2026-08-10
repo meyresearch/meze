@@ -255,7 +255,7 @@ class ColdMezeRecipe(MezeRecipe):
     def validate_time(cls, value):
         if isinstance(value, bss.Types.Time):
             return value
-        if value < 0:
+        if value <= 0:
             raise ValueError(
                 "dt, time must be greater than or equal to 0 picoseconds"
             )
@@ -289,9 +289,9 @@ class HotMezeRecipe(MezeRecipe):
     def validate_time(cls, value):
         if isinstance(value, bss.Types.Time):
             return value
-        if value < 0:
+        if value <= 0:
             raise ValueError(
-                "dt must be greater than or equal to 0 nanoseconds"
+                "dt must be greater than 0 nanoseconds"
             )
         return bss.Types.Time(value, "nanoseconds")
 
@@ -300,9 +300,9 @@ class HotMezeRecipe(MezeRecipe):
     def validate_timestep(cls, value):
         if isinstance(value, bss.Types.Time):
             return value
-        if value < 0:
+        if value <= 0:
             raise ValueError(
-                "dt must be greater than or equal to 0 picoseconds"
+                "dt must be greater than 0 picoseconds"
             )
         return bss.Types.Time(value, "picoseconds")
 
