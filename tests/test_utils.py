@@ -121,7 +121,7 @@ def test_write_tleap_solvation_input_basic():
     assert "protein = loadpdb protein.pdb\n" in lines
     assert "complex = combine {protein lig}\n" in lines
     assert any(
-        line.startswith("solvateoct") and "iso" in line for line in lines
+        line.startswith("solvateOct") and "iso" in line for line in lines
     )
     assert "addions2 complex Na+ 0\n" in lines
     assert "addions2 complex Cl- 0\n" in lines
@@ -141,7 +141,7 @@ def test_write_tleap_solvation_input_non_octahedral_box():
     solvate_lines = [line for line in lines if line.startswith("solvate")]
     assert len(solvate_lines) == 1
     assert "iso" not in solvate_lines[0]
-    assert "solvatebox" in solvate_lines[0].lower()
+    assert "solvateBox" in solvate_lines[0]
 
 
 def test_write_tleap_solvation_input_disulfide_bridges():
@@ -176,11 +176,11 @@ def test_write_tleap_input_wrong_box_shape_raises():
         )
 
 
-def test_edit_mcpbpy_tleap_input_substitutes_solvate_line(tmp_path):
+def test_edit_mcpbpy_tleap_input_substitutes_solvate_line_cubic(tmp_path):
     tleap_file = tmp_path / "mcpbpy_tleap.in"
     tleap_file.write_text(
         "mol = loadpdb complex.pdb\n"
-        "solvateoct mol TIP3PBOX 10.0 iso 0.75\n"
+        "solvateOct mol TIP3PBOX 10.0 iso 0.75\n"
         "quit\n"
     )
 
@@ -189,6 +189,24 @@ def test_edit_mcpbpy_tleap_input_substitutes_solvate_line(tmp_path):
     solvate_lines = [line for line in new_lines if line.startswith("solvate")]
     assert len(solvate_lines) == 1
     assert solvate_lines[0] == "solvateBox mol TIP3PBOX 10.0 0.75\n"
+    assert "source leaprc.gaff2\n" in new_lines
+
+
+def test_edit_mcpbpy_tleap_input_substitutes_solvate_line_octahedral(tmp_path):
+    tleap_file = tmp_path / "mcpbpy_tleap.in"
+    tleap_file.write_text(
+        "mol = loadpdb complex.pdb\n"
+        "solvateBox mol TIP3PBOX 10.0 0.75\n"
+        "quit\n"
+    )
+
+    new_lines = _edit_mcpbpy_tleap_input(
+        str(tleap_file), box_shape="octahedral"
+    )
+
+    solvate_lines = [line for line in new_lines if line.startswith("solvate")]
+    assert len(solvate_lines) == 1
+    assert solvate_lines[0] == "solvateOct mol TIP3PBOX 10.0 iso 0.75\n"
     assert "source leaprc.gaff2\n" in new_lines
 
 
@@ -201,18 +219,14 @@ def test_edit_mcpbpy_tleap_input_wrong_box_shape_raises(tmp_path):
     tleap_file = tmp_path / "mcpbpy_tleap.in"
     tleap_file.write_text(
         "mol = loadpdb complex.pdb\n"
-        "solvateoct mol TIP3PBOX 10.0 iso 0.75\n"
+        "solvateOct mol TIP3PBOX 10.0 iso 0.75\n"
         "quit\n"
     )
     with pytest.raises(ValueError):
         _edit_mcpbpy_tleap_input(
-            str(tleap_file), box_shape="orthorhomic dodecahedron"
+            str(tleap_file), box_shape="orthorhombic dodecahedron"
         )
 
-
-# ---------------------------------------------------------------------------
-# _write_gaussian_script
-# ---------------------------------------------------------------------------
 
 def test_write_gaussian_script_content(tmp_path):
     script_path = _write_gaussian_script(
@@ -233,10 +247,6 @@ def test_write_gaussian_script_content(tmp_path):
     assert "module load gaussian\n" in content
     assert content.endswith("g16 ligand_large_mk.com")
 
-
-# ---------------------------------------------------------------------------
-# _parse_mcpbpy_input
-# ---------------------------------------------------------------------------
 
 def test_parse_mcpbpy_input_type_coercion(tmp_path):
     mcpb_file = tmp_path / "mcpbpy.in"
