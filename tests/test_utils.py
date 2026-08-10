@@ -371,10 +371,6 @@ def test_get_mol2_charge_malformed_file_raises(tmp_path):
         _get_mol2_charge(str(mol2_file))
 
 
-# ---------------------------------------------------------------------------
-# pdb_to_sdf
-# ---------------------------------------------------------------------------
-
 def test_pdb_to_sdf_single_string_input(tmp_path):
     pdb_file = tmp_path / "ligand_1.pdb"
     pdb_file.write_text("dummy pdb content")
@@ -404,10 +400,6 @@ def test_pdb_to_sdf_empty_input_raises():
         pdb_to_sdf([])
 
 
-# ---------------------------------------------------------------------------
-# _set_n_somd_moves
-# ---------------------------------------------------------------------------
-
 @pytest.mark.parametrize(
     "sampling_time,n_somd_cycles,stepsize,expected",
     [
@@ -417,17 +409,14 @@ def test_pdb_to_sdf_empty_input_raises():
     ],
 )
 def test_set_n_somd_moves(sampling_time, n_somd_cycles, stepsize, expected):
-    assert _set_n_somd_moves(sampling_time, n_somd_cycles, stepsize) == expected
+    assert _set_n_somd_moves(
+        sampling_time, n_somd_cycles, stepsize
+    ) == expected
 
 
 def test_set_n_somd_moves_default_stepsize():
-    # default stepsize is 0.002 ps
     assert _set_n_somd_moves(1.0, 10) == 50_000
 
-
-# ---------------------------------------------------------------------------
-# _pretty
-# ---------------------------------------------------------------------------
 
 def test_pretty_dataclass():
     from dataclasses import dataclass
