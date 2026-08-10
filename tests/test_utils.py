@@ -125,7 +125,10 @@ def test_write_tleap_solvation_input_basic():
     )
     assert "addions2 complex Na+ 0\n" in lines
     assert "addions2 complex Cl- 0\n" in lines
-    assert "saveamberparm complex MOL_complex_solv.prmtop MOL_complex_solv.inpcrd\n" in lines
+    assert (
+        "saveamberparm complex "
+        "MOL_complex_solv.prmtop MOL_complex_solv.inpcrd\n"
+    ) in lines
     assert joined.strip().endswith("quit")
 
 
@@ -164,6 +167,15 @@ def test_write_tleap_solvation_input_non_standard_residues():
     assert "MOH = loadmol2 MOH.mol2\n" in lines
 
 
+def test_solvation_wrong_box_shape_raises():
+    with pytest.raises(ValueError):
+        _write_tleap_solvation_input(
+            protein_file="protein.pdb",
+            ligand=_fake_ligand(),
+            box_shape="orthorhombic dodecahedron"
+        )
+
+
 def test_edit_mcpbpy_tleap_input_substitutes_solvate_line(tmp_path):
     tleap_file = tmp_path / "mcpbpy_tleap.in"
     tleap_file.write_text(
@@ -176,7 +188,6 @@ def test_edit_mcpbpy_tleap_input_substitutes_solvate_line(tmp_path):
 
     solvate_lines = [line for line in new_lines if line.startswith("solvate")]
     assert len(solvate_lines) == 1
-    # box_shape[:3] is used verbatim in the solvate command: "cubic" -> "cub"
     assert solvate_lines[0] == "solvateBox mol TIP3PBOX 10.0 0.75\n"
     assert "source leaprc.gaff2\n" in new_lines
 
