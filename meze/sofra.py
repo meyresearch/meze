@@ -255,7 +255,7 @@ class ColdMezeRecipe(MezeRecipe):
             return value
         if value <= 0:
             raise ValueError(
-                "dt, time must be greater than or equal to 0 picoseconds"
+                "dt, time must be greater than 0 picoseconds"
             )
         return bss.Types.Time(value, "picoseconds")
 
@@ -367,7 +367,7 @@ class AlchemicalMezeRecipe(MezeRecipe):
             return value
         if value <= 0:
             raise ValueError(
-                "dt must be greater than or equal to 0 picoseconds"
+                "dt must be greater than 0 picoseconds"
             )
         return bss.Types.Time(value, "picoseconds")
 
