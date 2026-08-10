@@ -365,11 +365,9 @@ def test_get_mol2_charge_sums_atom_charges(tmp_path):
 
 
 def test_get_mol2_charge_malformed_file_raises(tmp_path):
-    # Known bug: without ATOM/BOND markers, `start`/`end` are never assigned,
-    # so this raises UnboundLocalError rather than the intended RuntimeError.
     mol2_file = tmp_path / "malformed.mol2"
     mol2_file.write_text("not a real mol2 file\n")
-    with pytest.raises(UnboundLocalError):
+    with pytest.raises(RuntimeError):
         _get_mol2_charge(str(mol2_file))
 
 
