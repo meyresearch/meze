@@ -21,17 +21,12 @@ def test_validate_file_wrong_type_raises():
         Ligand._validate_file(123)
 
 
-# ---------------------------------------------------------------------------
-# Ligand._check_files_exist
-# ---------------------------------------------------------------------------
-
 def test_check_files_exist_passes_for_real_files(tmp_path):
     file_1 = tmp_path / "a.pdb"
     file_2 = tmp_path / "b.pdb"
     file_1.write_text("dummy")
     file_2.write_text("dummy")
 
-    # no exception raised
     Ligand._check_files_exist([str(file_1), str(file_2)])
 
 
@@ -40,11 +35,7 @@ def test_check_files_exist_missing_file_raises():
         Ligand._check_files_exist(["/nonexistent/ligand.pdb"])
 
 
-# ---------------------------------------------------------------------------
-# Ligand._validate_charge
-# ---------------------------------------------------------------------------
-
-def test_validate_charge_float_passthrough():
+def test_validate_charge_float():
     assert Ligand._validate_charge(1.0) == 1.0
 
 
@@ -64,10 +55,6 @@ def test_validate_charge_invalid_raises():
     with pytest.raises(TypeError, match="must be an integer or float"):
         Ligand._validate_charge("abc")
 
-
-# ---------------------------------------------------------------------------
-# Ligand._infer_ligand_name
-# ---------------------------------------------------------------------------
 
 def test_infer_ligand_name_uses_file_stem():
     with pytest.warns(UserWarning, match="inferring from file name"):
