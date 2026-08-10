@@ -140,6 +140,8 @@ def _write_tleap_solvation_input(
     if box_shape not in allowed_shapes:
         message = f"Box shape '{box_shape}' not allowed."
         f"Must be one of {allowed_shapes}"
+        log.error(message)
+        raise ValueError(message)
     if workdir:
         os.chdir(workdir)
     lines = [
