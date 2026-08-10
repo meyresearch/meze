@@ -61,15 +61,16 @@ class Ligand():
             return [file]
         elif isinstance(file, list):
             if len(file) > 2:
-                raise ValueError(
+                message = (
                     f"Too many values for 'file': {file}."
-                    f"Expected a 'str' or a list of at most 2 input files."
+                    "Expected a 'str' or a list of at most 2 input files."
                 )
+                log.error(message)
+                raise ValueError(message)
             return file
-
-        raise TypeError(
-                f"Expected str or list[str], got {type(file)}"
-        )
+        message = f"Expected str or list[str], got {type(file)}"
+        log.error(message)
+        raise TypeError(message)
 
     @staticmethod
     def _check_files_exist(files):
@@ -84,10 +85,12 @@ class Ligand():
         try:
             return float(charge)
         except (TypeError, ValueError):
-            raise TypeError(
-                f"Ligand charge must be an integer or float "
+            message = (
+                "Ligand charge must be an integer or float "
                 f"(got {charge} of type {type(charge)})."
             )
+            log.error(message)
+            raise TypeError(message)
 
     @staticmethod
     def _infer_ligand_name(file):
@@ -124,7 +127,10 @@ class Ligand():
             directory = os.getcwd()
 
         if len(self.file) > 1:
-            raise UserWarning(f"Expected one ligand file but got {self.file}")
+            warnings.warn(
+                f"Expected one ligand file but got {self.file}",
+                UserWarning
+            )
         else:
             file = self.file[0]
 
