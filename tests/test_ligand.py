@@ -1,17 +1,12 @@
 import pytest
-
 from meze import Ligand
 
-
-# ---------------------------------------------------------------------------
-# Ligand._validate_file
-# ---------------------------------------------------------------------------
 
 def test_validate_file_str_wrapped_in_list():
     assert Ligand._validate_file("ligand_11.pdb") == ["ligand_11.pdb"]
 
 
-def test_validate_file_list_passthrough():
+def test_validate_file_list():
     files = ["ligand_11.pdb", "ligand_11.mol2"]
     assert Ligand._validate_file(files) == files
 
