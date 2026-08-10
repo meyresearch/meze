@@ -423,9 +423,9 @@ def _check_log_files(directory: str) -> List[str]:
                 rms_displacement_line = lines[i+4]
 
                 if (
-                    "YES" not in max_force_line and
-                    "YES" not in rms_force_line and
-                    "YES" not in max_displacement_line and
+                    "YES" not in max_force_line or
+                    "YES" not in rms_force_line or
+                    "YES" not in max_displacement_line or
                     "YES" not in rms_displacement_line
                 ):
                     warnings.warn(
