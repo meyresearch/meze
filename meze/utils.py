@@ -137,7 +137,7 @@ def _write_tleap_solvation_input(
         ligand_ff: Optional[str] = "gaff2"
 ):
     allowed_shapes = ["octahedral", "cubic"]
-    if box_shape not in allowed_shapes:
+    if box_shape.lower() not in allowed_shapes:
         message = (
             f"Box shape '{box_shape}' not allowed. "
             f"Must be one of {allowed_shapes}"
@@ -231,7 +231,7 @@ def _edit_mcpbpy_tleap_input(
             f"{tleap_input_file}"
         )
     allowed_shapes = ["octahedral", "cubic"]
-    if box_shape not in allowed_shapes:
+    if box_shape.lower() not in allowed_shapes:
         message = (
             f"Box shape '{box_shape}' not allowed. "
             f"Must be one of {allowed_shapes}"
