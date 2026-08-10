@@ -67,8 +67,18 @@ def test_cold_recipe_dt_and_runtime_coerced_to_picoseconds():
 
 
 def test_cold_recipe_negative_runtime_raises():
-    with pytest.raises(ValueError, match="greater than or equal to 0"):
+    with pytest.raises(ValueError, match="greater than 0"):
         ColdMezeRecipe(runtime=-1.0)
+
+
+def test_cold_recipe_zero_runtime_raises():
+    with pytest.raises(ValueError, match="greater than 0"):
+        ColdMezeRecipe(runtime=0)
+
+
+def test_hot_recipe_zero_dt_raises():
+    with pytest.raises(ValueError, match="greater than 0"):
+        ColdMezeRecipe(dt=0)
 
 
 def test_cold_recipe_temperature_range_coerced():
@@ -90,6 +100,11 @@ def test_hot_recipe_runtime_coerced_to_nanoseconds():
 
 def test_hot_recipe_negative_runtime_raises():
     with pytest.raises(ValueError, match="greater than 0"):
+        HotMezeRecipe(runtime=-1.0)
+
+
+def test_hot_recipe_zero_runtime_raises():
+    with pytest.raises(ValueError, match="greater than 0"):
         HotMezeRecipe(runtime=0)
 
 
@@ -100,6 +115,11 @@ def test_hot_recipe_dt_coerced_to_picoseconds():
 
 
 def test_hot_recipe_negative_dt_raises():
+    with pytest.raises(ValueError, match="greater than 0"):
+        HotMezeRecipe(dt=-1.0)
+
+
+def test_hot_recipe_cold_dt_raises():
     with pytest.raises(ValueError, match="greater than 0"):
         HotMezeRecipe(dt=0)
 
@@ -141,13 +161,14 @@ def test_alchemical_recipe_dt_coerced_to_picoseconds():
 
 
 def test_alchemical_recipe_negative_dt_raises():
-    with pytest.raises(ValueError, match="greater than or equal to 0"):
+    with pytest.raises(ValueError, match="greater than 0"):
         AlchemicalMezeRecipe(dt=-0.002)
 
 
-# ---------------------------------------------------------------------------
-# MezeRecipe.__getitem__ / __setitem__ / to_json
-# ---------------------------------------------------------------------------
+def test_alchemical_recipe_zero_dt_raises():
+    with pytest.raises(ValueError, match="greater than 0"):
+        AlchemicalMezeRecipe(dt=0)
+
 
 def test_recipe_getitem():
     recipe = MezeRecipe(group_name="vim2")
