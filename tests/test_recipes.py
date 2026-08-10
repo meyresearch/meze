@@ -191,6 +191,7 @@ def test_recipe_to_json_round_trip(tmp_path):
 
 
 def test_default_meze_recipe(tmp_path):
+    workdir = os.getcwd()
     os.chdir(tmp_path)
     recipe = MezeRecipe()
     assert recipe.workdir == str(tmp_path)
@@ -213,6 +214,7 @@ def test_default_meze_recipe(tmp_path):
     assert recipe.temperature._value == 300.0
     assert recipe.pressure._value == 1.0
     assert recipe.nb_cutoff._value == 12.0
+    os.chdir(workdir)
 
 
 def test_cold_recipe_inherits_coerced_temperature_and_pressure():
