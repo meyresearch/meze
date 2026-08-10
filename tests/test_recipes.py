@@ -1,7 +1,7 @@
 import json
 import pytest
 import BioSimSpace as bss
-
+from pydantic import ValidationError
 from meze import (
     MezeRecipe,
     ColdMezeRecipe,
@@ -9,10 +9,6 @@ from meze import (
     AlchemicalMezeRecipe,
 )
 
-
-# ---------------------------------------------------------------------------
-# MezeRecipe.validate_model
-# ---------------------------------------------------------------------------
 
 def test_model_none_passthrough():
     assert MezeRecipe(model=None).model is None
@@ -23,13 +19,9 @@ def test_model_coerced_to_int():
 
 
 def test_model_invalid_raises():
-    with pytest.raises(ValueError, match="Cannot covert"):
+    with pytest.raises(ValidationError, match="a valid integer"):
         MezeRecipe(model="abc")
 
-
-# ---------------------------------------------------------------------------
-# MezeRecipe.validate_temperature / validate_pressure / validate_cutoff_distance
-# ---------------------------------------------------------------------------
 
 def test_temperature_coerced_to_bss_type():
     recipe = MezeRecipe(temperature=300.0)
