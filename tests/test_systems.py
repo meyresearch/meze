@@ -11,6 +11,144 @@ from pathlib import Path
 DATA = Path(__file__).parent.parent / "tests" / "data"
 
 
+def test_cold_meze_wrong_recipe_type_raises():
+    with pytest.raises(
+        TypeError, match="Expected 'recipe' to be a ColdMezeRecipe"
+    ):
+        ColdMeze.from_files(
+            pdb_file=str(DATA / "vim2/vim2.fixed.pdb"), recipe=123
+        )
+
+
+def test_hot_meze_wrong_recipe_type_raises():
+    with pytest.raises(
+        TypeError, match="Expected 'recipe' to be a HotMezeRecipe"
+    ):
+        HotMeze.from_files(
+            pdb_file=str(DATA / "vim2/vim2.fixed.pdb"), recipe=123
+        )
+
+
+def test_cold_quantum_meze_wrong_recipe_type_raises():
+    with pytest.raises(
+        TypeError, match="Expected 'recipe' to be a ColdMezeRecipe"
+    ):
+        ColdQuantumMeze.from_files(
+            topology=str(DATA / "vim2/vim2_complex.prmtop"),
+            coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+            recipe=123
+        )
+
+
+def test_hot_quantum_meze_wrong_recipe_type_raises():
+    with pytest.raises(
+        TypeError, match="Expected 'recipe' to be a HotMezeRecipe"
+    ):
+        HotQuantumMeze.from_files(
+            topology=str(DATA / "vim2/vim2_complex.prmtop"),
+            coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+            recipe=123
+        )
+
+
+def test_cold_meze_no_files_raises():
+    with pytest.raises(ValueError, match="must supply either a pdb file"):
+        ColdMeze.from_files(recipe=ColdMezeRecipe())
+
+
+def test_hot_meze_no_files_raises():
+    with pytest.raises(ValueError, match="must supply either a pdb file"):
+        HotMeze.from_files(recipe=HotMezeRecipe())
+
+
+def test_cold_meze_recipe_none_built_from_kwargs():
+    m = ColdMeze.from_files(
+        pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
+        metal="ZN",
+        group_name="from_kwargs"
+    )
+    assert isinstance(m.recipe, ColdMezeRecipe)
+    assert m.recipe.metal == "Zn"
+    assert m.recipe.group_name == "from_kwargs"
+
+
+def test_cold_meze_recipe_dict_built_from_dict():
+    m = ColdMeze.from_files(
+        pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
+        recipe={"metal": "ZN", "group_name": "from_dict"}
+    )
+    assert isinstance(m.recipe, ColdMezeRecipe)
+    assert m.recipe.metal == "Zn"
+    assert m.recipe.group_name == "from_dict"
+
+
+def test_hot_meze_recipe_none_built_from_kwargs():
+    m = HotMeze.from_files(
+        pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
+        metal="ZN",
+        group_name="from_kwargs"
+    )
+    assert isinstance(m.recipe, HotMezeRecipe)
+    assert m.recipe.metal == "Zn"
+    assert m.recipe.group_name == "from_kwargs"
+
+
+def test_hot_meze_recipe_dict_built_from_dict():
+    m = HotMeze.from_files(
+        pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
+        recipe={"metal": "ZN", "group_name": "from_dict"}
+    )
+    assert isinstance(m.recipe, HotMezeRecipe)
+    assert m.recipe.metal == "Zn"
+    assert m.recipe.group_name == "from_dict"
+
+
+def test_cold_quantum_meze_recipe_none_built_from_kwargs():
+    qm = ColdQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        metal="ZN",
+        group_name="from_kwargs"
+    )
+    assert isinstance(qm.recipe, ColdMezeRecipe)
+    assert qm.recipe.metal == "Zn"
+    assert qm.recipe.group_name == "from_kwargs"
+
+
+def test_cold_quantum_meze_recipe_dict_built_from_dict():
+    qm = ColdQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe={"metal": "ZN", "group_name": "from_dict"}
+    )
+    assert isinstance(qm.recipe, ColdMezeRecipe)
+    assert qm.recipe.metal == "Zn"
+    assert qm.recipe.group_name == "from_dict"
+
+
+def test_hot_quantum_meze_recipe_none_built_from_kwargs():
+    hqm = HotQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        metal="ZN",
+        group_name="from_kwargs"
+    )
+    assert isinstance(hqm.recipe, HotMezeRecipe)
+    assert hqm.recipe.metal == "Zn"
+    assert hqm.recipe.group_name == "from_kwargs"
+
+
+def test_hot_quantum_meze_recipe_dict_built_from_dict():
+    hqm = HotQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe={"metal": "ZN", "group_name": "from_dict"}
+    )
+    assert isinstance(hqm.recipe, HotMezeRecipe)
+    assert hqm.recipe.metal == "Zn"
+    assert hqm.recipe.group_name == "from_dict"
+
+
 def test_missing_topology_file_raises(vim2_recipe_json):
     with pytest.raises(FileNotFoundError):
         ColdMeze.from_files(
@@ -513,10 +651,6 @@ def test_unknown_stage_raises():
         )
 
 
-# ---------------------------------------------------------------------------
-# HotMeze
-# ---------------------------------------------------------------------------
-
 def test_hot_meze_happy_path(vim2_recipe_json):
     hm = HotMeze.from_files(
         pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
@@ -552,10 +686,6 @@ def test_hot_meze_model_zero_warns_no_restraint_file(vim2_recipe_json, caplog):
     )
     assert "No restraint file supplied while model is 0" in caplog.text
 
-
-# ---------------------------------------------------------------------------
-# QuantumMeze / ColdQuantumMeze / HotQuantumMeze
-# ---------------------------------------------------------------------------
 
 def test_cold_quantum_meze_happy_path(vim2_recipe_json):
     qm = ColdQuantumMeze.from_files(
@@ -682,4 +812,3 @@ def test_hot_quantum_meze_happy_path(vim2_recipe_json):
         recipe=HotMezeRecipe(**vim2_recipe_json)
     )
     assert hqm.qm_charge == 0
-
