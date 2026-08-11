@@ -30,6 +30,19 @@ def test_meze_load_no_file_raises():
         Meze.load(filename="nonexistent/file")
 
 
+def test_meze_save_load_round_trip(vim2_cold_meze, tmp_path):
+    saved_file = vim2_cold_meze.save(str(tmp_path / "meze"))
+    loaded = Meze.load(saved_file)
+    assert loaded.topology == vim2_cold_meze.topology
+    assert loaded.coordinates == vim2_cold_meze.coordinates
+    assert loaded.recipe == vim2_cold_meze.recipe
+    assert loaded.stage == vim2_cold_meze.stage
+    assert loaded.non_standard_residues == vim2_cold_meze.non_standard_residues
+    assert loaded.ligand.name == vim2_cold_meze.ligand.name
+    assert loaded.ligand.charge == vim2_cold_meze.ligand.charge
+    assert loaded.ligand.residue_name == vim2_cold_meze.ligand.residue_name
+
+
 def test_cold_meze_wrong_recipe_type_raises():
     with pytest.raises(
         TypeError, match="Expected 'recipe' to be a ColdMezeRecipe"
