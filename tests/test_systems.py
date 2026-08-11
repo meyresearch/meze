@@ -783,7 +783,9 @@ def test_quantum_meze_custom_qm_region_bad_whole_residues_type_raises(
         )
 
 
-def test_quantum_meze_custom_qm_region_bad_atom_ids_type_raises(vim2_recipe_json):
+def test_quantum_meze_custom_qm_region_bad_atom_ids_type_raises(
+        vim2_recipe_json
+):
     with pytest.raises(TypeError, match="atom_ids'\\] must be a list of str"):
         ColdQuantumMeze.from_files(
             topology=str(DATA / "vim2/vim2_complex.prmtop"),
