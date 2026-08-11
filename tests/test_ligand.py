@@ -1,5 +1,24 @@
 import pytest
 from meze import Ligand
+from pathlib import Path
+
+DATA = Path(__file__).parent.parent / "tests" / "data"
+
+
+def test_ligand_happy_path_construction():
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"),
+        charge=-1,
+        name="ligand_11"
+    )
+    assert ligand.file == [str(DATA / "ligands/ligand_11.pdb")]
+    assert ligand.charge == -1.0
+    assert isinstance(ligand.charge, float)
+    assert ligand.residue_name == "R9K"
+    assert ligand.atom_type == "gaff2"
+    assert ligand.parameterised is False
+    assert ligand.system.nMolecules() == 1
+    assert ligand.system.nAtoms() == 31
 
 
 def test_validate_file_str_wrapped_in_list():
