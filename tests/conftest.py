@@ -13,6 +13,12 @@ def vim2_recipe_json():
 
 
 @pytest.fixture(scope="session")
+def l1_recipe_json():
+    with open(DATA / "l1/model_0_recipe.json") as f:
+        return json.load(f)
+
+
+@pytest.fixture(scope="session")
 def vim2_cold_meze(vim2_recipe_json):
     meze = ColdMeze.from_files(
         recipe=ColdMezeRecipe(**vim2_recipe_json),
