@@ -479,3 +479,13 @@ def test_set_protein_raises():
             recipe=MezeRecipe(),
             stage="unbound"
         )
+
+
+def test_unbound_stage_skips_protein_check():
+    meze = Meze(
+        topology=str(DATA / "vim2/vim2_water_only.pdb"),
+        coordinates=str(DATA / "vim2/vim2_water_only.pdb"),
+        recipe=MezeRecipe(),
+        stage="unbound"
+    )
+    assert meze.protein is None
