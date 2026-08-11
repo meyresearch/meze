@@ -1,3 +1,4 @@
+import os
 import pytest
 from pathlib import Path
 from meze import Meze, Ligand, AlchemicalMezeRecipe
@@ -27,6 +28,28 @@ def unbound_mezes():
     first = _unbound_meze(str(DATA / "ligands/ligand_11.pdb"), "ligand_11")
     second = _unbound_meze(str(DATA / "ligands/ligand_12.pdb"), "ligand_12")
     return first, second
+
+
+def _solvated_unbound_meze(name):
+    return Meze.from_files(
+        topology=str(DATA / f"ligands/{name}_solv.prmtop"),
+        coordinates=str(DATA / f"ligands/{name}_solv.inpcrd"),
+        stage="unbound",
+        ligand_resname="MOL"
+    )
+
+
+@pytest.fixture
+def solvated_alchemical_sofra(tmp_path):
+    first_meze = _solvated_unbound_meze("ligand_11")
+    second_meze = _solvated_unbound_meze("ligand_12")
+    return AlchemicalSofra(
+        first_meze=first_meze,
+        second_meze=second_meze,
+        stage="unbound",
+        recipe=AlchemicalMezeRecipe(n_lambdas=3),
+        directory=str(tmp_path)
+    )
 
 
 def test_alchemical_sofra_unbound_happy_path(unbound_mezes, tmp_path):
@@ -88,4 +111,29 @@ def test_alchemical_sofra_existing_directory_raises(unbound_mezes, tmp_path):
             recipe=AlchemicalMezeRecipe(),
             directory=str(tmp_path),
             overwrite=False
+        )
+
+
+def test_merge(solvated_alchemical_sofra):
+    merged = solvated_alchemical_sofra.merge()
+    assert merged.nAtoms() == 34
+
+
+def test_create_hybrid_molecule(solvated_alchemical_sofra):
+    hybrid_system = solvated_alchemical_sofra.create_hybrid_molecule()
+    assert hybrid_system.nMolecules() == 772
+    assert solvated_alchemical_sofra.merged_molecule is not None
+    assert solvated_alchemical_sofra.merged_molecule.nAtoms() == 34
+
+
+def test_setup_alchemistry(solvated_alchemical_sofra):
+    result = solvated_alchemical_sofra.setup_alchemistry()
+    assert result.nMolecules() == 772
+
+    working_directory = solvated_alchemical_sofra.working_directory
+    lambda_dirs = sorted(os.listdir(working_directory))
+    assert lambda_dirs == ["lambda_0.0000", "lambda_0.5000", "lambda_1.0000"]
+    for lambda_dir in lambda_dirs:
+        assert os.path.isfile(
+            os.path.join(working_directory, lambda_dir, "somd.cfg")
         )
