@@ -1191,10 +1191,12 @@ class Meze:
             if isinstance(val, float):
                 return [val] * n_atom_pairs
             if len(val) != n_atom_pairs:
-                raise ValueError(
+                message = (
                     f"{name} has {len(val)} values but atom_pairs has"
                     f" {n_atom_pairs} pairs."
                 )
+                log.error(message)
+                raise ValueError(message)
             return val
 
         force_constant = _expand(force_constant, "force_constant")
@@ -1210,11 +1212,13 @@ class Meze:
             ag1 = self.universe.select_atoms(sel1)
             ag2 = self.universe.select_atoms(sel2)
             if len(ag1) != 1 or len(ag2) != 1:
-                raise ValueError(
+                message = (
                     f"Each selection must match exactly one atom. "
                     f"'{sel1}' matched {len(ag1)}, "
                     f"'{sel2}' matched {len(ag2)}."
                 )
+                log.error(message)
+                raise ValueError(message)
             dist = eq_distances[i] if equilibrium_distances is not None else \
                 MDAnalysis.analysis.distances.dist(ag1, ag2)[-1][0]
 
