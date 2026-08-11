@@ -1,7 +1,10 @@
 import os
 import tempfile
 import pytest
-from meze import ColdMeze, ColdMezeRecipe, Ligand, MezeRecipe, Meze
+from meze import (
+    ColdMeze, ColdMezeRecipe, Ligand, MezeRecipe, Meze,
+    HotMeze, HotMezeRecipe, ColdQuantumMeze, HotQuantumMeze
+)
 from pathlib import Path
 
 
@@ -508,4 +511,175 @@ def test_unknown_stage_raises():
             recipe=MezeRecipe(),
             stage="something"
         )
+
+
+# ---------------------------------------------------------------------------
+# HotMeze
+# ---------------------------------------------------------------------------
+
+def test_hot_meze_happy_path(vim2_recipe_json):
+    hm = HotMeze.from_files(
+        pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
+        recipe=HotMezeRecipe(**vim2_recipe_json)
+    )
+    assert hm.restraint_file is None
+
+
+def test_hot_meze_restraint_file_missing_raises(vim2_recipe_json):
+    with pytest.raises(FileNotFoundError, match="Restraint file not found"):
+        HotMeze.from_files(
+            pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
+            recipe=HotMezeRecipe(**vim2_recipe_json),
+            restraint_file="nonexistent.RST"
+        )
+
+
+def test_hot_meze_restraint_file_real_ok(vim2_recipe_json, tmp_path):
+    restraint_file = tmp_path / "restraints.RST"
+    restraint_file.write_text("dummy")
+    hm = HotMeze.from_files(
+        pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
+        recipe=HotMezeRecipe(**vim2_recipe_json),
+        restraint_file=str(restraint_file)
+    )
+    assert hm.restraint_file == str(restraint_file)
+
+
+def test_hot_meze_model_zero_warns_no_restraint_file(vim2_recipe_json, caplog):
+    HotMeze.from_files(
+        pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
+        recipe=HotMezeRecipe(**{**vim2_recipe_json, "model": 0})
+    )
+    assert "No restraint file supplied while model is 0" in caplog.text
+
+
+# ---------------------------------------------------------------------------
+# QuantumMeze / ColdQuantumMeze / HotQuantumMeze
+# ---------------------------------------------------------------------------
+
+def test_cold_quantum_meze_happy_path(vim2_recipe_json):
+    qm = ColdQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=ColdMezeRecipe(**vim2_recipe_json)
+    )
+    assert set(qm.qm_region["whole_residues"]) == {235, 236}
+    assert set(qm.qm_region["atom_ids"]) == {
+        "1313-1318", "1284-1294", "2455-2458", "1247-1257",
+        "3450", "3088-3098", "2183-2193", "3451"
+    }
+    assert qm.qm_charge == 0
+    assert qm.distance_restraints is None
+
+
+def test_quantum_meze_exclude_resids_int_normalized(vim2_recipe_json):
+    qm = ColdQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=ColdMezeRecipe(**vim2_recipe_json),
+        exclude_resids=234
+    )
+    assert qm.exclude_resids == {234}
+    assert qm.qm_region["whole_residues"] == []
+    assert set(qm.qm_region["atom_ids"]) == {
+        "1284-1294", "1247-1257", "3450", "2183-2193"
+    }
+
+
+def test_quantum_meze_metal_resids_for_distance_restraints_int_normalized(
+    vim2_recipe_json
+):
+    qm = ColdQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=ColdMezeRecipe(**vim2_recipe_json),
+        metal_resids_for_distance_restraints=234
+    )
+    assert qm.metal_resids_for_distance_restraints == [234]
+
+
+def test_quantum_meze_additional_qm_resids_int_normalized(vim2_recipe_json):
+    qm = ColdQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=ColdMezeRecipe(**vim2_recipe_json),
+        additional_qm_resids=1
+    )
+    assert qm._additional_qm_resids == {1}
+    assert "2-15" in qm.qm_region["atom_ids"]
+
+
+def test_quantum_meze_additional_qm_resnames_resolved(vim2_recipe_json):
+    qm = ColdQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=ColdMezeRecipe(**vim2_recipe_json),
+        additional_qm_resnames="MOH"
+    )
+    assert qm._additional_qm_resids == {235}
+
+
+def test_quantum_meze_custom_qm_region_not_dict_raises(vim2_recipe_json):
+    with pytest.raises(TypeError, match="custom_qm_region must be a dict"):
+        ColdQuantumMeze.from_files(
+            topology=str(DATA / "vim2/vim2_complex.prmtop"),
+            coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+            recipe=ColdMezeRecipe(**vim2_recipe_json),
+            custom_qm_region="not a dict"
+        )
+
+
+def test_quantum_meze_custom_qm_region_missing_keys_raises(vim2_recipe_json):
+    with pytest.raises(ValueError, match="missing required keys"):
+        ColdQuantumMeze.from_files(
+            topology=str(DATA / "vim2/vim2_complex.prmtop"),
+            coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+            recipe=ColdMezeRecipe(**vim2_recipe_json),
+            custom_qm_region={"whole_residues": [1]}
+        )
+
+
+def test_quantum_meze_custom_qm_region_bad_whole_residues_type_raises(
+    vim2_recipe_json
+):
+    with pytest.raises(
+        TypeError, match="whole_residues'\\] must be an int or list of int"
+    ):
+        ColdQuantumMeze.from_files(
+            topology=str(DATA / "vim2/vim2_complex.prmtop"),
+            coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+            recipe=ColdMezeRecipe(**vim2_recipe_json),
+            custom_qm_region={"whole_residues": "x", "atom_ids": []}
+        )
+
+
+def test_quantum_meze_custom_qm_region_bad_atom_ids_type_raises(vim2_recipe_json):
+    with pytest.raises(TypeError, match="atom_ids'\\] must be a list of str"):
+        ColdQuantumMeze.from_files(
+            topology=str(DATA / "vim2/vim2_complex.prmtop"),
+            coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+            recipe=ColdMezeRecipe(**vim2_recipe_json),
+            custom_qm_region={"whole_residues": [1], "atom_ids": [1, 2]}
+        )
+
+
+def test_quantum_meze_custom_qm_region_used_directly(vim2_recipe_json):
+    custom = {"whole_residues": [5], "atom_ids": ["10-12"]}
+    qm = ColdQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=ColdMezeRecipe(**vim2_recipe_json),
+        custom_qm_region=custom
+    )
+    assert qm.qm_region == custom
+    assert qm.qm_charge == 0
+
+
+def test_hot_quantum_meze_happy_path(vim2_recipe_json):
+    hqm = HotQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=HotMezeRecipe(**vim2_recipe_json)
+    )
+    assert hqm.qm_charge == 0
 
