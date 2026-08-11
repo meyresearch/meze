@@ -300,40 +300,96 @@ def test_build_restraint_mask_additional(vim2_cold_meze):
     )
     assert mask == "':235-236'"
 
-# # ---------------------------------------------------------------------------
-# # Meze._validate_disulfide_bridges
-# #
-# # Note: vim2.fixed.pdb has no CYX residues at all, so branches that need a
-# # *successfully validated* bridge to be reached first (duplicate-bridge
-# # detection, the "already bonded in CONECT" skip, the distance-too-long
-# # check) aren't reachable with this fixture -- they need a system with real
-# # CYX residues to test.
-# # ---------------------------------------------------------------------------
 
-# def test_validate_disulfide_bridges_self_bonded_raises(vim2_cold_meze):
-#     vim2_cold_meze.disulfide_bridges = [{"resid1": 5, "resid2": 5}]
-#     with pytest.raises(ValueError, match="cannot connect residue 5 to itself"):
-#         vim2_cold_meze._validate_disulfide_bridges()
+def test_validate_disulfide_bridges_self_bonded_raises(vim2_cold_meze):
+    vim2_cold_meze.disulfide_bridges = [{"resid1": 5, "resid2": 5}]
+    with pytest.raises(ValueError, match="cannot connect residue 5 to itself"):
+        vim2_cold_meze._validate_disulfide_bridges()
 
 
-# def test_validate_disulfide_bridges_missing_keys_raises(vim2_cold_meze):
-#     vim2_cold_meze.disulfide_bridges = [{"resid1": 1}]
-#     with pytest.raises(ValueError, match="Invalid disulfide bridge entry"):
-#         vim2_cold_meze._validate_disulfide_bridges()
+def test_validate_disulfide_bridges_missing_keys_raises(vim2_cold_meze):
+    vim2_cold_meze.disulfide_bridges = [{"resid1": 1}]
+    with pytest.raises(ValueError, match="Invalid disulfide bridge entry"):
+        vim2_cold_meze._validate_disulfide_bridges()
 
 
-# def test_validate_disulfide_bridges_non_cyx_raises(vim2_cold_meze):
-#     vim2_cold_meze.disulfide_bridges = [{"resid1": 1, "resid2": 2}]
-#     with pytest.raises(ValueError, match="require CYX residues"):
-#         vim2_cold_meze._validate_disulfide_bridges()
+def test_validate_disulfide_bridges_non_cyx_raises(vim2_cold_meze):
+    vim2_cold_meze.disulfide_bridges = [{"resid1": 1, "resid2": 2}]
+    with pytest.raises(ValueError, match="require CYX residues"):
+        vim2_cold_meze._validate_disulfide_bridges()
 
 
-# ---------------------------------------------------------------------------
-# Meze._validate_non_standard_residues (auto-called during construction
-# when non_standard_residues is a dict)
-# ---------------------------------------------------------------------------
+def test_validate_disulfide_bridges_no_conect(l1_recipe_json):
+    l1_meze = ColdMeze.from_files(
+        pdb_file=str(DATA / "l1/l1_no_conect.pdb"),
+        recipe=ColdMezeRecipe(**l1_recipe_json),
+        disulfide_bridges=[{"resid1": 217, "resid2": 245}]
+    )
+    l1_meze._validate_disulfide_bridges()
+    assert l1_meze.disulfide_bridges == [{"resid1": 217, "resid2": 245}]
 
-# # ---------------------------------------------------------------------------
+
+def test_validate_disulfide_bridges_with_conect(l1_recipe_json, caplog):
+    l1_meze = ColdMeze.from_files(
+        pdb_file=str(DATA / "l1/l1_with_conect.pdb"),
+        recipe=ColdMezeRecipe(**l1_recipe_json),
+        disulfide_bridges=[{"resid1": 217, "resid2": 245}]
+    )
+    l1_meze._validate_disulfide_bridges()
+    assert (
+        "Residues 217 and 245 appear to already have a disulfide bond"
+    ) in caplog.text
+    assert l1_meze.disulfide_bridges is None
+
+
+def test_validate_duplicate_disulfide_bridges(l1_recipe_json):
+    l1_meze = ColdMeze.from_files(
+        pdb_file=str(DATA / "l1/l1_no_conect.pdb"),
+        recipe=ColdMezeRecipe(**l1_recipe_json),
+        disulfide_bridges=[{"resid1": 217, "resid2": 245},
+                           {"resid1": 217, "resid2": 245}]
+    )
+    with pytest.raises(ValueError, match="Duplicate disulfide bridge"):
+        l1_meze._validate_disulfide_bridges()
+
+
+def test_validate_missing_disulfide_bridges(l1_recipe_json):
+    l1_meze = ColdMeze.from_files(
+        pdb_file=str(DATA / "l1/l1_no_conect.pdb"),
+        recipe=ColdMezeRecipe(**l1_recipe_json),
+        disulfide_bridges=[{"resid1": 217, "resid2": 245},
+                           {"resid1": 1089, "resid2": 1514}]
+    )
+    with pytest.raises(
+        ValueError, match="Residue 1089 or 1514 not found in structure"
+    ):
+        l1_meze._validate_disulfide_bridges()
+
+
+def test_validate_no_cyx_disulfide_bridges(l1_recipe_json):
+    l1_meze = ColdMeze.from_files(
+        pdb_file=str(DATA / "l1/l1_no_SG.pdb"),
+        recipe=ColdMezeRecipe(**l1_recipe_json),
+        disulfide_bridges=[{"resid1": 217, "resid2": 245}]
+    )
+    with pytest.raises(
+        ValueError, match="Missing SG atom"
+    ):
+        l1_meze._validate_disulfide_bridges()
+
+
+def test_validate_long_disulfide_bridges(l1_recipe_json):
+    l1_meze = ColdMeze.from_files(
+        pdb_file=str(DATA / "l1/l1_long_ssbond.pdb"),
+        recipe=ColdMezeRecipe(**l1_recipe_json),
+        disulfide_bridges=[{"resid1": 217, "resid2": 245}]
+    )
+    with pytest.raises(
+        ValueError, match="Disulfide 217-245 too long:"
+    ):
+        l1_meze._validate_disulfide_bridges()
+
+
 # # Meze.write_restrained_atoms_pdb
 # # ---------------------------------------------------------------------------
 
