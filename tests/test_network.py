@@ -1,5 +1,23 @@
+import os
 from meze import Sofra
 import pytest
+
+
+def test_sofra_from_file_without_network_file(vim2_cold_meze, tmp_path):
+    pickle_file = vim2_cold_meze.save(str(tmp_path / "meze.pkl"))
+    sofra_file = str(tmp_path / "sofra.json")
+    vim2_cold_meze.add_to_sofra(
+        filename=sofra_file, key="ligand_11", pickle_file=pickle_file
+    )
+
+    sofra = Sofra.from_file(sofra_file=sofra_file)
+
+    assert list(sofra.mezes.keys()) == ["ligand_11"]
+    assert isinstance(sofra.mezes["ligand_11"], type(vim2_cold_meze))
+    assert sofra.network_file is None
+    assert sofra.group_name == "vim2_model_0"
+    assert sofra.project_directory == os.getcwd()
+    assert sofra.sofra_file == sofra_file
 
 
 def test_sofra_parse_lomap_output(tmp_path):
