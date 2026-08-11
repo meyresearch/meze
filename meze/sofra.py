@@ -988,19 +988,25 @@ class Meze:
 
         for bridge in self.disulfide_bridges:
             if not {"resid1", "resid2"} <= bridge.keys():
-                raise ValueError(f"Invalid disulfide bridge entry: {bridge}")
+                message = f"Invalid disulfide bridge entry: {bridge}"
+                log.error(message)
+                raise ValueError(message)
 
             r1, r2 = bridge["resid1"], bridge["resid2"]
 
             if r1 == r2:
-                raise ValueError(
+                message = (
                     f"Disulfide bridge cannot connect residue {r1} to itself."
                 )
+                log.error(message)
+                raise ValueError(message)
 
             pair = tuple(sorted((r1, r2)))
 
             if pair in seen_bridges:
-                raise ValueError(f"Duplicate disulfide bridge: {pair}")
+                message = f"Duplicate disulfide bridge: {pair}"
+                log.error(message)
+                raise.ValueError(message)
             seen_bridges.add(pair)
 
             try:
@@ -1008,29 +1014,37 @@ class Meze:
                 cyx2 = self.universe.select_atoms(f"resid {r2}").residues[0]
 
             except IndexError:
-                raise ValueError(
+                message = (
                     f"Residue {r1} or {r2} not found in structure."
                 )
+                log.error(message)
+                raise ValueError(message)
 
             if cyx1.resname != "CYX" or cyx2.resname != "CYX":
-                raise ValueError(
+                message = (
                     f"Disulfide bonds require CYX residues. "
                     f"Got {cyx1.resname} and {cyx2.resname} for {r1} and {r2}."
                 )
+                log.error(message)
+                raise ValueError(message)
 
             sg1 = cyx1.atoms.select_atoms("name SG")
             sg2 = cyx2.atoms.select_atoms("name SG")
 
             if len(sg1) == 0 or len(sg2) == 0:
-                raise ValueError(f"Missing SG atom in residues {r1} or {r2}.")
+                message = (f"Missing SG atom in residues {r1} or {r2}.")
+                log.error(message)
+                raise ValueError(message)
 
             _, _, dists = MDAnalysis.analysis.distances.dist(sg1, sg2)
             distance = dists[0]
             if distance > 3.0:
-                raise ValueError(
+                message = (
                     f"Disulfide {r1}-{r2} too long: "
                     f"{distance:.2f} Å (likely incorrect)."
                 )
+                log.error(message)
+                raise ValueError(message)
 
             for _, ids in conect_lines.items():
                 if sg1.ids[0] in ids or sg2.ids[0] in ids:
