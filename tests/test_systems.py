@@ -216,11 +216,13 @@ def test_build_distance_restraints(vim2_cold_meze):
     assert restraints[(3451, 3096)] == (2.15, 100.0, 1.0)
 
 
-
-
-# def test_build_distance_restraints_wrong_type_raises(vim2_cold_meze):
-#     with pytest.raises(TypeError, match="coordinating_residues must be a dict"):
-#         vim2_cold_meze.build_distance_restraints(coordinating_residues="not a dict")
+def test_build_distance_restraints_wrong_type_raises(vim2_cold_meze):
+    with pytest.raises(
+        TypeError, match="coordinating_residues must be a dict"
+    ):
+        vim2_cold_meze.build_distance_restraints(
+            coordinating_residues="not a dict"
+        )
 
 
 # def test_build_angle_restraints(vim2_cold_meze):
