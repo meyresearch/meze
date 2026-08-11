@@ -20,6 +20,25 @@ def test_sofra_from_file_without_network_file(vim2_cold_meze, tmp_path):
     assert sofra.sofra_file == sofra_file
 
 
+def test_sofra_from_file_with_network_file(vim2_cold_meze, tmp_path):
+    pickle_file = vim2_cold_meze.save(str(tmp_path / "meze.pkl"))
+    sofra_file = str(tmp_path / "sofra.json")
+    vim2_cold_meze.add_to_sofra(
+        filename=sofra_file, key="ligand_11", pickle_file=pickle_file
+    )
+    sofra = Sofra.from_file(sofra_file=sofra_file)
+
+    network_file = str(tmp_path / "network.csv")
+    with open(network_file, "w") as f:
+        f.write("Name_1,Name_2,Score\n")
+    sofra.save_network_file(network_file)
+
+    reloaded = Sofra.from_file(sofra_file=sofra_file)
+
+    assert reloaded.network_file == network_file
+    assert list(reloaded.mezes.keys()) == ["ligand_11"]
+
+
 def test_sofra_parse_lomap_output(tmp_path):
     sofra = Sofra(
         mezes={},
