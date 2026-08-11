@@ -39,6 +39,18 @@ def test_sofra_from_file_with_network_file(vim2_cold_meze, tmp_path):
     assert list(reloaded.mezes.keys()) == ["ligand_11"]
 
 
+def test_no_sofra_file_raises():
+    with pytest.raises(FileNotFoundError, match="Sofra file not found: "):
+        Sofra.from_file(sofra_file="nonexistent/sofra")
+
+
+def test_no_network_file_raises(tmp_path):
+    sofra_file = tmp_path / "sofra.json"
+    sofra_file.write_text('{"network_file": "nonexistent/file"}')
+    with pytest.raises(FileNotFoundError, match="Could not find network file"):
+        Sofra.from_file(sofra_file=str(sofra_file))
+
+
 def test_sofra_parse_lomap_output(tmp_path):
     sofra = Sofra(
         mezes={},
