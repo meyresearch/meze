@@ -912,9 +912,9 @@ class Meze:
                 f"element {metal.upper()}"
             )
             if len(self.metals) == 0:
-                raise ValueError(
-                    f"No atoms found for metal: {self.recipe.metal}"
-                )
+                message = f"No atoms found for metal: {self.recipe.metal}"
+                log.error(message)
+                raise ValueError(message)
 
         self.metal_resids = self.metals.resids
         self.metal_atomids = self.metals.atoms.ids
