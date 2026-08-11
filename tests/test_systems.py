@@ -225,25 +225,44 @@ def test_build_distance_restraints_wrong_type_raises(vim2_cold_meze):
         )
 
 
-# def test_build_angle_restraints(vim2_cold_meze):
-#     restraints = vim2_cold_meze.build_angle_restraints()
-#     # C(4,2) = 6 pairwise angle restraints per metal x 2 metals
-#     assert len(restraints) == 12
+def test_build_angle_restraints(vim2_cold_meze):
+    restraints = vim2_cold_meze.build_angle_restraints()
+    assert len(restraints) == 16
+    assert [(1255, 1288)] == (3.08, 100.0, 1.0) 
+    assert [(1255, 2191)] == (3.22, 100.0, 1.0) 
+    assert [(1255, 3452)] == (3.27, 100.0, 1.0) 
+    assert [(1288, 2191)] == (3.34, 100.0, 1.0) 
+    assert [(1288, 3452)] == (3.34, 100.0, 1.0) 
+    assert [(2191, 3452)] == (3.38, 100.0, 1.0) 
+    assert [(1318, 2458)] == (3.55, 100.0, 1.0) 
+    assert [(1318, 3096)] == (2.96, 100.0, 1.0) 
+    assert [(1318, 3452)] == (2.87, 100.0, 1.0)
+    assert [(1318, 3473)] == (4.45, 100.0, 1.0) 
+    assert [(2458, 3096)] == (3.48, 100.0, 1.0) 
+    assert [(2458, 3452)] == (3.7, 100.0, 1.0)
+    assert [(2458, 3473)] == (3.52, 100.0, 1.0)
+    assert [(3096, 3452)] == (3.97, 100.0, 1.0) 
+    assert [(3096, 3473)] == (2.99, 100.0, 1.0)
+    assert [(3452, 3473)] == (3.16, 100.0, 1.0)
 
 
-# def test_build_custom_distance_restraints_mismatched_lengths_raises(vim2_cold_meze):
-#     with pytest.raises(ValueError, match="force_constant has"):
-#         vim2_cold_meze.build_custom_distance_restraints(
-#             atom_pairs=[("resid 1 and name CA", "resid 2 and name CA")],
-#             force_constant=[100.0, 200.0],
-#         )
+def test_build_custom_distance_restraints_mismatched_lengths_raises(
+        vim2_cold_meze
+):
+    with pytest.raises(ValueError, match="force_constant has"):
+        vim2_cold_meze.build_custom_distance_restraints(
+            atom_pairs=[("resid 1 and name CA", "resid 2 and name CA")],
+            force_constant=[100.0, 200.0],
+        )
 
 
-# def test_build_custom_distance_restraints_bad_selection_raises(vim2_cold_meze):
-#     with pytest.raises(ValueError, match="must match exactly one atom"):
-#         vim2_cold_meze.build_custom_distance_restraints(
-#             atom_pairs=[("resid 1", "resid 2 and name CA")],
-#         )
+def test_build_custom_distance_restraints_bad_selection_raises(
+        vim2_cold_meze
+):
+    with pytest.raises(ValueError, match="must match exactly one atom"):
+        vim2_cold_meze.build_custom_distance_restraints(
+            atom_pairs=[("resid 1", "resid 2 and name CA")],
+        )
 
 
 # # ---------------------------------------------------------------------------
