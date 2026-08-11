@@ -438,13 +438,14 @@ class Meze:
             self.ligand_resid = self.get_ligand_resid()
             self.ligand_resname = self.ligand.residue_name
         elif self.ligand and self.ligand.parameterised and self.ligand_resid:
-            pass
+            self.ligand_resname = self.ligand.residue_name
         elif not self.ligand and self.ligand_resname:
             log.info(
                 "Inferring ligand from ligand residue name: "
                 f"{self.ligand_resname}"
             )
             self._set_ligand()
+            self.ligand_resid = self.get_ligand_resid()
         else:
             log.warning(
                 "Ligand not set by user in meze construction. "
