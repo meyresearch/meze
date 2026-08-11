@@ -2535,7 +2535,7 @@ class ColdMeze(Meze):
         if additional_restraints:
             if not (
                 {"resids"} <= additional_restraints.keys()
-                and not {"resnames"} <= additional_restraints.keys()
+                or {"resnames"} <= additional_restraints.keys()
             ):
                 message = (
                     "additional_restraints must contain "
