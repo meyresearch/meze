@@ -2908,9 +2908,12 @@ class HotMeze(Meze):
 
         if self.restraint_file:
             if not os.path.isfile(self.restraint_file):
-                raise FileNotFoundError(
+                message = (
                     f"Restraint file not found: {self.restraint_file}"
                 )
+                log.error(message)
+                raise FileNotFoundError(message)
+
         elif not self.restraint_file and self.recipe.model == 0:
             log.warning(
                 "No restraint file supplied while model is 0.\n"
