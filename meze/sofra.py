@@ -141,8 +141,8 @@ class MezeRecipe(BaseModel):
     pressure: Union[float, bss.Types.Pressure] = Field(
         1.0, description="Simulation pressure in atm"
     )
-    nb_cutoff: float = Field(
-        12.0, ge=0, description="Cut-off for electrostatics interactions"
+    nb_cutoff: Union[float, bss.Types.Length] = Field(
+        12.0, description="Cut-off for electrostatics interactions"
     )
 
     @field_validator("model", mode="after")
@@ -665,7 +665,7 @@ class Meze:
             raise NotImplementedError(message)
         return ligand_residues[0].toMolecule()
 
-    def get_small_molecule_resname(self) -> str | None:
+    def get_small_molecule_resname(self) -> str | None:  # DEPRECATED
 
         selection = self.universe.select_atoms(
             "not protein and not water"
