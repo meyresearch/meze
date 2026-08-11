@@ -11,6 +11,25 @@ from pathlib import Path
 DATA = Path(__file__).parent.parent / "tests" / "data"
 
 
+def test_meze_save_no_suffix(vim2_cold_meze, tmp_path):
+    dummy_file = str(tmp_path / "dummy_file")
+    saved_file = vim2_cold_meze.save(dummy_file)
+    assert os.path.isfile(saved_file)
+    assert Path(saved_file).suffix == ".pkl"
+
+
+def test_meze_save_with_suffix(vim2_cold_meze, tmp_path):
+    dummy_file = str(tmp_path / "dummy_file.pkl")
+    saved_file = vim2_cold_meze.save(dummy_file)
+    assert os.path.isfile(saved_file)
+    assert Path(saved_file).suffix == ".pkl"
+
+
+def test_meze_load_no_file_raises():
+    with pytest.raises(FileNotFoundError, match="Pickle meze file not found"):
+        Meze.load(filename="nonexistent/file")
+
+
 def test_cold_meze_wrong_recipe_type_raises():
     with pytest.raises(
         TypeError, match="Expected 'recipe' to be a ColdMezeRecipe"
