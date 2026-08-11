@@ -812,6 +812,7 @@ class Meze:
     def build_angle_restraints(
             self,
             metal_atom_ids: Optional[list[int]] = None,
+            coordinating_residues: Optional[dict[int, mda.AtomGroup]] = None,
             force_constant: Optional[float] = 100.0,
             flat_bottom_radius: Optional[float] = 1.00,
             exclude_residues: Optional[Union[int, list[int]]] = None
@@ -823,6 +824,29 @@ class Meze:
         metal_atom_ids = metal_atom_ids or list(
             self.coordinating_residues.keys()
         )
+        ligand_residues = coordinating_residues or self.coordinating_residues
+        if coordinating_residues is not None:
+            if not isinstance(coordinating_residues, dict):
+                raise TypeError(
+                    "coordinating_residues must be a dict, got "
+                    f"{type(coordinating_residues).__name__}"
+                )
+            if not all(isinstance(k, int) for k in coordinating_residues):
+                raise TypeError(
+                    f"coordinating_residues keys must be ints (atom IDs), "
+                    f"got {set(
+                        type(k).__name__ for k in coordinating_residues
+                    )}"
+                )
+            if not all(
+                isinstance(
+                    v, mda.AtomGroup
+                ) for v in coordinating_residues.values()
+            ):
+                raise TypeError(
+                    "coordinating_residues values must be "
+                    "MDAnalysis AtomGroups"
+                )
         exclude = self.exclude_resids or exclude_residues
         if isinstance(exclude, int):
             exclude = [exclude]
@@ -831,14 +855,14 @@ class Meze:
             exclude = []
 
         restraints = {}
-        for metal_id, ligating_atoms in self.coordinating_residues.items():
+        for metal_id, ligating_atoms in ligand_residues.items():
             if metal_id in metal_atom_ids:
                 vertices = []
                 for ligating_atom in ligating_atoms:
                     if ligating_atom.resid in exclude:
                         continue
                     if self.ligand and ligating_atom.resname.upper() == (
-                        self.coordinating_residues.keys()
+                        self.ligand.residue_name
                     ):
                         continue
                     if ligating_atom.id == metal_id:
