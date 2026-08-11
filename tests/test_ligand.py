@@ -79,3 +79,12 @@ def test_infer_ligand_name_uses_file_stem():
     with pytest.warns(UserWarning, match="inferring from file name"):
         name = Ligand._infer_ligand_name(["some/dir/ligand_11.pdb"])
     assert name == "ligand_11"
+
+
+def test_more_than_one_residue_warning(caplog):
+    Ligand(
+        file=str(DATA / "vim2/water.pdb"),
+        charge=-1,
+        name="ligand_11"
+    )
+    assert "Found multiple residues in ligand file" in caplog.text
