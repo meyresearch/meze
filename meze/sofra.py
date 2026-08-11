@@ -2537,10 +2537,13 @@ class ColdMeze(Meze):
                 {"resids"} <= additional_restraints.keys()
                 and not {"resnames"} <= additional_restraints.keys()
             ):
-                raise ValueError(
+                message = (
                     "additional_restraints must contain "
                     "'resids' or 'resnames' keys."
                 )
+                log.error(message)
+                raise ValueError(message)
+
             additional_resids = additional_restraints.get("resids", [])
             if isinstance(additional_resids, int):
                 additional_resids = [additional_resids]
