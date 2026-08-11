@@ -517,7 +517,7 @@ def _write_somd_restraints(
             f"{amber_style_restraint_file}"
         )
         log.error(message)
-        raise FileNotFoundError
+        raise FileNotFoundError(message)
     somd_restraints = {}
     with open(amber_style_restraint_file, "r") as ifile:
         for line in ifile:
