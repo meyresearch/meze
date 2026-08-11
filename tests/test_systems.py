@@ -42,7 +42,28 @@ def test_get_coordinate_fileformat_other_extensions(extension):
     assert Meze._get_coordinate_fileformat(extension) is None
 
 
-def test_coordinating_residues_identifies_zn_ligands(vim2_cold_meze):
+def test_set_universe_with_pdb():
+    pass
+
+
+def test_set_universe_no_elements_pdb():
+    pass
+
+
+def test_set_universe_with_topology_and_coordinates():
+    pass
+
+
+def test_set_metal_raises_for_absent_metal(vim2_recipe_json):
+    bad_recipe = ColdMezeRecipe(**{**vim2_recipe_json, "metal": "FE"})
+    with pytest.raises(ValueError, match="No atoms found for metal"):
+        ColdMeze.from_files(
+            recipe=bad_recipe,
+            pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
+        )
+
+
+def test_metal_and_coordinating_residues(vim2_cold_meze):
     m = vim2_cold_meze
     assert len(m.metals) == 2
     assert list(m.metal_resids) == [233, 234]
@@ -96,15 +117,121 @@ def test_add_ligand(vim2_cold_meze):
     assert ligand.system.nMolecules() == 1
 
 
-def test_set_metal_raises_for_absent_metal(vim2_recipe_json):
-    bad_recipe = ColdMezeRecipe(**{**vim2_recipe_json, "metal": "FE"})
-    with pytest.raises(ValueError, match="No atoms found for metal"):
-        ColdMeze.from_files(
-            recipe=bad_recipe,
-            pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
-        )
 
 
 def test_select_crystal_waters(vim2_cold_meze):
     assert set(vim2_cold_meze.crystal_waters.resnames) == {"WAT"}
     assert vim2_cold_meze.crystal_waters.n_residues == 182
+
+
+# def test_build_distance_restraints(vim2_cold_meze):
+#     restraints = vim2_cold_meze.build_distance_restraints()
+#     assert len(restraints) == 8  # 4 ligands x 2 metals
+#     for (metal_id, ligand_id), (distance, force_constant, radius) in restraints.items():
+#         assert metal_id in (3450, 3451)
+#         assert distance > 0
+#         assert force_constant == 100.0
+#         assert radius == 1.0
+
+
+# def test_build_distance_restraints_wrong_type_raises(vim2_cold_meze):
+#     with pytest.raises(TypeError, match="coordinating_residues must be a dict"):
+#         vim2_cold_meze.build_distance_restraints(coordinating_residues="not a dict")
+
+
+# def test_build_angle_restraints(vim2_cold_meze):
+#     restraints = vim2_cold_meze.build_angle_restraints()
+#     # C(4,2) = 6 pairwise angle restraints per metal x 2 metals
+#     assert len(restraints) == 12
+
+
+# def test_build_custom_distance_restraints_mismatched_lengths_raises(vim2_cold_meze):
+#     with pytest.raises(ValueError, match="force_constant has"):
+#         vim2_cold_meze.build_custom_distance_restraints(
+#             atom_pairs=[("resid 1 and name CA", "resid 2 and name CA")],
+#             force_constant=[100.0, 200.0],
+#         )
+
+
+# def test_build_custom_distance_restraints_bad_selection_raises(vim2_cold_meze):
+#     with pytest.raises(ValueError, match="must match exactly one atom"):
+#         vim2_cold_meze.build_custom_distance_restraints(
+#             atom_pairs=[("resid 1", "resid 2 and name CA")],
+#         )
+
+
+# # ---------------------------------------------------------------------------
+# # ColdMeze._build_restraint_mask
+# # ---------------------------------------------------------------------------
+
+# def test_build_restraint_mask_solute(vim2_cold_meze):
+#     mask = vim2_cold_meze._build_restraint_mask(position_restraints="solute")
+#     assert mask == "':1-235'"
+
+
+# def test_build_restraint_mask_backbone(vim2_cold_meze):
+#     mask = vim2_cold_meze._build_restraint_mask(position_restraints="backbone")
+#     assert mask == "'(@N,CA,C,O & !:WAT)|:83,85,87,148,167,209,233-235'"
+
+
+# def test_build_restraint_mask_metal_coordination(vim2_cold_meze):
+#     mask = vim2_cold_meze._build_restraint_mask(
+#         position_restraints="metal-coordination"
+#     )
+#     assert mask == "':83,85,87,148,167,209,233-235'"
+
+
+# def test_build_restraint_mask_none(vim2_cold_meze):
+#     assert vim2_cold_meze._build_restraint_mask(position_restraints=None) is None
+
+
+# def test_build_restraint_mask_invalid_option_raises(vim2_cold_meze):
+#     with pytest.raises(ValueError, match="Invalid restraint option"):
+#         vim2_cold_meze._build_restraint_mask(position_restraints="bogus")
+
+
+# # ---------------------------------------------------------------------------
+# # Meze._validate_disulfide_bridges
+# #
+# # Note: vim2.fixed.pdb has no CYX residues at all, so branches that need a
+# # *successfully validated* bridge to be reached first (duplicate-bridge
+# # detection, the "already bonded in CONECT" skip, the distance-too-long
+# # check) aren't reachable with this fixture -- they need a system with real
+# # CYX residues to test.
+# # ---------------------------------------------------------------------------
+
+# def test_validate_disulfide_bridges_self_bonded_raises(vim2_cold_meze):
+#     vim2_cold_meze.disulfide_bridges = [{"resid1": 5, "resid2": 5}]
+#     with pytest.raises(ValueError, match="cannot connect residue 5 to itself"):
+#         vim2_cold_meze._validate_disulfide_bridges()
+
+
+# def test_validate_disulfide_bridges_missing_keys_raises(vim2_cold_meze):
+#     vim2_cold_meze.disulfide_bridges = [{"resid1": 1}]
+#     with pytest.raises(ValueError, match="Invalid disulfide bridge entry"):
+#         vim2_cold_meze._validate_disulfide_bridges()
+
+
+# def test_validate_disulfide_bridges_non_cyx_raises(vim2_cold_meze):
+#     vim2_cold_meze.disulfide_bridges = [{"resid1": 1, "resid2": 2}]
+#     with pytest.raises(ValueError, match="require CYX residues"):
+#         vim2_cold_meze._validate_disulfide_bridges()
+
+
+# ---------------------------------------------------------------------------
+# Meze._validate_non_standard_residues (auto-called during construction
+# when non_standard_residues is a dict)
+# ---------------------------------------------------------------------------
+
+# # ---------------------------------------------------------------------------
+# # Meze.write_restrained_atoms_pdb
+# # ---------------------------------------------------------------------------
+
+# def test_write_restrained_atoms_pdb(vim2_cold_meze):
+#     with tempfile.TemporaryDirectory() as d:
+#         out = os.path.join(d, "restrained.pdb")
+#         vim2_cold_meze.write_restrained_atoms_pdb(out)
+#         assert os.path.isfile(out)
+#         with open(out) as f:
+#             content = f.read()
+#         assert "ATOM" in content or "HETATM" in content
