@@ -469,3 +469,13 @@ def test_get_mutatable_ligand_no_resname_raises(vim2_recipe_json):
 
 def test_set_protein(vim2_cold_meze):
     assert vim2_cold_meze.protein.n_residues == 232
+
+
+def test_set_protein_raises():
+    with pytest.raises(RuntimeError, match="Could not set protein"):
+        Meze(
+            topology=str(DATA / "vim2/water.pdb"),
+            coordinates=str(DATA / "vim2/water.pdb"),
+            recipe=MezeRecipe(),
+            stage="unbound"
+        )
