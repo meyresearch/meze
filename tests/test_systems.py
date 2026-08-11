@@ -390,14 +390,14 @@ def test_validate_long_disulfide_bridges(l1_recipe_json):
         l1_meze._validate_disulfide_bridges()
 
 
-# # Meze.write_restrained_atoms_pdb
-# # ---------------------------------------------------------------------------
+def test_write_restrained_atoms_pdb(vim2_cold_meze):
+    with open(DATA / "vim2/test_restraints.pdb", "r") as f:
+        reference = f.readlines()
+    with tempfile.TemporaryDirectory() as d:
+        out = os.path.join(d, "restrained.pdb")
+        vim2_cold_meze.write_restrained_atoms_pdb(out)
+        assert os.path.isfile(out)
+        with open(out) as f:
+            content = f.readlines()
 
-# def test_write_restrained_atoms_pdb(vim2_cold_meze):
-#     with tempfile.TemporaryDirectory() as d:
-#         out = os.path.join(d, "restrained.pdb")
-#         vim2_cold_meze.write_restrained_atoms_pdb(out)
-#         assert os.path.isfile(out)
-#         with open(out) as f:
-#             content = f.read()
-#         assert "ATOM" in content or "HETATM" in content
+    assert reference == content
