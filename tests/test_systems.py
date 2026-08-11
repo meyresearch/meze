@@ -196,21 +196,26 @@ def test_add_ligand(vim2_cold_meze):
     assert ligand.system.nMolecules() == 1
 
 
-
-
 def test_select_crystal_waters(vim2_cold_meze):
     assert set(vim2_cold_meze.crystal_waters.resnames) == {"WAT"}
     assert vim2_cold_meze.crystal_waters.n_residues == 182
 
 
-# def test_build_distance_restraints(vim2_cold_meze):
-#     restraints = vim2_cold_meze.build_distance_restraints()
-#     assert len(restraints) == 8  # 4 ligands x 2 metals
-#     for (metal_id, ligand_id), (distance, force_constant, radius) in restraints.items():
-#         assert metal_id in (3450, 3451)
-#         assert distance > 0
-#         assert force_constant == 100.0
-#         assert radius == 1.0
+def test_build_distance_restraints(vim2_cold_meze):
+    restraints = vim2_cold_meze.build_distance_restraints(
+
+    )
+    assert len(restraints) == 8
+    assert restraints[(3450, 1255)] == (2.05, 100.0, 1.0)
+    assert restraints[(3450, 1288)] == (2.07, 100.0, 1.0)
+    assert restraints[(3450, 2191)] == (2.05, 100.0, 1.0)
+    assert restraints[(3450, 3452)] == (1.89, 100.0, 1.0)
+    assert restraints[(3451, 3452)] == (2.08, 100.0, 1.0)
+    assert restraints[(3451, 1318)] == (2.35, 100.0, 1.0)
+    assert restraints[(3451, 2458)] == (2.29, 100.0, 1.0)
+    assert restraints[(3451, 3096)] == (2.15, 100.0, 1.0)
+
+
 
 
 # def test_build_distance_restraints_wrong_type_raises(vim2_cold_meze):
