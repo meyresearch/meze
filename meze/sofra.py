@@ -415,6 +415,7 @@ class Meze:
             self.coordinating_residues = (
                 self._get_metal_coordinating_residues()
             )
+            self._set_protein()
         elif self.stage == "unbound":
             self.metals = None
             self.metal_resids = []
@@ -427,7 +428,6 @@ class Meze:
 
         self._set_waters()
         self._setup_bss_system()
-        self._set_protein()
 
         if self.non_standard_residues and isinstance(
             self.non_standard_residues, dict
@@ -898,6 +898,13 @@ class Meze:
 
     def _set_protein(self):
         self.protein = self.universe.select_atoms("protein")
+        if not self.protein:
+            message = (
+                "Could not set protein for system using:\n"
+                "'self.universe.select_atoms('protein')"
+            )
+            log.error(message)
+            raise RuntimeError(message)
 
     def _set_metal(self):
         """Set metal residue names and indices based on MDAnalysis Universe
