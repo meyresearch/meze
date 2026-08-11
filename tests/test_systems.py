@@ -1,8 +1,7 @@
 import os
 import tempfile
 import pytest
-from meze import ColdMeze, ColdMezeRecipe, Ligand
-from meze.sofra import Meze
+from meze import ColdMeze, ColdMezeRecipe, Ligand, MezeRecipe, Meze
 from pathlib import Path
 
 
@@ -42,16 +41,96 @@ def test_get_coordinate_fileformat_other_extensions(extension):
     assert Meze._get_coordinate_fileformat(extension) is None
 
 
-def test_set_universe_with_pdb():
-    pass
+def test_set_universe_no_elements_pdb(vim2_recipe_json):
+    no_elements = ColdMeze.from_files(
+        pdb_file=str(DATA / "vim2/vim2_no_elements.pdb"),
+        recipe=ColdMezeRecipe(**vim2_recipe_json)
+    )
+    elements = no_elements.universe.atoms.elements
+    assert len(elements) == len(no_elements.universe.atoms)
+    assert set(elements) >= {"H", "C", "N", "O", "S", "ZN"}
+    assert "" not in elements
 
 
-def test_set_universe_no_elements_pdb():
-    pass
+def test_meze_with_topology_and_coordinates(vim2_recipe_json):
+    meze = ColdMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=ColdMezeRecipe(**vim2_recipe_json)
+    )
+    assert len(meze.universe.atoms) == 25009
+    assert list(meze.metal_resids) == [233, 234]
+    assert list(meze.metal_atomids) == [3450, 3451]
+    assert set(meze.coordinating_residues.keys()) == {3450, 3451}
 
 
-def test_set_universe_with_topology_and_coordinates():
-    pass
+def test_base_meze_with_topology_and_coordinates():
+    meze = Meze(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=MezeRecipe()
+    )
+    assert len(meze.universe.atoms) == 25009
+    assert list(meze.metal_resids) == [233, 234]
+    assert list(meze.metal_atomids) == [3450, 3451]
+    assert set(meze.coordinating_residues.keys()) == {3450, 3451}
+    assert set(meze.crystal_waters.resnames) == {"WAT"}
+    assert meze.exclude_resids == []
+
+
+def test_ligand_resid_set_from_parameterised_ligand():
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"),
+        name="ligand_11",
+        charge=-1,
+        parameterised=True,
+        residue_name="MOL",
+    )
+    meze = Meze(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=MezeRecipe(),
+        ligand=ligand,
+    )
+    assert meze.ligand_resid == 236
+    assert meze.ligand_resname == "MOL"
+
+
+def test_ligand_resid_preset_skips_recompute():
+     ligand = Ligand(
+         file=str(DATA / "ligands/ligand_11.pdb"),
+         name="ligand_11",
+         charge=-1,
+         parameterised=True,
+         residue_name="MOL",
+     )
+     meze = Meze(
+         topology=str(DATA / "vim2/vim2_complex.prmtop"),
+         coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+         recipe=MezeRecipe(),
+         ligand=ligand,
+         ligand_resid=236,
+     )
+     assert meze.ligand_resid == 236
+     assert meze.ligand_resname == "MOL"
+
+
+def test_set_ligand_infers_from_ligand_resname():
+    meze = Meze(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=MezeRecipe(),
+        ligand_resname="MOL",
+    )
+    assert meze.ligand is not None
+    assert meze.ligand.residue_name == "MOL"
+    assert meze.ligand.parameterised is True
+    assert meze.ligand.file == [
+        str(DATA / "vim2/vim2_complex.inpcrd"),
+        str(DATA / "vim2/vim2_complex.prmtop"),
+    ]
+    assert meze.ligand.charge == pytest.approx(-0.999, abs=1e-2)
+    assert meze.ligand_resid == 236
 
 
 def test_set_metal_raises_for_absent_metal(vim2_recipe_json):
