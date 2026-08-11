@@ -1501,7 +1501,7 @@ class Meze:
 
         except FileNotFoundError:
             log.error("Failed to solvate meze.")
-            raise RuntimeError
+            raise RuntimeError("Failed to solvate meze.")
 
         os.chdir(workdir)
 
@@ -2502,20 +2502,23 @@ class ColdMeze(Meze):
             topology = pdb_file
             coordinates = pdb_file
         if not topology or not coordinates:
-            raise ValueError(
+            message = (
                 "You must supply either a pdb file or "
                 "both a topology and coordinate file."
             )
-
+            log.error(message)
+            raise ValueError(message)
         if recipe is None:
             recipe = ColdMezeRecipe(**kwargs)
         elif isinstance(recipe, dict):
             recipe = ColdMezeRecipe(**recipe)
         elif not isinstance(recipe, ColdMezeRecipe):
-            raise TypeError(
+            message = (
                 "Expected 'recipe' to be a ColdMezeRecipe, dict, or None,"
                 f" but got {type(recipe).__name__}"
             )
+            log.error(message)
+            raise TypeError(message)
 
         return cls(
             topology=topology,
@@ -3085,18 +3088,22 @@ class QuantumMeze(Meze):
 
         if self.custom_qm_region is not None:
             if not isinstance(self.custom_qm_region, dict):
-                raise TypeError(
+                message = (
                     f"custom_qm_region must be a dict, got {
                         type(self.custom_qm_region).__name__
                     }"
                 )
+                log.error(message)
+                raise TypeError(message)
             missing = {
                 "whole_residues", "atom_ids"
             } - self.custom_qm_region.keys()
             if missing:
-                raise ValueError(
+                message = (
                     f"custom_qm_region is missing required keys: {missing}"
                 )
+                log.error(message)
+                raise ValueError(message)
             whole_residues = self.custom_qm_region["whole_residues"]
             if isinstance(whole_residues, int):
                 self.custom_qm_region["whole_residues"] = [whole_residues]
@@ -3104,22 +3111,28 @@ class QuantumMeze(Meze):
                 if not all(
                     isinstance(residue, int) for residue in whole_residues
                 ):
-                    raise TypeError(
+                    message = (
                         "custom_qm_region['whole_residues'] must be an "
                         "int or list of int"
                     )
+                    log.error(message)
+                    raise TypeError(message)
             else:
-                raise TypeError(
+                message = (
                     "custom_qm_region['whole_residues'] must be an "
                     "int or list of int"
                 )
+                log.error(message)
+                raise TypeError(message)
             if not all(
                 isinstance(atoms, str)
                 for atoms in self.custom_qm_region["atom_ids"]
             ):
-                raise TypeError(
+                message = (
                     "custom_qm_region['atom_ids'] must be a list of str"
                 )
+                log.error(message)
+                raise TypeError(message)
 
             self.qm_region = self.custom_qm_region
         else:
@@ -3439,10 +3452,12 @@ class ColdQuantumMeze(QuantumMeze):
         elif isinstance(recipe, dict):
             recipe = ColdMezeRecipe(**recipe)
         elif not isinstance(recipe, ColdMezeRecipe):
-            raise TypeError(
+            message = (
                 "Expected 'recipe' to be a ColdMezeRecipe, "
                 f"dict, or None, but got {type(recipe).__name__}"
             )
+            log.error(message)
+            raise TypeError(message)
         return cls(
             topology=topology,
             coordinates=coordinates,
@@ -3749,10 +3764,12 @@ class HotQuantumMeze(QuantumMeze):
         elif isinstance(recipe, dict):
             recipe = HotMezeRecipe(**recipe)
         elif not isinstance(recipe, HotMezeRecipe):
-            raise TypeError(
+            message = (
                 "Expected 'recipe' to be a HotMezeRecipe, dict,"
                 f" or None, but got {type(recipe).__name__}"
             )
+            log.error(message)
+            raise TypeError(message)
         return cls(
             topology=topology,
             coordinates=coordinates,
@@ -3888,7 +3905,7 @@ class Sofra:
                 "Cannot construct Sofra object."
             )
             log.error(message)
-            raise RuntimeError
+            raise RuntimeError(message)
         if len(mezes) == 1:
             message = (
                 f"Found only one meze in {sofra_file}."
@@ -3899,7 +3916,7 @@ class Sofra:
             if not os.path.isdir(directory):
                 message = f"Project directory {directory} does not exist."
                 log.error(message)
-                raise FileNotFoundError
+                raise FileNotFoundError(message)
             project_directory = directory
         else:
             project_directory = os.getcwd()
@@ -4383,14 +4400,14 @@ class Sofra:
                 "Check lomap output for errors."
             )
             log.error(message)
-            raise RuntimeError
+            raise RuntimeError(message)
         if not os.path.isfile(png_file):
             message = (
                 f"Lomap did not produce {png_file}. "
                 "Check lomap output for errors."
             )
             log.error(message)
-            raise RuntimeError
+            raise RuntimeError(message)
 
         log.info("Lomap finished succesfully. Parsing outputs.")
         self.transformations, self.lomap_scores, network_file = (
@@ -4435,7 +4452,7 @@ class Sofra:
                 "Check lomap outputs for any errors."
             )
             log.error(message)
-            raise RuntimeError
+            raise RuntimeError(message)
 
         connected_file = os.path.join(
             directory, f"{self.group_name}_lomap_network.csv"
@@ -4510,7 +4527,7 @@ class AlchemicalSofra:
                 "Set overwrite=True or supply a different directory."
             )
             log.error(message)
-            raise FileExistsError
+            raise FileExistsError(message)
         self.working_directory = working_directory
 
     def _set_bss_molecules(self):
