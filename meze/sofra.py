@@ -3883,6 +3883,7 @@ class Sofra:
         with open(sofra_file, "r") as file:
             sofra_contents = json.load(file)
         mezes = {}
+        network_file = None
         for ligand_name, entry in sofra_contents.items():
             if not isinstance(entry, dict):
                 if ligand_name == "network_file":
