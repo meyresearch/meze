@@ -435,3 +435,17 @@ def test_write_restrained_atoms_pdb(vim2_cold_meze):
             content = f.readlines()
 
     assert reference == content
+
+
+def test_get_mutatable_ligand_no_resname_raises(vim2_recipe_json):
+    meze = ColdMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=ColdMezeRecipe(**vim2_recipe_json)
+    )
+    with pytest.raises(RuntimeError, match="Ligand residue name not set"):
+        meze.get_mutatable_ligand_molecule()
+
+
+def test_set_protein(vim2_cold_meze):
+    assert vim2_cold_meze.protein.n_residues == 232
