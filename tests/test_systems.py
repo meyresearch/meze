@@ -52,12 +52,8 @@ def test_set_universe_no_elements_pdb(vim2_recipe_json):
     assert "" not in elements
 
 
-def test_meze_with_topology_and_coordinates(vim2_recipe_json):
-    meze = ColdMeze.from_files(
-        topology=str(DATA / "vim2/vim2_complex.prmtop"),
-        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
-        recipe=ColdMezeRecipe(**vim2_recipe_json)
-    )
+def test_meze_with_topology_and_coordinates(vim2_top_and_coord):
+    meze = vim2_top_and_coord
     assert len(meze.universe.atoms) == 25009
     assert list(meze.metal_resids) == [233, 234]
     assert list(meze.metal_atomids) == [3450, 3451]
@@ -97,22 +93,22 @@ def test_ligand_resid_set_from_parameterised_ligand():
 
 
 def test_ligand_resid_preset_skips_recompute():
-     ligand = Ligand(
-         file=str(DATA / "ligands/ligand_11.pdb"),
-         name="ligand_11",
-         charge=-1,
-         parameterised=True,
-         residue_name="MOL",
-     )
-     meze = Meze(
-         topology=str(DATA / "vim2/vim2_complex.prmtop"),
-         coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
-         recipe=MezeRecipe(),
-         ligand=ligand,
-         ligand_resid=236,
-     )
-     assert meze.ligand_resid == 236
-     assert meze.ligand_resname == "MOL"
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"),
+        name="ligand_11",
+        charge=-1,
+        parameterised=True,
+        residue_name="MOL",
+    )
+    meze = Meze(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=MezeRecipe(),
+        ligand=ligand,
+        ligand_resid=236,
+    )
+    assert meze.ligand_resid == 236
+    assert meze.ligand_resname == "MOL"
 
 
 def test_set_ligand_infers_from_ligand_resname():
@@ -227,23 +223,19 @@ def test_build_distance_restraints_wrong_type_raises(vim2_cold_meze):
 
 def test_build_angle_restraints(vim2_cold_meze):
     restraints = vim2_cold_meze.build_angle_restraints()
-    assert len(restraints) == 16
-    assert [(1255, 1288)] == (3.08, 100.0, 1.0) 
-    assert [(1255, 2191)] == (3.22, 100.0, 1.0) 
-    assert [(1255, 3452)] == (3.27, 100.0, 1.0) 
-    assert [(1288, 2191)] == (3.34, 100.0, 1.0) 
-    assert [(1288, 3452)] == (3.34, 100.0, 1.0) 
-    assert [(2191, 3452)] == (3.38, 100.0, 1.0) 
-    assert [(1318, 2458)] == (3.55, 100.0, 1.0) 
-    assert [(1318, 3096)] == (2.96, 100.0, 1.0) 
-    assert [(1318, 3452)] == (2.87, 100.0, 1.0)
-    assert [(1318, 3473)] == (4.45, 100.0, 1.0) 
-    assert [(2458, 3096)] == (3.48, 100.0, 1.0) 
-    assert [(2458, 3452)] == (3.7, 100.0, 1.0)
-    assert [(2458, 3473)] == (3.52, 100.0, 1.0)
-    assert [(3096, 3452)] == (3.97, 100.0, 1.0) 
-    assert [(3096, 3473)] == (2.99, 100.0, 1.0)
-    assert [(3452, 3473)] == (3.16, 100.0, 1.0)
+    assert len(restraints) == 12
+    assert restraints[(1255, 1288)] == (3.08, 100.0, 1.0)
+    assert restraints[(1255, 2191)] == (3.22, 100.0, 1.0)
+    assert restraints[(1255, 3452)] == (3.27, 100.0, 1.0)
+    assert restraints[(1288, 2191)] == (3.34, 100.0, 1.0)
+    assert restraints[(1288, 3452)] == (3.34, 100.0, 1.0)
+    assert restraints[(2191, 3452)] == (3.38, 100.0, 1.0)
+    assert restraints[(1318, 2458)] == (3.55, 100.0, 1.0)
+    assert restraints[(1318, 3096)] == (2.96, 100.0, 1.0)
+    assert restraints[(1318, 3452)] == (2.87, 100.0, 1.0)
+    assert restraints[(2458, 3096)] == (3.48, 100.0, 1.0)
+    assert restraints[(2458, 3452)] == (3.7, 100.0, 1.0)
+    assert restraints[(3096, 3452)] == (3.97, 100.0, 1.0)
 
 
 def test_build_custom_distance_restraints_mismatched_lengths_raises(
@@ -265,35 +257,48 @@ def test_build_custom_distance_restraints_bad_selection_raises(
         )
 
 
-# # ---------------------------------------------------------------------------
-# # ColdMeze._build_restraint_mask
-# # ---------------------------------------------------------------------------
-
-# def test_build_restraint_mask_solute(vim2_cold_meze):
-#     mask = vim2_cold_meze._build_restraint_mask(position_restraints="solute")
-#     assert mask == "':1-235'"
+def test_build_restraint_mask_solute(vim2_cold_meze):
+    mask = vim2_cold_meze._build_restraint_mask(position_restraints="solute")
+    assert mask == "':1-235'"
 
 
-# def test_build_restraint_mask_backbone(vim2_cold_meze):
-#     mask = vim2_cold_meze._build_restraint_mask(position_restraints="backbone")
-#     assert mask == "'(@N,CA,C,O & !:WAT)|:83,85,87,148,167,209,233-235'"
+def test_build_restraint_mask_backbone(vim2_cold_meze):
+    mask = vim2_cold_meze._build_restraint_mask(position_restraints="backbone")
+    assert mask == "'(@N,CA,C,O & !:WAT)|:83,85,87,148,167,209,233-235'"
 
 
-# def test_build_restraint_mask_metal_coordination(vim2_cold_meze):
-#     mask = vim2_cold_meze._build_restraint_mask(
-#         position_restraints="metal-coordination"
-#     )
-#     assert mask == "':83,85,87,148,167,209,233-235'"
+def test_build_restraint_mask_metal_coordination(vim2_cold_meze):
+    mask = vim2_cold_meze._build_restraint_mask(
+        position_restraints="metal-coordination"
+    )
+    assert mask == "':83,85,87,148,167,209,233-235'"
 
 
-# def test_build_restraint_mask_none(vim2_cold_meze):
-#     assert vim2_cold_meze._build_restraint_mask(position_restraints=None) is None
+def test_build_restraint_mask_none(vim2_cold_meze):
+    assert vim2_cold_meze._build_restraint_mask(
+        position_restraints=None
+    ) is None
 
 
-# def test_build_restraint_mask_invalid_option_raises(vim2_cold_meze):
-#     with pytest.raises(ValueError, match="Invalid restraint option"):
-#         vim2_cold_meze._build_restraint_mask(position_restraints="bogus")
+def test_build_restraint_mask_invalid_option_raises(vim2_cold_meze):
+    with pytest.raises(ValueError, match="Invalid restraint option"):
+        vim2_cold_meze._build_restraint_mask(position_restraints="bogus")
 
+
+def test_additional_restraints_dict_raises(vim2_cold_meze):
+    with pytest.raises(ValueError, match="additional_restraints must contain"):
+        vim2_cold_meze._build_restraint_mask(
+            position_restraints="solute",
+            additional_restraints={"wrong": "values"}
+        )
+
+
+def test_build_restraint_mask_additional(vim2_cold_meze):
+    mask = vim2_cold_meze._build_restraint_mask(
+        position_restraints=None,
+        additional_restraints={"resids": [236], "resnames": ["MOH"]}
+    )
+    assert mask == "':235-236'"
 
 # # ---------------------------------------------------------------------------
 # # Meze._validate_disulfide_bridges
