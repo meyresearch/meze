@@ -1,6 +1,7 @@
 import os
 from meze import Sofra
 import pytest
+import json
 
 
 def test_sofra_from_file_without_network_file(vim2_cold_meze, tmp_path):
@@ -49,6 +50,51 @@ def test_no_network_file_raises(tmp_path):
     sofra_file.write_text('{"network_file": "nonexistent/file"}')
     with pytest.raises(FileNotFoundError, match="Could not find network file"):
         Sofra.from_file(sofra_file=str(sofra_file))
+
+
+def test_entry_missing_pickle_file_skipped(vim2_cold_meze, tmp_path, caplog):
+    pickle_file = vim2_cold_meze.save(str(tmp_path / "meze.pkl"))
+    sofra_file = tmp_path / "sofra.json"
+    sofra_file.write_text(json.dumps({
+        "ligand_11": {"pickle_file": pickle_file},
+        "ligand_12": {"not_pickle_file": "oops"}
+    }))
+
+    sofra = Sofra.from_file(sofra_file=str(sofra_file))
+
+    assert list(sofra.mezes.keys()) == ["ligand_11"]
+    assert "Could not find pickle file for ligand_12" in caplog.text
+
+
+def test_no_mezes_raises(tmp_path):
+    sofra_file = tmp_path / "sofra.json"
+    sofra_file.write_text("{}")
+    with pytest.raises(RuntimeError, match="No pickle mezes found"):
+        Sofra.from_file(sofra_file=str(sofra_file))
+
+
+def test_only_one_meze_warning(vim2_cold_meze, tmp_path, caplog):
+    pickle_file = vim2_cold_meze.save(str(tmp_path / "meze.pkl"))
+    sofra_file = tmp_path / "sofra.json"
+    sofra_file.write_text(json.dumps({
+        "ligand_11": {"pickle_file": pickle_file},
+    }))
+
+    Sofra.from_file(sofra_file=str(sofra_file))
+    assert "Found only one meze in" in caplog.text
+
+
+def test_sofra_from_file_wrong_directory(vim2_cold_meze, tmp_path):
+    pickle_file = vim2_cold_meze.save(str(tmp_path / "meze.pkl"))
+    sofra_file = str(tmp_path / "sofra.json")
+    vim2_cold_meze.add_to_sofra(
+        filename=sofra_file, key="ligand_11", pickle_file=pickle_file
+    )
+
+    with pytest.raises(
+        FileNotFoundError, match="Project directory nonexistent/ does not exist"
+    ):
+        Sofra.from_file(sofra_file=sofra_file, directory="nonexistent/")
 
 
 def test_sofra_parse_lomap_output(tmp_path):
