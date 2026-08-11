@@ -4356,6 +4356,7 @@ class Sofra:
         for sdf_file in sdf_files:
             shutil.copy(sdf_file, lomap_directory)
 
+        workingdir = os.getcwd()
         os.chdir(lomap_directory)
         lomap_command = f"lomap -d -n {self.group_name} "
         if force_connected_ligands_file:
@@ -4415,6 +4416,7 @@ class Sofra:
             self._parse_lomap_output(scores_file, lomap_directory)
         )
         self.save_network_file(network_file)
+        os.chdir(workingdir)
 
     def save_network_file(self, network_file: str):
         self.network_file = network_file
