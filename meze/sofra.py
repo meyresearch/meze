@@ -421,10 +421,13 @@ class Meze:
             self.metal_resids = []
             self.metal_atomids = []
             self.coordinating_residues = {}
+            self.protein = None
         else:
-            raise ValueError(
+            message = (
                 f"Unrecognised stage set: {self.stage}"
             )
+            log.error(message)
+            raise ValueError(message)
 
         self._set_waters()
         self._setup_bss_system()
