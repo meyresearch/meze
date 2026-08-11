@@ -142,7 +142,7 @@ def test_sofra_parse_lomap_output_raises(tmp_path):
         ",15:14,16:15,17:16,18:17,19:18,20:25,21:26,22:24,23:27,24:28,25:29,"
         "26:30,27:31,28:21,29:32,30:33"
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="Lomap output did not contain any "):
         sofra._parse_lomap_output(
             lomap_file,
             tmp_path
