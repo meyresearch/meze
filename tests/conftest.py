@@ -37,5 +37,6 @@ def vim2_top_and_coord(vim2_recipe_json):
     return ColdMeze.from_files(
         topology=str(DATA / "vim2/vim2_complex.prmtop"),
         coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
-        recipe=ColdMezeRecipe(**vim2_recipe_json)
+        recipe=ColdMezeRecipe(**vim2_recipe_json),
+        ligand_resname="MOL"
     )

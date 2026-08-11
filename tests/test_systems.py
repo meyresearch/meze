@@ -221,6 +221,18 @@ def test_build_distance_restraints_wrong_type_raises(vim2_cold_meze):
         )
 
 
+def test_ligand_not_in_distance_restraints(vim2_top_and_coord):
+    restraints = vim2_top_and_coord.build_distance_restraints()
+    for (_, ligand_id) in restraints.keys():
+        assert ligand_id != 3473
+
+
+def test_ligand_not_in_angle_restraints(vim2_top_and_coord):
+    restraints = vim2_top_and_coord.build_angle_restraints()
+    for (_, ligand_id) in restraints.keys():
+        assert ligand_id != 3473
+
+
 def test_build_angle_restraints(vim2_cold_meze):
     restraints = vim2_cold_meze.build_angle_restraints()
     assert len(restraints) == 12
