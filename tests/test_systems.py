@@ -138,6 +138,19 @@ def test_set_metal_raises_for_absent_metal(vim2_recipe_json):
         )
 
 
+def test_cold_meze_empty_exclude_resids(vim2_cold_meze):
+    assert vim2_cold_meze.exclude_resids == set()
+
+
+def test_cold_meze_exclude_resids(vim2_recipe_json):
+    m = ColdMeze.from_files(
+        recipe=ColdMezeRecipe(**vim2_recipe_json),
+        pdb_file=str(DATA / "vim2/vim2.fixed.pdb"),
+        exclude_resids=5
+    )
+    assert m.exclude_resids == {5}
+
+
 def test_metal_and_coordinating_residues(vim2_cold_meze):
     m = vim2_cold_meze
     assert len(m.metals) == 2
