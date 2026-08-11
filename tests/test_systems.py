@@ -243,6 +243,15 @@ def test_build_distance_restraints_wrong_value_type_raises(vim2_cold_meze):
         )
 
 
+def test_build_distance_restraints_wrong_key_type_raises(vim2_cold_meze):
+    with pytest.raises(
+        TypeError, match="coordinating_residues keys must be "
+    ):
+        vim2_cold_meze.build_distance_restraints(
+            coordinating_residues={"string": "some string"}
+        )
+
+
 def test_ligand_not_in_distance_restraints(vim2_top_and_coord):
     restraints = vim2_top_and_coord.build_distance_restraints()
     for (_, ligand_id) in restraints.keys():
