@@ -1006,7 +1006,7 @@ class Meze:
             if pair in seen_bridges:
                 message = f"Duplicate disulfide bridge: {pair}"
                 log.error(message)
-                raise.ValueError(message)
+                raise ValueError(message)
             seen_bridges.add(pair)
 
             try:
