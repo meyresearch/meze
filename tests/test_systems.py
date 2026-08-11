@@ -437,6 +437,26 @@ def test_write_restrained_atoms_pdb(vim2_cold_meze):
     assert reference == content
 
 
+def test_get_mutatable_ligand_no_matching_residue_raises(vim2_top_and_coord):
+    vim2_top_and_coord.ligand_resname = "ZZZ"
+    with pytest.raises(
+        RuntimeError, match="Could not find any ligand residues"
+    ):
+        vim2_top_and_coord.get_mutatable_ligand_molecule()
+
+
+def test_get_mutatable_ligand_multiple_residues_raises(vim2_top_and_coord):
+    vim2_top_and_coord.ligand_resname = "WAT"
+    with pytest.raises(NotImplementedError, match="multiple residues"):
+        vim2_top_and_coord.get_mutatable_ligand_molecule()
+
+
+def test_get_mutatable_ligand_molecule(vim2_top_and_coord):
+    vim2_top_and_coord.ligand_resname = "MOL"
+    molecule = vim2_top_and_coord.get_mutatable_ligand_molecule()
+    assert molecule.nAtoms() == 31
+
+
 def test_get_mutatable_ligand_no_resname_raises(vim2_recipe_json):
     meze = ColdMeze.from_files(
         topology=str(DATA / "vim2/vim2_complex.prmtop"),
