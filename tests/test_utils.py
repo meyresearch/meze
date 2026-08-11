@@ -79,7 +79,9 @@ def test_write_somd_restraints_round_trip(tmp_path):
 
 
 def test_write_somd_restraints_missing_file_raises():
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(
+        FileNotFoundError, match="Could not find AMBER-style restraint file"
+    ):
         _write_somd_restraints("/nonexistent/restraints.RST")
 
 
