@@ -477,15 +477,26 @@ def test_set_protein_raises():
             topology=str(DATA / "vim2/water.pdb"),
             coordinates=str(DATA / "vim2/water.pdb"),
             recipe=MezeRecipe(),
-            stage="unbound"
+            stage="bound"
         )
 
 
 def test_unbound_stage_skips_protein_check():
     meze = Meze(
-        topology=str(DATA / "vim2/vim2_water_only.pdb"),
-        coordinates=str(DATA / "vim2/vim2_water_only.pdb"),
+        topology=str(DATA / "vim2/water.pdb"),
+        coordinates=str(DATA / "vim2/water.pdb"),
         recipe=MezeRecipe(),
         stage="unbound"
     )
     assert meze.protein is None
+
+
+def test_unknown_stage_raises():
+    with pytest.raises(ValueError, match="Unrecognised stage"):
+        Meze(
+            topology=str(DATA / "vim2/water.pdb"),
+            coordinates=str(DATA / "vim2/water.pdb"),
+            recipe=MezeRecipe(),
+            stage="something"
+        )
+
