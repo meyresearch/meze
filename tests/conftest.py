@@ -24,3 +24,12 @@ def vim2_cold_meze(vim2_recipe_json):
         name="ligand_11",
         ligand_charge=-1
     )
+
+
+@pytest.fixture(scope="session")
+def vim2_top_and_coord(vim2_recipe_json):
+    return ColdMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=ColdMezeRecipe(**vim2_recipe_json)
+    )
