@@ -1079,3 +1079,21 @@ def test_add_water_raises_wrong_model_option(vim2_cold_meze):
     ):
         meze.add_water()
 
+
+def test_add_water_model_2_builds_tleap_command(vim2_cold_meze, tmp_path):
+    meze = dataclasses.replace(
+        vim2_cold_meze,
+        recipe=vim2_cold_meze.recipe.model_copy(update={"model": 2}),
+        non_standard_residues=None
+    )
+
+    with patch("meze.sofra.os.system") as mock_sys, pytest.raises(
+        RuntimeError, match="Failed to solvate meze"
+    ):
+        meze.add_water(directory=str(tmp_path))
+
+    assert mock_sys.call_args[0][0] == (
+        f"tleap -s -f {tmp_path}/tleap_solvate.in > "
+        f"{tmp_path}/tleap_solvate.out"
+    )
+    assert (tmp_path / "tleap_solvate.in").is_file()
