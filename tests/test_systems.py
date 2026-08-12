@@ -6,6 +6,7 @@ from meze import (
     HotMeze, HotMezeRecipe, ColdQuantumMeze, HotQuantumMeze,
     QuantumMeze
 )
+import shutil
 from pathlib import Path
 from unittest.mock import patch
 import MDAnalysis as mda
@@ -929,3 +930,29 @@ def test_prepare_metals_for_ezaff_raises_missing_output_error(
         RuntimeError, match="Could not prepare"
     ):
         vim2_cold_meze.prepare_metals_for_ezaff(directory=str(tmp_path))
+
+
+def test_write_complex(vim2_cold_meze, tmp_path):
+    shutil.copy(
+        DATA / "ligands/ligand_11.pdb",
+        tmp_path / f"{vim2_cold_meze.ligand.name}.pdb"
+    )
+
+    with patch("meze.sofra.os.system") as mock_sys:
+        result = vim2_cold_meze.write_complex(
+            directory=str(tmp_path), ligand_name="ligand_11"
+        )
+
+    assert mock_sys.call_args[0][0] == (
+        f"pdb4amber -i {tmp_path}/ligand_11_complex.pdb "
+        f"-o {tmp_path}/vim2_model_0_ligand_11.amber.pdb"
+    )
+    assert result.filename == str(
+        tmp_path / "vim2_model_0_ligand_11.amber.pdb"
+    )
+    assert len(result.atoms) == 4029
+
+    complex_pdb = tmp_path / "ligand_11_complex.pdb"
+    assert complex_pdb.is_file()
+    written = mda.Universe(str(complex_pdb))
+    assert len(written.atoms) == 4029
