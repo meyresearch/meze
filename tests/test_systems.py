@@ -1068,3 +1068,14 @@ def test_add_water_raises_wrong_non_standard_param_method(vim2_cold_meze):
         )
 
 
+def test_add_water_raises_wrong_model_option(vim2_cold_meze):
+    meze = ColdQuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        model=5
+    )
+    with pytest.raises(
+        NotImplementedError, match="Model option 5 is not implemented"
+    ):
+        meze.add_water()
+
