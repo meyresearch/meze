@@ -1900,6 +1900,14 @@ class Meze:
             )
 
             os.system(metal_to_pdb_command)
+
+            if not os.path.isfile(f"{directory}/{metal_mcpb_resname}.mol2"):
+                message = (
+                    f"Could not prepare '{directory}/{metal_mcpb_resname}.pdb' "
+                    "for hybrid model with metalpdb2mol2.py"
+                )
+                log.error(message)
+                raise RuntimeError(message)
             metals.append(f"{metal_mcpb_resname}.mol2")
 
         return metals
