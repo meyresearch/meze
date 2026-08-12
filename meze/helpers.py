@@ -1,5 +1,19 @@
 import shutil
 import os
+import logging
+from rich.logging import RichHandler
+from rich.console import Console
+console = Console(force_terminal=True, color_system="truecolor")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(console=console, rich_tracebacks=True, markup=True)],
+    force=True,
+)
+
+log = logging.getLogger("rich")
 
 
 def _check_ambertools():
@@ -20,6 +34,8 @@ def _check_ambertools():
         if amberhome and os.path.exists(os.path.join(amberhome, "bin", tool)):
             continue
 
-        raise RuntimeError(
+        message = (
             f"{tool} not found. AmberTools installation required."
         )
+        log.error(message)
+        raise RuntimeError(message)
