@@ -3,6 +3,8 @@ import pytest
 from meze import Ligand
 from pathlib import Path
 from unittest.mock import patch
+import os
+
 DATA = Path(__file__).parent.parent / "tests" / "data"
 
 
@@ -95,10 +97,13 @@ def test_run_antechamber_builds_command_and_strips_du(
         tmp_path, monkeypatch, caplog
 ):
     monkeypatch.chdir(tmp_path)
+    cwd_before = os.getcwd()
     ligand = Ligand(
         file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
     )
-    mol2_path = str(tmp_path / "ligand_11.mol2")
+    param_dir = tmp_path / "parameterisation"
+    param_dir.mkdir()
+    mol2_path = str(param_dir / "ligand_11.mol2")
 
     def fake_system(cmd):
         Path(mol2_path).write_text(
@@ -115,16 +120,17 @@ def test_run_antechamber_builds_command_and_strips_du(
         "meze.ligand.os.system", side_effect=fake_system
     ) as mock_sys:
         result = ligand._run_antechamber(
-            parameterisation_directory=str(tmp_path),
-            input_file=str(tmp_path / "MOL.pdb"),
+            parameterisation_directory=str(param_dir),
+            input_file=str(param_dir / "MOL.pdb"),
             output_file=mol2_path,
         )
     assert "Atom type DU found in file" in caplog.text
     assert mock_sys.call_args[0][0] == (
-        f"antechamber -fi pdb -fo mol2 -i {tmp_path}/MOL.pdb "
+        f"antechamber -fi pdb -fo mol2 -i {param_dir}/MOL.pdb "
         f"-o {mol2_path} -c bcc -nc -1 -at gaff2 -pf y -rn MOL"
     )
     assert result == mol2_path
+    assert os.getcwd() == cwd_before
 
 
 def test_run_antechamber_missing_output_raises(tmp_path, monkeypatch):
@@ -252,38 +258,35 @@ def test_run_parmchk_missing_output_raises(tmp_path, monkeypatch):
         )
 
 
+def test_run_parmchk_builds_command(
+        tmp_path, monkeypatch, caplog
+):
+    monkeypatch.chdir(tmp_path)
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
+    )
+    mol2_path = str(tmp_path / "ligand_11.mol2")
 
-# def test_run_parmchk_builds_command_and_strips_du(
-#         tmp_path, monkeypatch, caplog
-# ):
-#     monkeypatch.chdir(tmp_path)
-#     ligand = Ligand(
-#         file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
-#     )
-#     mol2_path = str(tmp_path / "ligand_11.mol2")
+    def fake_system(cmd):
+        Path(mol2_path).write_text(
+            "@<TRIPOS>ATOM\n"
+            "1 N         -25.7360   -7.0810   59.0550 N         1 AP1     "
+            "-0.516300\n"
+            "2 H         -25.2620   -6.6490   59.6280 H         1 AP1      "
+            "0.333361\n"
+        )
 
-#     def fake_system(cmd):
-#         Path(mol2_path).write_text(
-#             "@<TRIPOS>ATOM\n"
-#             "1 N         -25.7360   -7.0810   59.0550 N         1 AP1     "
-#             "-0.516300\n"
-#             "2 H         -25.2620   -6.6490   59.6280 H         1 AP1      "
-#             "0.333361\n"
-#             "3 CA        -25.9480   -6.4070   57.7830 DU        1 AP1      "
-#             "0.038100\n"
-#         )
-
-#     with patch(
-#         "meze.ligand.os.system", side_effect=fake_system
-#     ) as mock_sys:
-#         result = ligand._run_antechamber(
-#             parameterisation_directory=str(tmp_path),
-#             input_file=str(tmp_path / "MOL.pdb"),
-#             output_file=mol2_path,
-#         )
-#     assert "Atom type DU found in file" in caplog.text
-#     assert mock_sys.call_args[0][0] == (
-#         f"antechamber -fi pdb -fo mol2 -i {tmp_path}/MOL.pdb "
-#         f"-o {mol2_path} -c bcc -nc -1 -at gaff2 -pf y -rn MOL"
-#     )
-#     assert result == mol2_path
+    with patch(
+        "meze.ligand.os.system", side_effect=fake_system
+    ) as mock_sys:
+        result = ligand._run_antechamber(
+            parameterisation_directory=str(tmp_path),
+            input_file=str(tmp_path / "MOL.pdb"),
+            output_file=mol2_path,
+        )
+    assert "Atom type DU found in file" in caplog.text
+    assert mock_sys.call_args[0][0] == (
+        f"parmchk2 -i {tmp_path}/ligand_11.mol2 -o ligand_11.frcmod "
+        f"-f mol2 -s gaff2"
+    )
+    assert result == mol2_path
