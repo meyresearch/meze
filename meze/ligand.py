@@ -276,6 +276,14 @@ class Ligand():
                          atom_type: Literal["default", "amber"] = "default"):
         _check_ambertools()
         workdir = os.getcwd()
+        allowed = ["default", "amber"]
+        if atom_type.lower() not in allowed:
+            message = (
+                f"'atom_type' must be one of {allowed}\n"
+                f"got {atom_type}"
+            )
+            log.error(message)
+            raise ValueError(message)
         if atom_type == "default":
             atom_type = "0"
         else:
