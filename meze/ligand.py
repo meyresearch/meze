@@ -388,7 +388,7 @@ class Ligand():
                 system=system,
                 parameterised=True
             )
-        except FileNotFoundError:
+        except OSError:
             log.error(f"Failed to solvate ligand {ligand.name}")
             raise RuntimeError
         os.chdir(workdir)
