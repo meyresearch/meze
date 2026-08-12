@@ -257,9 +257,11 @@ class Ligand():
         os.system(parmcheck_cmd)
 
         if not os.path.isfile(output_file):
-            log.warning(
+            message = (
                 f"parmchk2 failed: missing output files for {output_file}"
             )
+            log.error(message)
+            raise RuntimeError(message)
         os.chdir(workdir)
         return output_file
 
