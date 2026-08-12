@@ -4355,10 +4355,11 @@ class Sofra:
         # TODO
         # have an option to input a network to allow users
         # to use the same network accross models
-        if not pdb_files:
-            message = "Could not find any pdb files in the given path"
-            log.error(message)
-            raise RuntimeError(message)
+        for file in pdb_files:
+            if not os.path.isfile(file):
+                message = f"Given file does not exist: {file}"
+                log.error(message)
+                raise FileNotFoundError(message)
 
         sdf_files = pdb_to_sdf(pdb_files)
 
@@ -4421,6 +4422,7 @@ class Sofra:
                 "Check lomap output for errors."
             )
             log.error(message)
+            os.chdir(workingdir)
             raise RuntimeError(message)
         if not os.path.isfile(png_file):
             message = (
@@ -4428,6 +4430,7 @@ class Sofra:
                 "Check lomap output for errors."
             )
             log.error(message)
+            os.chdir(workingdir)
             raise RuntimeError(message)
 
         log.info("Lomap finished succesfully. Parsing outputs.")
