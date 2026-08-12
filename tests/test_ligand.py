@@ -256,7 +256,9 @@ def test_parameterise_antechamber_method(tmp_path):
     ][0]
 
 
-def test_parameterise_tleap_method(tmp_path):
+def test_parameterise_tleap_method(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    cwd_before = os.getcwd()
     ligand = Ligand(
         file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
     )
@@ -290,3 +292,32 @@ def test_parameterise_tleap_wrong_method_raises():
             name="ligand_11"
         ).parameterise(method="wrong")
 
+
+def test_run_tleap_builds_command_and_restores_cwd(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    cwd_before = os.getcwd()
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
+    )
+    param_dir = tmp_path / "parameterisation"
+    param_dir.mkdir()
+    coordinate_file = str(param_dir / "ligand_11.pdb")
+    output_file = str(param_dir / "MOL.mol2")
+
+    def fake_system(cmd):
+        Path(output_file).write_text("dummy content\n")
+
+    with patch(
+        "meze.ligand.os.system", side_effect=fake_system
+    ) as mock_sys:
+        result = ligand.run_ligand_tleap(
+            parameterisation_directory=str(param_dir),
+            coordinate_file=coordinate_file,
+            force_field="gaff2",
+            residue_name="MOL"
+        )
+    assert mock_sys.call_args[0][0] == (
+        f"tleap -s -f {param_dir}/MOL_tleap.in"
+    )
+    assert result == output_file
+    assert os.getcwd() == cwd_before
