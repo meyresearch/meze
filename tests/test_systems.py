@@ -136,6 +136,24 @@ def test_hot_meze_recipe_dict_built_from_dict():
     assert m.recipe.group_name == "from_dict"
 
 
+@pytest.mark.parametrize("resid,expected", [
+    (83, "1247-1257"),
+    (85, "1284-1294"),
+    (87, "1313-1318"),
+    (148, "2183-2193"),
+    (167, "2455-2458"),
+    (209, "3088-3098"),
+])
+def test_get_side_chain_selection(resid, expected):
+    qm_meze = QuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=MezeRecipe()
+    )
+    residue = qm_meze.universe.select_atoms(f"resid {resid}").residues[0]
+    assert qm_meze._get_side_chain_selection(residue) == expected
+
+
 def test_cold_quantum_meze_recipe_none_built_from_kwargs():
     qm = ColdQuantumMeze.from_files(
         topology=str(DATA / "vim2/vim2_complex.prmtop"),
