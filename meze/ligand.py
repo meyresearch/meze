@@ -105,8 +105,7 @@ class Ligand():
         residues = self.system.getResidues()
         if len(residues) > 1:
             warnings.warn(
-                f"Found multiple residues in ligand file {self.file}:"
-                f"\n{residues}",
+                f"Found multiple residues in ligand file {self.file}:",
                 UserWarning
             )
             warnings.warn(

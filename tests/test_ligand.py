@@ -1,3 +1,4 @@
+import shutil
 import pytest
 from meze import Ligand
 from pathlib import Path
@@ -168,18 +169,23 @@ def test_parameterise_wrong_method_raises():
 
 def test_parameterise_antechamber_method(tmp_path):
     # _run_antechamber/_run_parmchk2 are mocked out directly rather than via
-    # os.system, since they're already covered on their own; the mocked
-    # antechamber return value points at a real, valid file (the original
-    # ligand pdb) so the real, unmocked bss.IO.readMolecules(...) call at
-    # the end of parameterise() has something genuine to read.
+    # os.system, since they're already covered on their own. The mocked
+    # antechamber side_effect writes a real file at mol2_path and returns
+    # that path, so result.file reflects the realistic mol2 output path
+    # and the real, unmocked bss.IO.readMolecules(...) call at the end of
+    # parameterise() has something genuine to read.
     ligand = Ligand(
         file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
     )
-    real_pdb = str(DATA / "ligands/ligand_11.pdb")
+    mol2_path = str(tmp_path / "ligand_11.mol2")
     frcmod_path = str(tmp_path / "ligand_11.frcmod")
 
+    def fake_antechamber(**kwargs):
+        shutil.copy(DATA / "ligands/ligand_11.pdb", mol2_path)
+        return mol2_path
+
     with patch.object(
-        ligand, "_run_antechamber", return_value=real_pdb
+        ligand, "_run_antechamber", side_effect=fake_antechamber
     ) as mock_ac, patch.object(
         ligand, "_run_parmchk2", return_value=frcmod_path
     ) as mock_pc:
@@ -187,12 +193,11 @@ def test_parameterise_antechamber_method(tmp_path):
             directory=str(tmp_path), method="antechamber", residue_name="MOL"
         )
 
-    mol2_path = str(tmp_path / "ligand_11.mol2")
     assert mock_ac.call_args.kwargs["output_file"] == mol2_path
     assert mock_pc.call_args.kwargs["input_file"] == mol2_path
     assert mock_pc.call_args.kwargs["output_file"] == frcmod_path
     assert result.parameterised is True
-    assert result.file == mol2_path
+    assert result.file == [mol2_path]
     assert result.frcmod_file == frcmod_path
     assert result.residue_name == "MOL"
     assert result.system.nMolecules() == 1
@@ -225,6 +230,6 @@ def test_parameterise_tleap_method(tmp_path):
     )
     assert mock_tleap.call_args.kwargs["force_field"] == "gaff2"
     assert result.parameterised is True
-    assert result.file == real_pdb
+    assert result.file == [real_pdb]
     assert result.frcmod_file is None
     assert result.residue_name == "MOL"
