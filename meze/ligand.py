@@ -104,12 +104,12 @@ class Ligand():
     def _infer_residue_name(self):
         residues = self.system.getResidues()
         if len(residues) > 1:
-            log.warning(
+            warnings.warn(
                 f"Found multiple residues in ligand file {self.file}:"
                 f"\n{residues}",
                 UserWarning
             )
-            log.warning(
+            warnings.warn(
                 "Choosing residue name based on first residue.",
                 UserWarning
             )
@@ -129,6 +129,15 @@ class Ligand():
 
         if not directory:
             directory = os.getcwd()
+
+        allowed = ["antechamber", "tleap"]
+        if method.lower() not in allowed:
+            message = (
+                f"'method' should be one of '{allowed}'\n"
+                f"got {method}"
+            )
+            log.error(message)
+            raise ValueError(message)
 
         if len(self.file) > 1:
             message = (
@@ -157,7 +166,7 @@ class Ligand():
 
         output_coordinate_file = None
         output_frcmod_file = None
-        if method == "antechamber":
+        if method.lower() == "antechamber":
             mol2_path = os.path.join(directory, f"{output_filename}.mol2")
             output_coordinate_file = self._run_antechamber(
                 parameterisation_directory=directory,
@@ -174,7 +183,7 @@ class Ligand():
                 output_file=frcmod_path,
                 atom_type=atom_type
             )
-        elif method == "tleap":
+        elif method.lower() == "tleap":
             output_coordinate_file = self.run_ligand_tleap(
                 parameterisation_directory=directory,
                 coordinate_file=file,
