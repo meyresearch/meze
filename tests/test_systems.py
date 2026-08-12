@@ -976,3 +976,34 @@ def test_build_empirical_bonds(vim2_cold_meze, tmp_path, monkeypatch):
     )
     assert result.mcpbpy_input_file == "some/mcpbpy.in"
     assert os.getcwd() == cwd_before
+
+
+def test_prepare_resp_calculation_wrong_additional_lines_type_raises(
+        vim2_cold_meze
+):
+    with pytest.raises(
+        TypeError, match="additional_lines must be a list of strings"
+    ):
+        vim2_cold_meze.prepare_resp_calculation(
+            additional_lines=[
+                "string",
+                "string2",
+                1234
+            ]
+        )
+
+
+def test_prepare_resp_calculation_paramdirectory_not_set(vim2_cold_meze):
+    vim2_cold_meze.parameterisation_directory = None
+    with pytest.raises(
+        ValueError, match="MCPB parameterisation directory not set"
+    ):
+        vim2_cold_meze.prepare_resp_calculation()
+
+
+def test_build_empirical_bonds(vim2_cold_meze, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    cwd_before = os.getcwd()
+    with patch("meze.sofra.os.system") as mock_sys:
+        result = vim2_cold_meze.prepare_resp_calculation()
+
