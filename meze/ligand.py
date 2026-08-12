@@ -4,7 +4,6 @@ from BioSimSpace._SireWrappers import System as bssSystem
 from pathlib import Path
 import dataclasses
 from dataclasses import dataclass
-import warnings
 from typing import (
     Literal,
     Optional,
@@ -95,22 +94,19 @@ class Ligand():
     @staticmethod
     def _infer_ligand_name(file):
         name = Path(file[0]).stem
-        warnings.warn(
-            f"Ligand name not set, inferring from file name: {file}",
-            UserWarning
+        log.warning(
+            f"Ligand name not set, inferring from file name: {file}"
         )
         return name
 
     def _infer_residue_name(self):
         residues = self.system.getResidues()
         if len(residues) > 1:
-            warnings.warn(
-                f"Found multiple residues in ligand file {self.file}:",
-                UserWarning
+            log.warning(
+                f"Found multiple residues in ligand file {self.file}:"
             )
-            warnings.warn(
-                "Choosing residue name based on first residue.",
-                UserWarning
+            log.warning(
+                "Choosing residue name based on first residue."
             )
         residue = residues[0]
         residue_name = residue.name()
@@ -232,10 +228,10 @@ class Ligand():
         new_lines = []
         for line in mol2_lines:
             if "DU" in line:
-                warnings.warn(f"Atom type DU found in file {output_file}")
+                log.warning(f"Atom type DU found in file {output_file}")
                 atom_name = line.split()[1]
                 new_line = line.replace("DU", atom_name)
-                warnings.warn(f"Replacing DU with {atom_name}")
+                log.warning(f"Replacing DU with {atom_name}")
             else:
                 new_line = line
             new_lines.append(new_line)
@@ -261,9 +257,8 @@ class Ligand():
         os.system(parmcheck_cmd)
 
         if not os.path.isfile(output_file):
-            warnings.warn(
-                f"parmchk2 failed: missing output files for {output_file}",
-                UserWarning
+            log.warning(
+                f"parmchk2 failed: missing output files for {output_file}"
             )
         os.chdir(workdir)
         return output_file
@@ -304,9 +299,8 @@ class Ligand():
         os.system(tleap_cmd)
         output_file = f"{parameterisation_directory}/{residue_name}.mol2"
         if not os.path.isfile(output_file):
-            warnings.warn(
-                f"tleap failed: missing output files for {output_file}",
-                UserWarning
+            log.warning(
+                f"tleap failed: missing output files for {output_file}"
             )
         os.chdir(workdir)
         return output_file
