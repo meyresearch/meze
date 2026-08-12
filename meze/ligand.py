@@ -131,10 +131,11 @@ class Ligand():
             directory = os.getcwd()
 
         if len(self.file) > 1:
-            warnings.warn(
+            message = (
                 f"Expected one ligand file but got {self.file}",
-                UserWarning
             )
+            log.error(message)
+            raise ValueError(message)
         else:
             file = self.file[0]
 
