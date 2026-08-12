@@ -1397,12 +1397,14 @@ class Meze:
         if non_standard_parameterisation_method not in (
             "antechamber", "tleap"
         ):
-            raise ValueError(
+            message = (
                 f"non_standard_parameterisation_method must be one of {(
                     'antechamber', 'tleap'
                 )} "
                 f"got {type(non_standard_parameterisation_method).__name__}"
             )
+            log.error(message)
+            raise TypeError(message)
         if directory:
             os.makedirs(directory, exist_ok=True)
 
@@ -1426,9 +1428,11 @@ class Meze:
             parameterised_ligand = self.ligand
             parameterised_non_standard_residues = self.non_standard_residues
         else:
-            raise NotImplementedError(
+            message = (
                 f"Model option {self.recipe.model} is not implemented"
             )
+            log.error(message)
+            raise NotImplementedError(message)
 
         if not mcpbpy_tleap_file:
             tleap_input_file = os.path.join(directory, "tleap_solvate.in")
