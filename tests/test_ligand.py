@@ -282,6 +282,7 @@ def test_parameterise_tleap_method(tmp_path, monkeypatch):
     assert result.file == [real_pdb]
     assert result.frcmod_file is None
     assert result.residue_name == "MOL"
+    assert os.getcwd() == cwd_before
 
 
 def test_parameterise_tleap_wrong_method_raises():
