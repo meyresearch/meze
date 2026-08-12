@@ -280,24 +280,24 @@ def test_parse_mcpbpy_input_empty_path_raises():
         _parse_mcpbpy_input(mcpbpy_input_file=None)
 
 
-def test_check_log_files_warns_when_none_found(tmp_path):
-    with pytest.warns(UserWarning, match="Could not find any log files"):
-        result = _check_log_files(str(tmp_path))
+def test_check_log_files_warns_when_none_found(tmp_path, caplog):
+    result = _check_log_files(str(tmp_path))
     assert result == []
+    assert "Could not find any log files" in caplog.text
 
 
-def test_check_log_files_warns_on_single_log_file(tmp_path):
+def test_check_log_files_warns_on_single_log_file(tmp_path, caplog):
     log_file = tmp_path / "ligand.log"
     log_file.write_text("Normal termination of Gaussian\n")
-    with pytest.warns(UserWarning, match="Only one log file found"):
-        _check_log_files(str(tmp_path))
+    _check_log_files(str(tmp_path))
+    assert "Only one log file found" in caplog.text
 
 
-def test_check_log_files_warns_on_abnormal_termination(tmp_path):
+def test_check_log_files_warns_on_abnormal_termination(tmp_path, caplog):
     (tmp_path / "a.log").write_text("Normal termination of Gaussian\n")
     (tmp_path / "b.log").write_text("Error termination\n")
-    with pytest.warns(UserWarning, match="did not terminate normally"):
-        _check_log_files(str(tmp_path))
+    _check_log_files(str(tmp_path))
+    assert "did not terminate normally" in caplog.text
 
 
 def test_check_log_files_empty_log_raises_ioerror(tmp_path):
@@ -307,7 +307,7 @@ def test_check_log_files_empty_log_raises_ioerror(tmp_path):
         _check_log_files(str(tmp_path))
 
 
-def test_check_log_file_all_not_converged(tmp_path):
+def test_check_log_file_all_not_converged(tmp_path, caplog):
     (tmp_path / "large_opt.log").write_text(
         "         Item               Value     Threshold  Converged?\n"
         "Maximum Force            0.225680     0.000450     NO\n"
@@ -315,11 +315,11 @@ def test_check_log_file_all_not_converged(tmp_path):
         "Maximum Displacement     0.051861     0.001800     NO\n"
         "RMS     Displacement     0.010123     0.001200     NO\n"
     )
-    with pytest.warns(UserWarning, match="did not converge"):
-        _check_log_files(str(tmp_path))
+    _check_log_files(str(tmp_path))
+    assert "did not converge" in caplog.text
 
 
-def test_check_log_file_some_not_converged(tmp_path):
+def test_check_log_file_some_not_converged(tmp_path, caplog):
     (tmp_path / "large_opt.log").write_text(
         "         Item               Value     Threshold  Converged?\n"
         "Maximum Force            0.225680     0.000450     NO\n"
@@ -327,8 +327,8 @@ def test_check_log_file_some_not_converged(tmp_path):
         "Maximum Displacement     0.051861     0.001800     YES\n"
         "RMS     Displacement     0.010123     0.001200     YES\n"
     )
-    with pytest.warns(UserWarning, match="did not converge"):
-        _check_log_files(str(tmp_path))
+    _check_log_files(str(tmp_path))
+    assert "did not converge" in caplog.text
 
 
 def test_check_log_file_converged(tmp_path):

@@ -76,25 +76,23 @@ def test_validate_charge_invalid_raises():
         Ligand._validate_charge("abc")
 
 
-def test_infer_ligand_name_uses_file_stem():
-    with pytest.warns(UserWarning, match="inferring from file name"):
-        name = Ligand._infer_ligand_name(["some/dir/ligand_11.pdb"])
+def test_infer_ligand_name_uses_file_stem(caplog):
+    name = Ligand._infer_ligand_name(["some/dir/ligand_11.pdb"])
     assert name == "ligand_11"
+    assert "inferring from file name" in caplog.text
 
 
-def test_more_than_one_residue_warning():
-    with pytest.warns(
-        UserWarning, match="Found multiple residues in ligand file"
-    ):
-        Ligand(
-            file=str(DATA / "vim2/water.pdb"),
-            charge=-1,
-            name="ligand_11"
-        )
+def test_more_than_one_residue_warning(caplog):
+    Ligand(
+        file=str(DATA / "vim2/water.pdb"),
+        charge=-1,
+        name="ligand_11"
+    )
+    assert "Found multiple residues in ligand file" in caplog.text
 
 
 def test_run_antechamber_builds_command_and_strips_du(
-        tmp_path, monkeypatch
+        tmp_path, monkeypatch, caplog
 ):
     monkeypatch.chdir(tmp_path)
     ligand = Ligand(
@@ -113,15 +111,15 @@ def test_run_antechamber_builds_command_and_strips_du(
             "0.038100\n"
         )
 
-    with (
-        pytest.warns(UserWarning, match="Atom type DU found in file"),
-        patch("meze.ligand.os.system", side_effect=fake_system) as mock_sys
-    ):
+    with patch(
+        "meze.ligand.os.system", side_effect=fake_system
+    ) as mock_sys:
         result = ligand._run_antechamber(
             parameterisation_directory=str(tmp_path),
             input_file=str(tmp_path / "MOL.pdb"),
             output_file=mol2_path,
         )
+    assert "Atom type DU found in file" in caplog.text
     assert mock_sys.call_args[0][0] == (
         f"antechamber -fi pdb -fo mol2 -i {tmp_path}/MOL.pdb "
         f"-o {mol2_path} -c bcc -nc -1 -at gaff2 -pf y -rn MOL"
