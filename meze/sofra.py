@@ -1505,6 +1505,7 @@ class Meze:
 
         except FileNotFoundError:
             log.error("Failed to solvate meze.")
+            os.chdir(workdir)
             raise RuntimeError("Failed to solvate meze.")
 
         os.chdir(workdir)
