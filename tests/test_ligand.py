@@ -168,12 +168,6 @@ def test_parameterise_wrong_method_raises():
 
 
 def test_parameterise_antechamber_method(tmp_path):
-    # _run_antechamber/_run_parmchk2 are mocked out directly rather than via
-    # os.system, since they're already covered on their own. The mocked
-    # antechamber side_effect writes a real file at mol2_path and returns
-    # that path, so result.file reflects the realistic mol2 output path
-    # and the real, unmocked bss.IO.readMolecules(...) call at the end of
-    # parameterise() has something genuine to read.
     ligand = Ligand(
         file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
     )
@@ -202,7 +196,6 @@ def test_parameterise_antechamber_method(tmp_path):
     assert result.residue_name == "MOL"
     assert result.system.nMolecules() == 1
 
-    # the residue-renaming logic runs for real before any mocked call
     renamed = (tmp_path / "MOL.pdb").read_text()
     assert " MOL " in [
         line for line in renamed.splitlines() if "HETATM" in line
@@ -233,3 +226,12 @@ def test_parameterise_tleap_method(tmp_path):
     assert result.file == [real_pdb]
     assert result.frcmod_file is None
     assert result.residue_name == "MOL"
+
+
+def test_parameterise_tleap_wrong_method_raises():
+    with pytest.raises(ValueError, match="'method' should be one of"):
+        Ligand(
+            file=str(DATA / "ligands/ligand_11.pdb"),
+            charge=-1,
+            name="ligand_11"
+        ).parameterise(method="wrong")
