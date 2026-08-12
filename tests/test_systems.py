@@ -3,7 +3,8 @@ import tempfile
 import pytest
 from meze import (
     ColdMeze, ColdMezeRecipe, Ligand, MezeRecipe, Meze,
-    HotMeze, HotMezeRecipe, ColdQuantumMeze, HotQuantumMeze
+    HotMeze, HotMezeRecipe, ColdQuantumMeze, HotQuantumMeze,
+    QuantumMeze
 )
 from pathlib import Path
 
@@ -179,6 +180,32 @@ def test_hot_quantum_meze_recipe_dict_built_from_dict():
     assert isinstance(hqm.recipe, HotMezeRecipe)
     assert hqm.recipe.metal == "Zn"
     assert hqm.recipe.group_name == "from_dict"
+
+
+def test_write_qm_namelist():
+    qm_meze = QuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=MezeRecipe()
+    )
+    qm_namelist = qm_meze._write_qm_namelist()
+    assert qm_namelist[0] == "&qmmm"
+    assert qm_namelist[-1] == "/"
+    assert "  writepdb=1" in qm_namelist
+    assert "  qmcharge=0" in qm_namelist
+    assert "  qm_theory='DFTB3'" in qm_namelist
+    assert "  qmshake=0" in qm_namelist
+    assert "  qm_ewald=1" in qm_namelist
+    assert "  qm_pme=1" in qm_namelist
+
+    qmmask_line = next(line for line in qm_namelist if "qmmask=" in line)
+    assert qmmask_line.startswith("  qmmask=':235-236|(@")
+    assert qmmask_line.endswith(")'")
+    atom_ids = qmmask_line.split("(@")[1].rstrip(")'").split(",")
+    assert set(atom_ids) == {
+        "3088-3098", "3450", "2455-2458", "1313-1318",
+        "1284-1294", "2183-2193", "3451", "1247-1257"
+    }
 
 
 def test_missing_topology_file_raises(vim2_recipe_json):
