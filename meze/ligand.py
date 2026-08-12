@@ -106,9 +106,13 @@ class Ligand():
         if len(residues) > 1:
             log.warning(
                 f"Found multiple residues in ligand file {self.file}:"
-                f"\n{residues}"
+                f"\n{residues}",
+                UserWarning
             )
-            log.warning("Choosing residue name based on first residue.")
+            log.warning(
+                "Choosing residue name based on first residue.",
+                UserWarning
+            )
         residue = residues[0]
         residue_name = residue.name()
         log.info(f"Ligand residue name set to {residue_name}")
