@@ -126,6 +126,23 @@ def test_run_antechamber_builds_command_and_strips_du(
     assert result == mol2_path
 
 
+def test_run_antechamber_missing_output_raises(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
+    )
+    mol2_path = str(tmp_path / "ligand_11.mol2")
+
+    with patch("meze.ligand.os.system"), pytest.raises(
+        RuntimeError, match="antechamber failed: missing output files"
+    ):
+        ligand._run_antechamber(
+            parameterisation_directory=str(tmp_path),
+            input_file=str(tmp_path / "MOL.pdb"),
+            output_file=mol2_path,
+        )
+
+
 def test_parameterise_antechamber_method(tmp_path):
     # _run_antechamber/_run_parmchk2 are mocked out directly rather than via
     # os.system, since they're already covered on their own; the mocked
