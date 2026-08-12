@@ -261,6 +261,7 @@ class Ligand():
                 f"parmchk2 failed: missing output files for {output_file}"
             )
             log.error(message)
+            os.chdir(workdir)
             raise RuntimeError(message)
         os.chdir(workdir)
         return output_file
