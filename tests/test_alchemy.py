@@ -3,6 +3,7 @@ import pytest
 from pathlib import Path
 from meze import Meze, Ligand, AlchemicalMezeRecipe
 from meze.sofra import AlchemicalSofra
+from meze.utils import _write_distance_restraints
 
 DATA = Path(__file__).parent.parent / "tests" / "data"
 
@@ -52,12 +53,13 @@ def solvated_alchemical_sofra(tmp_path):
     )
 
 
-def _bound_meze(topology, coordinates):
+def _bound_meze(topology, coordinates, restraint_file=None):
     return Meze.from_files(
         topology=topology,
         coordinates=coordinates,
         stage="bound",
-        ligand_resname="MOL"
+        ligand_resname="MOL",
+        restraint_file=restraint_file
     )
 
 
@@ -194,3 +196,38 @@ def test_setup_alchemistry_bound(solvated_bound_alchemical_sofra, caplog):
         assert os.path.isfile(
             os.path.join(working_directory, lambda_dir, "somd.cfg")
         )
+
+
+def test_setup_alchemistry_bound_with_restraint_file(tmp_path):
+    restraint_file = str(tmp_path / "restraints.RST")
+    lines = _write_distance_restraints({(3450, 1255): (2.05, 100.0, 1.0)})
+    with open(restraint_file, "w") as f:
+        f.writelines(lines)
+
+    first_meze = _bound_meze(
+        str(DATA / "vim2/vim2_complex.prmtop"),
+        str(DATA / "vim2/vim2_complex.inpcrd"),
+        restraint_file=restraint_file
+    )
+    second_meze = _bound_meze(
+        str(DATA / "vim2/ligand_12_complex_solv.prmtop"),
+        str(DATA / "vim2/ligand_12_complex_solv.inpcrd")
+    )
+    alchemical_sofra = AlchemicalSofra(
+        first_meze=first_meze,
+        second_meze=second_meze,
+        stage="bound",
+        recipe=AlchemicalMezeRecipe(n_lambdas=3),
+        directory=str(tmp_path)
+    )
+    alchemical_sofra.setup_alchemistry()
+
+    cfg_file = os.path.join(
+        alchemical_sofra.working_directory, "lambda_0.0000", "somd.cfg"
+    )
+    content = open(cfg_file).read()
+    assert "use permanent distance restraints = True" in content
+    assert (
+        "permanent distance restraints dictionary = "
+        "{(3449, 1254): (2.05, 100.0, 0.5)}"
+    ) in content
