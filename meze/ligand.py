@@ -294,8 +294,10 @@ class Ligand():
             f"{parameterisation_directory}/{residue_name}_tleap.in", "w"
         ) as ofile:
             ofile.writelines(lines)
-        tleap_cmd = f"tleap -s -f \
-            {parameterisation_directory}/{residue_name}_tleap.in"
+        tleap_cmd = (
+            "tleap -s -f "
+            f"{parameterisation_directory}/{residue_name}_tleap.in"
+        )
         log.info("Running tleap with command:")
         log.info(tleap_cmd)
         os.chdir(parameterisation_directory)
