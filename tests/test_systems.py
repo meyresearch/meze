@@ -7,7 +7,8 @@ from meze import (
     QuantumMeze
 )
 from pathlib import Path
-
+from unittest.mock import patch
+import MDAnalysis as mda
 
 DATA = Path(__file__).parent.parent / "tests" / "data"
 
@@ -891,3 +892,40 @@ def test_hot_quantum_meze_happy_path(vim2_recipe_json):
         recipe=HotMezeRecipe(**vim2_recipe_json)
     )
     assert hqm.qm_charge == 0
+
+
+def test_prepare_metals_for_ezaff(vim2_cold_meze, tmp_path):
+    def fake_system(cmd):
+        out_path = cmd.split("-o ")[1].split(" -c")[0]
+        Path(out_path).write_text("dummy mol2\n")
+
+    with patch(
+        "meze.sofra.os.system", side_effect=fake_system
+    ) as mock_sys:
+        result = vim2_cold_meze.prepare_metals_for_ezaff(
+            directory=str(tmp_path)
+        )
+
+    assert result == ["ZN1.mol2", "ZN2.mol2"]
+    assert mock_sys.call_count == 2
+    assert mock_sys.call_args_list[0][0][0] == (
+        f"metalpdb2mol2.py -i {tmp_path}/ZN1.pdb "
+        f"-o {tmp_path}/ZN1.mol2 -c 2"
+    )
+    assert mock_sys.call_args_list[1][0][0] == (
+        f"metalpdb2mol2.py -i {tmp_path}/ZN2.pdb "
+        f"-o {tmp_path}/ZN2.mol2 -c 2"
+    )
+    zn1 = mda.Universe(str(tmp_path / "ZN1.pdb"))
+    assert len(zn1.atoms) == 1
+    zn2 = mda.Universe(str(tmp_path / "ZN2.pdb"))
+    assert len(zn2.atoms) == 1
+
+
+def test_prepare_metals_for_ezaff_raises_missing_output_error(
+        vim2_cold_meze, tmp_path
+):
+    with patch("meze.sofra.os.system"), pytest.raises(
+        RuntimeError, match="Could not prepare"
+    ):
+        vim2_cold_meze.prepare_metals_for_ezaff(directory=str(tmp_path))
