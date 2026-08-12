@@ -90,7 +90,9 @@ def test_more_than_one_residue_warning(caplog):
     assert "Found multiple residues in ligand file" in caplog.text
 
 
-def test_run_antechamber_builds_command_and_strips_du(tmp_path, monkeypatch):
+def test_run_antechamber_builds_command_and_strips_du(
+        tmp_path, monkeypatch, caplog
+):
     monkeypatch.chdir(tmp_path)
     ligand = Ligand(
         file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
@@ -98,9 +100,20 @@ def test_run_antechamber_builds_command_and_strips_du(tmp_path, monkeypatch):
     mol2_path = str(tmp_path / "ligand_11.mol2")
 
     def fake_system(cmd):
-        Path(mol2_path).write_text("dummy mol2 content\n")
+        Path(mol2_path).write_text(
+            "@<TRIPOS>ATOM\n"
+            "1 N         -25.7360   -7.0810   59.0550 N         1 AP1     "
+            "-0.516300\n"
+            "2 H         -25.2620   -6.6490   59.6280 H         1 AP1      "
+            "0.333361\n"
+            "3 CA        -25.9480   -6.4070   57.7830 DU        1 AP1      "
+            "0.038100\n"
+        )
 
-    with patch("meze.ligand.os.system", side_effect=fake_system) as mock_sys:
+    with (
+        pytest.warns(UserWarning, match="Atom type DU found in file"),
+        patch("meze.ligand.os.system", side_effect=fake_system) as mock_sys
+    ):
         result = ligand._run_antechamber(
             parameterisation_directory=str(tmp_path),
             input_file=str(tmp_path / "MOL.pdb"),
