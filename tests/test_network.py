@@ -22,7 +22,7 @@ def _build_sofra(vim2_cold_meze, tmp_path):
 
 def test_sofra_from_file_without_network_file(vim2_cold_meze, tmp_path):
     sofra_file = str(tmp_path / "sofra.json")
-    sofra = _build_sofra()
+    sofra = _build_sofra(vim2_cold_meze, tmp_path)
 
     assert list(sofra.mezes.keys()) == ["ligand_11"]
     assert isinstance(sofra.mezes["ligand_11"], type(vim2_cold_meze))
@@ -32,9 +32,9 @@ def test_sofra_from_file_without_network_file(vim2_cold_meze, tmp_path):
     assert sofra.sofra_file == sofra_file
 
 
-def test_sofra_from_file_with_network_file(tmp_path):
+def test_sofra_from_file_with_network_file(vim2_cold_meze, tmp_path):
     sofra_file = str(tmp_path / "sofra.json")
-    sofra = _build_sofra()
+    sofra = _build_sofra(vim2_cold_meze, tmp_path)
 
     network_file = str(tmp_path / "network.csv")
     with open(network_file, "w") as f:
