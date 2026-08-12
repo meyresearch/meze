@@ -1057,3 +1057,14 @@ def test_prepare_resp_calculation(vim2_cold_meze, tmp_path, monkeypatch):
     assert (tmp_path / "ligand_slurm_g_opt.sh").is_file()
     assert (tmp_path / "ligand_slurm_mk.sh").is_file()
     assert os.getcwd() == cwd_before
+
+
+def test_add_water_raises_wrong_non_standard_param_method(vim2_cold_meze):
+    with pytest.raises(
+        TypeError, match="non_standard_parameterisation_method must be"
+    ):
+        vim2_cold_meze.add_water(
+            non_standard_parameterisation_method="wrong"
+        )
+
+
