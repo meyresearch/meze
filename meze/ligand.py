@@ -206,8 +206,8 @@ class Ligand():
             f"-c {charge_method} -nc {charge} -at {atom_type} "
             f"-pf y -rn {residue_name}"
         )
-        logging.info("Running antechamber with command:")
-        logging.info(antechamber_cmd)
+        log.info("Running antechamber with command:")
+        log.info(antechamber_cmd)
         os.chdir(parameterisation_directory)
         os.system(antechamber_cmd)
         if not os.path.isfile(output_file):
@@ -246,8 +246,8 @@ class Ligand():
             f"parmchk2 -i {input_file} -o {output_file} "
             f"-f mol2 -s {atom_type}"
         )
-        logging.info("Running parmchk2 with command:")
-        logging.info(parmcheck_cmd)
+        log.info("Running parmchk2 with command:")
+        log.info(parmcheck_cmd)
         os.chdir(parameterisation_directory)
         os.system(parmcheck_cmd)
 
@@ -281,8 +281,8 @@ class Ligand():
             ofile.writelines(lines)
         tleap_cmd = f"tleap -s -f \
             {parameterisation_directory}/{residue_name}_tleap.in"
-        logging.info("Running tleap with command:")
-        logging.info(tleap_cmd)
+        log.info("Running tleap with command:")
+        log.info(tleap_cmd)
         os.chdir(parameterisation_directory)
         os.system(tleap_cmd)
         output_file = f"{parameterisation_directory}/{residue_name}.mol2"
