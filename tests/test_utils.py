@@ -18,7 +18,7 @@ from meze.utils import (
     _write_tleap_solvation_input,
     pdb_to_sdf,
 )
-
+from unittest.mock import patch
 
 def test_list_rindex_returns_last_matching_index():
     assert _list_rindex(["a", "bx", "c", "bx", "d"], "b") == 3
