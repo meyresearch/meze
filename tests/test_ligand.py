@@ -81,17 +81,19 @@ def test_infer_ligand_name_uses_file_stem():
     assert name == "ligand_11"
 
 
-def test_more_than_one_residue_warning(caplog):
-    Ligand(
-        file=str(DATA / "vim2/water.pdb"),
-        charge=-1,
-        name="ligand_11"
-    )
-    assert "Found multiple residues in ligand file" in caplog.text
+def test_more_than_one_residue_warning():
+    with pytest.warns(
+        UserWarning, match="Found multiple residues in ligand file"
+    ):
+        Ligand(
+            file=str(DATA / "vim2/water.pdb"),
+            charge=-1,
+            name="ligand_11"
+        )
 
 
 def test_run_antechamber_builds_command_and_strips_du(
-        tmp_path, monkeypatch, caplog
+        tmp_path, monkeypatch
 ):
     monkeypatch.chdir(tmp_path)
     ligand = Ligand(
@@ -155,6 +157,15 @@ def test_parameterise_too_many_files_raises():
         ).parameterise()
 
 
+def test_parameterise_wrong_method_raises():
+    with pytest.raises(ValueError, match="'method' should be one of"):
+        Ligand(
+            file=str(DATA / "ligands/ligand_11.pdb"),
+            charge=-1,
+            name="ligand_11"
+        ).parameterise(method="wrong")
+
+
 def test_parameterise_antechamber_method(tmp_path):
     # _run_antechamber/_run_parmchk2 are mocked out directly rather than via
     # os.system, since they're already covered on their own; the mocked
@@ -181,7 +192,7 @@ def test_parameterise_antechamber_method(tmp_path):
     assert mock_pc.call_args.kwargs["input_file"] == mol2_path
     assert mock_pc.call_args.kwargs["output_file"] == frcmod_path
     assert result.parameterised is True
-    assert result.file == real_pdb
+    assert result.file == mol2_path
     assert result.frcmod_file == frcmod_path
     assert result.residue_name == "MOL"
     assert result.system.nMolecules() == 1
