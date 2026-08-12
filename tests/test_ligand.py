@@ -233,3 +233,57 @@ def test_parameterise_tleap_wrong_method_raises():
             charge=-1,
             name="ligand_11"
         ).parameterise(method="wrong")
+
+
+def test_run_parmchk_missing_output_raises(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
+    )
+    mol2_path = str(tmp_path / "ligand_11.mol2")
+
+    with patch("meze.ligand.os.system"), pytest.raises(
+        RuntimeError, match="parmchk2 failed: missing output files"
+    ):
+        ligand._run_parmchk2(
+            parameterisation_directory=str(tmp_path),
+            input_file=str(tmp_path / "MOL.pdb"),
+            output_file=mol2_path,
+        )
+
+
+
+# def test_run_parmchk_builds_command_and_strips_du(
+#         tmp_path, monkeypatch, caplog
+# ):
+#     monkeypatch.chdir(tmp_path)
+#     ligand = Ligand(
+#         file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
+#     )
+#     mol2_path = str(tmp_path / "ligand_11.mol2")
+
+#     def fake_system(cmd):
+#         Path(mol2_path).write_text(
+#             "@<TRIPOS>ATOM\n"
+#             "1 N         -25.7360   -7.0810   59.0550 N         1 AP1     "
+#             "-0.516300\n"
+#             "2 H         -25.2620   -6.6490   59.6280 H         1 AP1      "
+#             "0.333361\n"
+#             "3 CA        -25.9480   -6.4070   57.7830 DU        1 AP1      "
+#             "0.038100\n"
+#         )
+
+#     with patch(
+#         "meze.ligand.os.system", side_effect=fake_system
+#     ) as mock_sys:
+#         result = ligand._run_antechamber(
+#             parameterisation_directory=str(tmp_path),
+#             input_file=str(tmp_path / "MOL.pdb"),
+#             output_file=mol2_path,
+#         )
+#     assert "Atom type DU found in file" in caplog.text
+#     assert mock_sys.call_args[0][0] == (
+#         f"antechamber -fi pdb -fo mol2 -i {tmp_path}/MOL.pdb "
+#         f"-o {mol2_path} -c bcc -nc -1 -at gaff2 -pf y -rn MOL"
+#     )
+#     assert result == mol2_path
