@@ -1,4 +1,3 @@
-import warnings
 import numpy as np
 from .ligand import Ligand
 from typing import (
@@ -380,16 +379,14 @@ def _check_log_files(directory: str) -> List[str]:
         f"{directory}/*.log"
     )
     if len(log_files) == 0:
-        warnings.warn(
+        log.warning(
             "Could not find any log files in: "
-            f"{directory}",
-            UserWarning
+            f"{directory}"
         )
     elif len(log_files) == 1:
-        warnings.warn(
+        log.warning(
             "Only one log file found in the parameterisation directory: "
-            f"{log_files[0]}",
-            UserWarning
+            f"{log_files[0]}"
         )
     for log_file in log_files:
         if "leap.log" not in log_file:
@@ -402,9 +399,8 @@ def _check_log_files(directory: str) -> List[str]:
                     f"Log file {log_file} is empty."
                 )
             if "Normal termination of Gaussian" not in contents:
-                warnings.warn(
-                    f"Log file {log_file} did not terminate normally",
-                    UserWarning
+                log.warning(
+                    f"Log file {log_file} did not terminate normally"
                 )
             if "large_opt" in log_file:
                 try:
@@ -428,10 +424,9 @@ def _check_log_files(directory: str) -> List[str]:
                     "YES" not in max_displacement_line or
                     "YES" not in rms_displacement_line
                 ):
-                    warnings.warn(
+                    log.warning(
                         f"Log file {log_file} did not converge:"
-                        f"{convergence_lines}",
-                        UserWarning
+                        f"{convergence_lines}"
                     )
     return log_files
 
