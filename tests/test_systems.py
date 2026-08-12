@@ -994,16 +994,66 @@ def test_prepare_resp_calculation_wrong_additional_lines_type_raises(
 
 
 def test_prepare_resp_calculation_paramdirectory_not_set(vim2_cold_meze):
-    vim2_cold_meze.parameterisation_directory = None
+    meze = dataclasses.replace(vim2_cold_meze, parameterisation_directory=None)
     with pytest.raises(
         ValueError, match="MCPB parameterisation directory not set"
     ):
-        vim2_cold_meze.prepare_resp_calculation()
+        meze.prepare_resp_calculation()
 
 
-def test_build_empirical_bonds(vim2_cold_meze, tmp_path, monkeypatch):
+def test_prepare_resp_calculation_no_com_files(
+        vim2_cold_meze, tmp_path
+):
+    meze = dataclasses.replace(
+        vim2_cold_meze, parameterisation_directory=str(tmp_path)
+    )
+    with pytest.raises(RuntimeError, match="No Gaussian .com files found in "):
+        meze.prepare_resp_calculation()
+
+
+def test_prepare_resp_calculation(vim2_cold_meze, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     cwd_before = os.getcwd()
-    with patch("meze.sofra.os.system") as mock_sys:
-        result = vim2_cold_meze.prepare_resp_calculation()
+    meze = dataclasses.replace(
+        vim2_cold_meze,
+        parameterisation_directory=str(tmp_path)
+    )
 
+    com_content = (
+        "%Mem=8000MB\n"
+        "%NProcShared=8\n"
+        "%Chk=ligand_large_mk.chk\n"
+        "# B3LYP/6-31G* Opt Pop=MK\n"
+        "\n"
+        "comment\n"
+        "\n"
+        "CLR\n"
+        "0 1\n"
+        "Zn 0.0 0.0 0.0\n"
+        "Zn\n"
+    )
+
+    def fake_system(cmd):
+        if "MCPB.py" in cmd:
+            (tmp_path / "ligand_large_mk.com").write_text(com_content)
+
+    with patch(
+        "meze.sofra.os.system", side_effect=fake_system
+    ) as mock_sys:
+        result = meze.prepare_resp_calculation()
+
+    mcpbpy_input_file = str(tmp_path / "mcpbpy.in")
+    assert mock_sys.call_args_list[0][0][0] == (
+        f"MCPB.py -i {mcpbpy_input_file} -s 1 > {tmp_path}/mcpb_step1.out"
+    )
+    assert mock_sys.call_args_list[1][0][0] == (
+        f"chmod +x {tmp_path}/ligand_slurm_g_opt.sh"
+    )
+    assert mock_sys.call_args_list[2][0][0] == (
+        f"chmod +x {tmp_path}/ligand_slurm_mk.sh"
+    )
+    assert result.mcpbpy_input_file == mcpbpy_input_file
+    assert (tmp_path / "ligand_large_opt.com").is_file()
+    assert (tmp_path / "ligand_slurm_g_opt.sh").is_file()
+    assert (tmp_path / "ligand_slurm_mk.sh").is_file()
+    assert os.getcwd() == cwd_before

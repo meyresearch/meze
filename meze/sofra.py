@@ -1726,10 +1726,14 @@ class Meze:
         if additional_lines is not None and not all(
             isinstance(line, str) for line in additional_lines
         ):
-            raise TypeError("additional_lines must be a list of strings")
+            message = ("additional_lines must be a list of strings")
+            log.error(message)
+            raise TypeError(message)
 
         if not self.parameterisation_directory:
-            raise ValueError("MCPB parameterisation directory not set.")
+            message = ("MCPB parameterisation directory not set.")
+            log.error(message)
+            raise ValueError(message)
 
         metals = []
         for i, metal in enumerate(self.metals):
@@ -1765,10 +1769,12 @@ class Meze:
         )
 
         if not com_files:
-            raise ValueError(
+            message = (
                 "No Gaussian .com files found in "
                 f"{self.parameterisation_directory}."
             )
+            log.error(message)
+            raise RuntimeError
 
         if split_large_files:
             self.update_gaussian_inputs(
