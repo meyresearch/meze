@@ -207,10 +207,12 @@ class Ligand():
         os.chdir(parameterisation_directory)
         os.system(antechamber_cmd)
         if not os.path.isfile(output_file):
-            warnings.warn(
-                f"antechamber failed: missing output files for {output_file}",
-                UserWarning
+            message = (
+                f"antechamber failed: missing output files for {output_file}"
             )
+            log.error(message)
+            os.chdir(workdir)
+            raise RuntimeError(message)
 
         with open(output_file, "r") as ifile:
             mol2_lines = ifile.readlines()
