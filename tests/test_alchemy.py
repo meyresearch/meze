@@ -157,7 +157,9 @@ def test_create_hybrid_molecule(solvated_alchemical_sofra):
 
 
 def test_setup_alchemistry(solvated_alchemical_sofra):
-    result = solvated_alchemical_sofra.setup_alchemistry()
+    result = solvated_alchemical_sofra.setup_alchemistry(
+        compute_platform="cuda"
+    )
     assert result.nMolecules() == 772
 
     working_directory = solvated_alchemical_sofra.working_directory
