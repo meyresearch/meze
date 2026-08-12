@@ -1,7 +1,7 @@
 import pytest
 from meze import Ligand
 from pathlib import Path
-
+from unittest.mock import patch
 DATA = Path(__file__).parent.parent / "tests" / "data"
 
 
@@ -88,3 +88,90 @@ def test_more_than_one_residue_warning(caplog):
         name="ligand_11"
     )
     assert "Found multiple residues in ligand file" in caplog.text
+
+
+def test_run_antechamber_builds_command_and_strips_du(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
+    )
+    mol2_path = str(tmp_path / "ligand_11.mol2")
+
+    def fake_system(cmd):
+        Path(mol2_path).write_text("dummy mol2 content\n")
+
+    with patch("meze.ligand.os.system", side_effect=fake_system) as mock_sys:
+        result = ligand._run_antechamber(
+            parameterisation_directory=str(tmp_path),
+            input_file=str(tmp_path / "MOL.pdb"),
+            output_file=mol2_path,
+        )
+    assert mock_sys.call_args[0][0] == (
+        f"antechamber -fi pdb -fo mol2 -i {tmp_path}/MOL.pdb "
+        f"-o {mol2_path} -c bcc -nc -1 -at gaff2 -pf y -rn MOL"
+    )
+    assert result == mol2_path
+
+
+def test_parameterise_antechamber_method(tmp_path):
+    # _run_antechamber/_run_parmchk2 are mocked out directly rather than via
+    # os.system, since they're already covered on their own; the mocked
+    # antechamber return value points at a real, valid file (the original
+    # ligand pdb) so the real, unmocked bss.IO.readMolecules(...) call at
+    # the end of parameterise() has something genuine to read.
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
+    )
+    real_pdb = str(DATA / "ligands/ligand_11.pdb")
+    frcmod_path = str(tmp_path / "ligand_11.frcmod")
+
+    with patch.object(
+        ligand, "_run_antechamber", return_value=real_pdb
+    ) as mock_ac, patch.object(
+        ligand, "_run_parmchk2", return_value=frcmod_path
+    ) as mock_pc:
+        result = ligand.parameterise(
+            directory=str(tmp_path), method="antechamber", residue_name="MOL"
+        )
+
+    mol2_path = str(tmp_path / "ligand_11.mol2")
+    assert mock_ac.call_args.kwargs["output_file"] == mol2_path
+    assert mock_pc.call_args.kwargs["input_file"] == mol2_path
+    assert mock_pc.call_args.kwargs["output_file"] == frcmod_path
+    assert result.parameterised is True
+    assert result.file == real_pdb
+    assert result.frcmod_file == frcmod_path
+    assert result.residue_name == "MOL"
+    assert result.system.nMolecules() == 1
+
+    # the residue-renaming logic runs for real before any mocked call
+    renamed = (tmp_path / "MOL.pdb").read_text()
+    assert " MOL " in [
+        line for line in renamed.splitlines() if "HETATM" in line
+    ][0]
+
+
+def test_parameterise_tleap_method(tmp_path):
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
+    )
+    real_pdb = str(DATA / "ligands/ligand_11.pdb")
+
+    with patch.object(
+        ligand, "run_ligand_tleap", return_value=real_pdb
+    ) as mock_tleap:
+        result = ligand.parameterise(
+            directory=str(tmp_path),
+            method="tleap",
+            residue_name="MOL",
+            force_field="gaff2",
+        )
+
+    assert mock_tleap.call_args.kwargs["coordinate_file"] == str(
+        tmp_path / "MOL.pdb"
+    )
+    assert mock_tleap.call_args.kwargs["force_field"] == "gaff2"
+    assert result.parameterised is True
+    assert result.file == real_pdb
+    assert result.frcmod_file is None
+    assert result.residue_name == "MOL"
