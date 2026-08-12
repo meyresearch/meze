@@ -10,6 +10,7 @@ import shutil
 from pathlib import Path
 from unittest.mock import patch
 import MDAnalysis as mda
+import dataclasses
 
 DATA = Path(__file__).parent.parent / "tests" / "data"
 
@@ -956,3 +957,22 @@ def test_write_complex(vim2_cold_meze, tmp_path):
     assert complex_pdb.is_file()
     written = mda.Universe(str(complex_pdb))
     assert len(written.atoms) == 4029
+
+
+def test_build_empirical_bonds(vim2_cold_meze, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    cwd_before = os.getcwd()
+    meze = dataclasses.replace(
+        vim2_cold_meze,
+        mcpbpy_input_file="some/mcpbpy.in",
+        parameterisation_directory=str(tmp_path)
+    )
+
+    with patch("meze.sofra.os.system") as mock_sys:
+        result = meze.build_empirical_bonds()
+
+    assert mock_sys.call_args[0][0] == (
+        f"MCPB.py -i some/mcpbpy.in -s 2e > {tmp_path}/mcpb_step2e.out"
+    )
+    assert result.mcpbpy_input_file == "some/mcpbpy.in"
+    assert os.getcwd() == cwd_before
