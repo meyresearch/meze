@@ -143,6 +143,18 @@ def test_run_antechamber_missing_output_raises(tmp_path, monkeypatch):
         )
 
 
+def test_parameterise_too_many_files_raises():
+    with pytest.raises(ValueError, match="Expected one ligand file"):
+        Ligand(
+            file=[
+                str(DATA / "ligands/ligand_11_solv.inpcrd"),
+                str(DATA / "ligands/ligand_11_solv.prmtop")
+            ],
+            charge=-1,
+            name="ligand_11"
+        ).parameterise()
+
+
 def test_parameterise_antechamber_method(tmp_path):
     # _run_antechamber/_run_parmchk2 are mocked out directly rather than via
     # os.system, since they're already covered on their own; the mocked
