@@ -167,6 +167,15 @@ def test_setup_alchemistry(solvated_alchemical_sofra):
         assert os.path.isfile(
             os.path.join(working_directory, lambda_dir, "somd.cfg")
         )
+    cfg_content = open(
+        os.path.join(working_directory, "lambda_0.0000", "somd.cfg")
+    ).read()
+    assert "ncycles = 20" in cfg_content
+    assert "nmoves = 100000" in cfg_content
+    assert "cutoff distance = 12.0000 A" in cfg_content
+    assert "minimise = True" in cfg_content
+    assert "minimise maximum iterations = 5000" in cfg_content
+    assert "platform = cuda" in cfg_content
 
 
 def test_merge_bound(solvated_bound_alchemical_sofra):
