@@ -1774,7 +1774,7 @@ class Meze:
                 f"{self.parameterisation_directory}."
             )
             log.error(message)
-            raise RuntimeError
+            raise RuntimeError(message)
 
         if split_large_files:
             self.update_gaussian_inputs(
