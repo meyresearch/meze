@@ -315,12 +315,19 @@ class Ligand():
             directory: Optional[str] = None,
             force_field: Optional[str] = "gaff2",
             water_model: Optional[str] = "tip3p",
-            box_shape: Optional[str] = "octahedral",
+            box_shape: Literal["octahedral", "cubic"] = "octahedral",
             box_edges: Optional[float] = 10.0,
             solvent_closeness: Optional[float] = 0.75,
     ):
         _check_ambertools()
-
+        allowed = ["octahedral", "cubic"]
+        if box_shape.lower() not in allowed:
+            message = (
+                f"'box_shape' should be one of {allowed}\n"
+                f"got {box_shape}"
+            )
+            log.error(message)
+            raise ValueError(message)
         if directory:
             os.makedirs(directory, exist_ok=True)
 
