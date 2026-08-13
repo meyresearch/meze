@@ -87,6 +87,15 @@ def test_hot_quantum_meze_wrong_recipe_type_raises():
         )
 
 
+def test_quantum_meze_wrong_model_warns(vim2_recipe_json, caplog):
+    QuantumMeze(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=MezeRecipe(**vim2_recipe_json),
+    )
+    assert "You have set model to 0" in caplog.text
+
+
 def test_cold_meze_no_files_raises():
     with pytest.raises(ValueError, match="must supply either a pdb file"):
         ColdMeze.from_files(recipe=ColdMezeRecipe())
