@@ -502,8 +502,8 @@ def test_heat_with_rampup(
     assert isinstance(protocol, bss.Protocol.Equilibration)
     assert protocol.getStartTemperature()._value == 100
     assert protocol.getEndTemperature()._value == 300
-    assert protocol.getTimeStep() == 0.0005
-    assert protocol.getRunTime() == 5
+    assert protocol.getTimeStep()._value == 0.0005
+    assert protocol.getRunTime()._value == 5
     assert protocol.getPressure() is None
     assert protocol.getForceConstant()._value == 10
 
@@ -539,7 +539,8 @@ def test_heat_constant_temp(
     protocol = call_kwargs["protocol"]
     assert isinstance(protocol, bss.Protocol.Equilibration)
     assert (
-        protocol.getStartTemperature() == protocol.getEndTemperature() == 310
+        protocol.getStartTemperature()._value ==
+        protocol.getEndTemperature()._value == 310
     )
     assert protocol.getPressure() is None
 
