@@ -300,3 +300,81 @@ def test_run_npt(
     assert call_kwargs["extra_options"]["barostat"] == recipe.barostat
 
 
+def test_solute_position_restraints_threading(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 2}
+    )
+    meze = dataclasses.replace(vim2_top_and_coord, recipe=recipe)
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path),
+            protocol_type="minimisation",
+            process_name="test-run",
+            is_gpu=False,
+            position_restraints="solute"
+        )
+
+    expected_mask = meze._build_restraint_mask(position_restraints="solute")
+    assert (
+        mock_amber.call_args.kwargs["extra_options"]["restraintmask"]
+        == expected_mask
+    )
+
+
+def test_bb_position_restraints_threading(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 2}
+    )
+    meze = dataclasses.replace(vim2_top_and_coord, recipe=recipe)
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path),
+            protocol_type="minimisation",
+            process_name="test-run",
+            is_gpu=False,
+            position_restraints="backbone"
+        )
+
+    expected_mask = meze._build_restraint_mask(position_restraints="backbone")
+    assert (
+        mock_amber.call_args.kwargs["extra_options"]["restraintmask"]
+        == expected_mask
+    )
+
+
+def test_metal_position_restraints_threading(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 2}
+    )
+    meze = dataclasses.replace(vim2_top_and_coord, recipe=recipe)
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path),
+            protocol_type="minimisation",
+            process_name="test-run",
+            is_gpu=False,
+            position_restraints="metal-coordination"
+        )
+
+    expected_mask = meze._build_restraint_mask(
+        position_restraints="metal-coordination"
+    )
+    assert (
+        mock_amber.call_args.kwargs["extra_options"]["restraintmask"]
+        == expected_mask
+    )
