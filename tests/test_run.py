@@ -268,3 +268,32 @@ def test_run_nvt_constant_temp(
         protocol.getStartTemperature() == protocol.getEndTemperature()
         == recipe.temperature
     )
+
+
+
+def test_run_nvt_constant_temp(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 2}
+    )
+    meze = dataclasses.replace(vim2_top_and_coord, recipe=recipe)
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path),
+            protocol_type="npt",
+            process_name="test-run",
+            is_gpu=False,
+            restart=True
+        )
+
+    call_kwargs = mock_amber.call_args.kwargs
+    protocol = call_kwargs["protocol"]
+    assert (
+        protocol.getStartTemperature() == protocol.getEndTemperature()
+        == recipe.temperature
+    )
+    assert protocol.getPressure() == recipe.pressure
