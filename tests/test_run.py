@@ -191,7 +191,7 @@ def test_run_minimisation_protocol_type(
             workdir=str(tmp_path),
             protocol_type="minimisation",
             process_name="test-run",
-            is_gpu=False,
+            is_gpu=False
         )
 
     call_kwargs = mock_amber.call_args.kwargs
@@ -200,6 +200,34 @@ def test_run_minimisation_protocol_type(
     assert protocol.getSteps() == recipe.max_cycles
 
     extra_options = call_kwargs["extra_options"]
+    assert extra_options["nmropt"] == 1
     assert extra_options["ntmin"] == recipe.min_method
     assert extra_options["maxcyc"] == recipe.max_cycles
     assert extra_options["ncyc"] == recipe.n_sd_cycles
+
+
+def test_run_nvt_protocol_type(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    meze = dataclasses.replace(vim2_top_and_coord, recipe=recipe)
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path),
+            protocol_type="nvt",
+            process_name="test-run",
+            is_gpu=False,
+            restart=True
+        )
+
+    call_kwargs = mock_amber.call_args.kwargs
+    protocol = call_kwargs["protocol"]
+    assert isinstance(protocol, bss.Protocol.Minimisation)
+    assert protocol.getSteps() == recipe.max_cycles
+
+    extra_options = call_kwargs["extra_options"]
