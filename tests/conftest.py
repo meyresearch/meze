@@ -3,7 +3,16 @@ import pytest
 import json
 import BioSimSpace as bss
 from unittest.mock import MagicMock
-from meze import ColdMeze, ColdMezeRecipe, HotMeze, HotMezeRecipe
+from meze import (
+    ColdMeze,
+    ColdMezeRecipe,
+    HotMeze,
+    HotMezeRecipe,
+    QuantumMeze,
+    ColdQuantumMeze,
+    HotQuantumMeze,
+    MezeRecipe
+)
 from pathlib import Path
 
 DATA = Path(__file__).parent.parent / "tests" / "data"
@@ -52,6 +61,33 @@ def vim2_hot_meze(vim2_recipe_json):
         coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
         recipe=HotMezeRecipe(**vim2_recipe_json),
         ligand_resname="MOL"
+    )
+
+
+@pytest.fixture(scope="session")
+def vim2_quantum_meze(vim2_recipe_json):
+    return QuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=MezeRecipe(**vim2_recipe_json),
+    )
+
+
+@pytest.fixture(scope="session")
+def vim2_cold_quantum_meze(vim2_recipe_json):
+    return QuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=ColdQuantumMeze(vim2_recipe_json),
+    )
+
+
+@pytest.fixture(scope="session")
+def vim2_hot_quantum_meze(vim2_recipe_json):
+    return QuantumMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=HotQuantumMeze(**vim2_recipe_json),
     )
 
 
