@@ -167,3 +167,10 @@ def test_run_restraint_file_remap_branch(
     assert (run_directory / "restraints.RST").read_text() == (
         top_level_restraints.read_text()
     )
+
+
+def test_coldmeze_run_wrong_protocol_raises(vim2_cold_meze):
+    with pytest.raises(ValueError, match="Unsupported protocol type 'wrong'"):
+        vim2_cold_meze.run(
+            protocol_type="wrong"
+        )
