@@ -3107,6 +3107,7 @@ class QuantumMeze(Meze):
                 "model option will be ignored."
             )
             log.warning(message)
+            self.recipe.model = None
         
         if isinstance(self.exclude_resids, int):
             self.exclude_resids = [self.exclude_resids]
