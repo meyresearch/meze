@@ -424,7 +424,7 @@ def test_additional_disres_sets_nmropt(
             protocol_type="minimisation",
             process_name="test-run",
             is_gpu=False,
-            additional_distance_restraints={(3450, 1255): {2.00, 100, 1.0}}
+            additional_distance_restraints={(3450, 1255): (2.00, 100, 1.0)}
         )
 
     assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1
@@ -679,7 +679,7 @@ def test_hot_meze_additional_disres_sets_nmropt(
             workdir=str(tmp_path),
             process_name="test-run",
             is_gpu=False,
-            additional_distance_restraints={(3450, 1255): {2.00, 100, 1.0}}
+            additional_distance_restraints={(3450, 1255): (2.00, 100, 1.0)}
         )
 
     assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1
