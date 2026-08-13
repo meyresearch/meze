@@ -3,6 +3,7 @@ import dataclasses
 from unittest.mock import patch
 import BioSimSpace as bss
 import pytest
+from meze.utils import _write_distance_restraints
 
 
 def test_run_happy_path(vim2_top_and_coord, tmp_path, mock_amber_process):
@@ -68,3 +69,48 @@ def test_run_process_is_error_raises(
             config_options={},
             is_gpu=False
         )
+
+
+def test_run_distance_restraints_branch(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    meze = dataclasses.replace(vim2_top_and_coord, recipe=recipe)
+    protocol = bss.Protocol.Minimisation(steps=100)
+    distance_restraints = _write_distance_restraints(
+        {(3450, 1255): (2.05, 100.0, 1.0)}
+    )
+
+    with patch("meze.sofra.bss.Process.Amber", side_effect=mock_amber_process):
+        meze._run(
+            system=None,
+            recipe=recipe,
+            protocol=protocol,
+            process_name="test-run",
+            config_options={},
+            is_gpu=False,
+            distance_restraints=distance_restraints
+        )
+
+    run_directory = tmp_path / "test-run"
+    assert (run_directory / "test-run_restrained_atoms.pdb").is_file()
+
+    coordination_restraints = meze._prepare_distance_restraints()
+    angle_restraints = meze._prepare_angle_restraints()
+    expected_restraints = (
+        distance_restraints + coordination_restraints + angle_restraints
+    )
+
+    top_level_restraints = tmp_path / "restraints.RST"
+    assert top_level_restraints.read_text() == "".join(expected_restraints)
+    assert (run_directory / "restraints.RST").read_text() == (
+        top_level_restraints.read_text()
+    )
+
+    config_content = (run_directory / "test-run.cfg").read_text()
+    assert "&wt TYPE='DUMPFREQ', istep1=100 /" in config_content
+    assert '&wt TYPE="END", /' in config_content
+    assert "DISANG=restraints.RST" in config_content
+    assert "DUMPAVE=distances.out" in config_content

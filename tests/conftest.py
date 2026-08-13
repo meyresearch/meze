@@ -59,6 +59,7 @@ def mock_amber_process():
             fileformat=["prm7", "rst7"]
         )
         process = MagicMock()
+        process._config_file = os.path.join(work_dir, f"{name}.cfg")
         process.isError.return_value = False
         process.getSystem.return_value = system
         processes.append(process)
