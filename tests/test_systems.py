@@ -566,21 +566,30 @@ def test_build_restraint_mask_additional(vim2_cold_meze):
 
 
 def test_validate_disulfide_bridges_self_bonded_raises(vim2_cold_meze):
-    vim2_cold_meze.disulfide_bridges = [{"resid1": 5, "resid2": 5}]
+    meze = dataclasses.replace(
+        vim2_cold_meze,
+        disulfide_bridges=[{"resid1": 5, "resid2": 5}]
+    )
     with pytest.raises(ValueError, match="cannot connect residue 5 to itself"):
-        vim2_cold_meze._validate_disulfide_bridges()
+        meze._validate_disulfide_bridges()
 
 
 def test_validate_disulfide_bridges_missing_keys_raises(vim2_cold_meze):
-    vim2_cold_meze.disulfide_bridges = [{"resid1": 1}]
+    meze = dataclasses.replace(
+        vim2_cold_meze,
+        disulfide_bridges=[{"resid1": 1}]
+    )
     with pytest.raises(ValueError, match="Invalid disulfide bridge entry"):
-        vim2_cold_meze._validate_disulfide_bridges()
+        meze._validate_disulfide_bridges()
 
 
 def test_validate_disulfide_bridges_non_cyx_raises(vim2_cold_meze):
-    vim2_cold_meze.disulfide_bridges = [{"resid1": 1, "resid2": 2}]
+    meze = dataclasses.replace(
+        vim2_cold_meze,
+        disulfide_bridges=[{"resid1": 1, "resid2": 2}]
+    )
     with pytest.raises(ValueError, match="require CYX residues"):
-        vim2_cold_meze._validate_disulfide_bridges()
+        meze._validate_disulfide_bridges()
 
 
 def test_validate_disulfide_bridges_no_conect(l1_recipe_json):
@@ -668,22 +677,31 @@ def test_write_restrained_atoms_pdb(vim2_cold_meze):
 
 
 def test_get_mutatable_ligand_no_matching_residue_raises(vim2_top_and_coord):
-    vim2_top_and_coord.ligand_resname = "ZZZ"
+    meze = dataclasses.replace(
+        vim2_top_and_coord,
+        ligand_resname="ZZZ"
+    )
     with pytest.raises(
         RuntimeError, match="Could not find any ligand residues"
     ):
-        vim2_top_and_coord.get_mutatable_ligand_molecule()
+        meze.get_mutatable_ligand_molecule()
 
 
 def test_get_mutatable_ligand_multiple_residues_raises(vim2_top_and_coord):
-    vim2_top_and_coord.ligand_resname = "WAT"
+    meze = dataclasses.replace(
+        vim2_top_and_coord,
+        ligand_resname="WAT"
+    )
     with pytest.raises(NotImplementedError, match="multiple residues"):
-        vim2_top_and_coord.get_mutatable_ligand_molecule()
+        meze.get_mutatable_ligand_molecule()
 
 
 def test_get_mutatable_ligand_molecule(vim2_top_and_coord):
-    vim2_top_and_coord.ligand_resname = "MOL"
-    molecule = vim2_top_and_coord.get_mutatable_ligand_molecule()
+    meze = dataclasses.replace(
+        vim2_top_and_coord,
+        ligand_resname="MOL"
+    )
+    molecule = meze.get_mutatable_ligand_molecule()
     assert molecule.nAtoms() == 31
 
 
@@ -1080,7 +1098,13 @@ def test_add_water_raises_wrong_model_option(vim2_cold_meze):
         meze.add_water()
 
 
-def test_add_water_model_2_builds_tleap_command(vim2_cold_meze, tmp_path):
+def test_add_water_model_2_builds_tleap_command(
+        vim2_cold_meze, tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    cwd_before = os.getcwd()
+    param_dir = tmp_path / "parameterisation"
+    param_dir.mkdir()
     meze = dataclasses.replace(
         vim2_cold_meze,
         recipe=vim2_cold_meze.recipe.model_copy(update={"model": 2}),
@@ -1090,10 +1114,11 @@ def test_add_water_model_2_builds_tleap_command(vim2_cold_meze, tmp_path):
     with patch("meze.sofra.os.system") as mock_sys, pytest.raises(
         RuntimeError, match="Failed to solvate meze"
     ):
-        meze.add_water(directory=str(tmp_path))
+        meze.add_water(directory=param_dir)
 
     assert mock_sys.call_args[0][0] == (
         f"tleap -s -f {tmp_path}/tleap_solvate.in > "
         f"{tmp_path}/tleap_solvate.out"
     )
     assert (tmp_path / "tleap_solvate.in").is_file()
+    assert os.getcwd() == cwd_before
