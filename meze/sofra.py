@@ -3369,7 +3369,7 @@ class QuantumMeze(Meze):
         distance_restraints_dict = self.build_distance_restraints(atom_ids)
         return _write_distance_restraints(distance_restraints_dict)
 
-    def run_qm(
+    def _run_qm(
         self,
         recipe: MezeRecipe,
         protocol: "bssProtocol",
@@ -3631,7 +3631,7 @@ class ColdQuantumMeze(QuantumMeze):
                 pressure=recipe.pressure,
             )
 
-        return super().run_qm(
+        return super()._run_qm(
             protocol=protocol,
             recipe=recipe,
             system=system,
@@ -3885,7 +3885,7 @@ class HotQuantumMeze(QuantumMeze):
             pressure=recipe.pressure
         )
 
-        return super().run_qm(
+        return super()._run_qm(
             protocol=protocol,
             recipe=recipe,
             system=system,
