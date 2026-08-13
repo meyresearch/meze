@@ -683,3 +683,56 @@ def test_hot_meze_additional_disres_sets_nmropt(
         )
 
     assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1
+
+
+#### test _run_qm ###
+"""
+
+- additional_positional_restraints validation (must contain resids xor resnames, else ValueError)
+- disres resolution (explicit arg vs. self.metal_resids_for_distance_restraints vs. resolving resnames against self.universe)
+- the nmropt=1 + DUMPFREQ namelist line, gated on whether distance restraints are actually present
+- merging _write_qm_namelist()'s output with the restraint namelist and additional_distance_restraints
+"""
+"""
+def test_qm_run_happy_path(vim2_quantum_meze, tmp_path, mock_amber_process):
+    recipe = vim2_quantum_meze.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": None}
+    )
+    meze = dataclasses.replace(vim2_quantum_meze, recipe=recipe)
+    protocol = bss.Protocol.Minimisation(steps=100)
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        result = meze.run_qm(
+            system=None,
+            recipe=recipe,
+            protocol=protocol,
+            process_name="test-qm-run",
+        )
+
+    call_kwargs = mock_amber.call_args.kwargs
+    run_directory = str(tmp_path / "test-qm-run")
+    assert call_kwargs["system"] is meze.system
+    assert call_kwargs["protocol"] is protocol
+    assert call_kwargs["work_dir"] == run_directory
+    assert call_kwargs["name"] == "test-qm-run"
+    assert call_kwargs["extra_lines"] == []
+    assert call_kwargs["is_gpu"] is False
+    assert call_kwargs["exe"] == recipe.path_to_engine
+
+    extra_options = call_kwargs["extra_options"]
+    assert extra_options[""]
+
+    process = mock_amber_process.processes[-1]
+    process.start.assert_called_once()
+    process.wait.assert_called_once()
+
+    assert result.topology == os.path.join(run_directory, "next.prm7")
+    assert result.coordinates == os.path.join(run_directory, "next.rst7")
+    assert os.path.isfile(result.topology)
+    assert os.path.isfile(result.coordinates)
+    assert result.recipe == recipe
+"""
+
+
