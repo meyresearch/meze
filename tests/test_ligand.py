@@ -325,7 +325,7 @@ def test_run_tleap_builds_command_and_restores_cwd(tmp_path, monkeypatch):
 
 
 def test_add_water_wrong_box_shape_raises():
-    with pytest.raises(ValueError, match="'box_shape' must be one of"):
+    with pytest.raises(ValueError, match="'box_shape' should be one of"):
         Ligand(
             file=str(DATA / "ligands/ligand_11.pdb"),
             charge=-1,
@@ -341,14 +341,23 @@ def test_add_water_builds_tleap_command(tmp_path, monkeypatch):
     )
     param_dir = tmp_path / "parameterisation"
     param_dir.mkdir()
-
+    ligand_mol2 = param_dir / f"{ligand.name}.mol2"
+    ligand_frcmod = param_dir / f"{ligand.name}.frcmod"
+    solvated_topology = param_dir / f"{ligand.name}_solv.prmtop"
+    solvated_coordinates = param_dir / f"{ligand.name}_solv.inpcrd"
     with patch("meze.sofra.os.system") as mock_sys, pytest.raises(
         OSError, match="Failed to solvate meze"
     ):
-        ligand.add_water(directory=str(tmp_path))
+        solvated = ligand.add_water(directory=str(param_dir))
 
     assert mock_sys.call_args[0][0] == (
-        f"tleap -s -f {tmp_path}/tleap_solvate.in > "
-        f"{tmp_path}/tleap_solvate.out"
+        f"tleap -s -f {param_dir}/tleap_solvate.in > "
+        f"{param_dir}/tleap_solvate.out"
     )
-    assert (tmp_path / "tleap_solvate.in").is_file()
+    assert (param_dir / "tleap_solvate.in").is_file()
+    assert solvated.file == ligand_mol2
+    assert solvated.frcmod_file == ligand_frcmod
+    assert solvated.coordinates == solvated_coordinates
+    assert solvated.topology == solvated_topology
+    assert solvated.parameterised is True
+    assert os.getcwd() == cwd_before
