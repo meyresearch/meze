@@ -3035,7 +3035,8 @@ class HotMeze(Meze):
             distance_write_frequency: Optional[int] = 10000,
             additional_distance_restraints: Optional[
                 dict[tuple[int, int], tuple[float, float, float]]
-            ] = None
+            ] = None,
+            is_gpu: Optional[bool] = True
     ):
         recipe = HotMezeRecipe(
             workdir=workdir or self.recipe.workdir,
@@ -3083,7 +3084,8 @@ class HotMeze(Meze):
             process_name=process_name,
             config_options=config_options,
             distance_write_frequency=distance_write_frequency,
-            distance_restraints=extra_distance_restraints
+            distance_restraints=extra_distance_restraints,
+            is_gpu=is_gpu
         )
 
 
