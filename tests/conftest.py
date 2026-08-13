@@ -1,5 +1,8 @@
+import os
 import pytest
 import json
+import BioSimSpace as bss
+from unittest.mock import MagicMock
 from meze import ColdMeze, ColdMezeRecipe
 from pathlib import Path
 
@@ -40,3 +43,26 @@ def vim2_top_and_coord(vim2_recipe_json):
         recipe=ColdMezeRecipe(**vim2_recipe_json),
         ligand_resname="MOL"
     )
+
+
+@pytest.fixture
+def mock_amber_process():
+    processes = []
+
+    def _side_effect(*args, **kwargs):
+        system = kwargs.get("system")
+        work_dir = kwargs.get("work_dir")
+        name = kwargs.get("name")
+        bss.IO.saveMolecules(
+            os.path.join(work_dir, name),
+            system=system,
+            fileformat=["prm7", "rst7"]
+        )
+        process = MagicMock()
+        process.isError.return_value = False
+        process.getSystem.return_value = system
+        processes.append(process)
+        return process
+
+    _side_effect.processes = processes
+    return _side_effect
