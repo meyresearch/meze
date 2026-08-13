@@ -2690,8 +2690,8 @@ class ColdMeze(Meze):
     def run(
             self,
             protocol_type: Literal["minimisation", "nvt", "npt"],
-            system: Optional[bssSystem],
-            workdir: Optional[str],
+            system: Optional[bssSystem] = None,
+            workdir: Optional[str] = None,
             restart: Optional[bool] = False,
             position_restraints: Optional[str] = None,
             restraint_weight: Optional[float] = None,
@@ -2716,10 +2716,12 @@ class ColdMeze(Meze):
     ) -> "ColdMeze":
         allowed_protocols = ["minimisation", "nvt", "npt"]
         if protocol_type not in allowed_protocols:
-            raise ValueError(
+            message = (
                 f"Unsupported protocol type '{protocol_type}'.\n"
                 f"Must be one of {allowed_protocols}."
             )
+            log.error(message)
+            raise ValueError(message)
 
         recipe = ColdMezeRecipe(
             workdir=workdir or self.recipe.workdir,
