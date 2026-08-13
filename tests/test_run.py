@@ -470,3 +470,110 @@ def test_minimise(
         mock_amber.call_args.kwargs["extra_options"]["restraintmask"]
         == expected_mask
     )
+
+
+def test_heat_with_rampup(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    meze = dataclasses.replace(
+        vim2_top_and_coord, recipe=recipe
+    )
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.heat(
+            workdir=str(tmp_path) + "/heat",
+            position_restraints="backbone",
+            restart=True,
+            restraint_weight=10,
+            timestep=0.0005,
+            runtime=5,
+            start_temperature=100,
+            end_temperature=300,
+            is_gpu=False
+        )
+
+    call_kwargs = mock_amber.call_args.kwargs
+    protocol = call_kwargs["protocol"]
+    assert isinstance(protocol, bss.Protocol.Equilibration)
+    assert protocol.getStartTemperature()._value == 100
+    assert protocol.getEndTemperature()._value == 300
+    assert protocol.getTimeStep() == 0.0005
+    assert protocol.getRunTime() == 5
+    assert protocol.getPressure() is None
+    assert protocol.getForceConstant()._value == 10
+
+    expected_mask = meze._build_restraint_mask(
+        position_restraints="backbone"
+    )
+    assert (
+        mock_amber.call_args.kwargs["extra_options"]["restraintmask"]
+        == expected_mask
+    )
+
+
+def test_heat_constant_temp(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    meze = dataclasses.replace(
+        vim2_top_and_coord, recipe=recipe
+    )
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.heat(
+            workdir=str(tmp_path) + "/heat",
+            temperature=310,
+            is_gpu=False
+        )
+
+    call_kwargs = mock_amber.call_args.kwargs
+    protocol = call_kwargs["protocol"]
+    assert isinstance(protocol, bss.Protocol.Equilibration)
+    assert (
+        protocol.getStartTemperature() == protocol.getEndTemperature() == 310
+    )
+    assert protocol.getPressure() is None
+
+
+def test_pressurise(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    meze = dataclasses.replace(
+        vim2_top_and_coord, recipe=recipe
+    )
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.pressurise(
+            workdir=str(tmp_path) + "/press",
+            position_restraints="backbone",
+            restart=True,
+            restraint_weight=10,
+            timestep=0.0005,
+            runtime=5,
+            pressure=1.0,
+            is_gpu=False
+        )
+
+    call_kwargs = mock_amber.call_args.kwargs
+    protocol = call_kwargs["protocol"]
+    assert isinstance(protocol, bss.Protocol.Equilibration)
+    assert (
+        protocol.getStartTemperature() == protocol.getEndTemperature()
+        == recipe.temperature
+    )
+    assert protocol.getPressure() == recipe.pressure
+    assert call_kwargs["extra_options"]["barostat"] == recipe.barostat
