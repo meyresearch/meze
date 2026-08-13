@@ -578,3 +578,109 @@ def test_pressurise(
     )
     assert protocol.getPressure() == recipe.pressure
     assert call_kwargs["extra_options"]["barostat"] == recipe.barostat
+
+
+def test_hot_meze_run_happy_path(
+        vim2_hot_meze, tmp_path, mock_amber_process
+):
+    recipe = vim2_hot_meze.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    rst_file = tmp_path / "restraints.RST"
+    rst_file.write_text("dummy rst file")
+    meze = dataclasses.replace(
+        vim2_hot_meze, recipe=recipe, restraint_file=rst_file
+    )
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path) + "/prod",
+            process_name="test-run",
+            nb_cutoff=8,
+            timestep=0.002,
+            runtime=40,
+            temperature=310,
+            pressure=1.0,
+            write_frequency=500,
+            distance_write_frequency=500,
+            is_gpu=False
+        )
+
+    call_kwargs = mock_amber.call_args.kwargs
+    run_directory = str(tmp_path / "test-run")
+    assert call_kwargs["work_dir"] == run_directory
+    assert call_kwargs["name"] == "test-run"
+    assert call_kwargs["is_gpu"] is False
+    assert call_kwargs["exe"] == recipe.path_to_engine
+
+    extra_options = call_kwargs["extra_options"]
+    assert extra_options["cut"] == 8.0
+    assert (
+        extra_options["ntpr"] == extra_options["ntwx"]
+        == extra_options["ntwr"] == 500
+    )
+    assert extra_options["irest"] == 1
+    assert extra_options["ntx"] == 5
+    assert extra_options["iwrap"] == 0
+    assert extra_options["nmropt"] == 1
+
+    protocol = call_kwargs["protocol"]
+    assert isinstance(protocol, bss.Protocol.Production)
+    assert protocol.getTimeStep()._value == 0.002
+    assert protocol.getRunTime()._value == 40
+    assert protocol.getTemperature()._value == 310
+    assert protocol.getPressure()._value == 1.0
+
+    assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1
+    assert os.path.isfile(tmp_path / "prod/restraints.RST")
+
+
+
+def test_hot_meze_restraint_file_sets_nmropt(
+        vim2_hot_meze, tmp_path, mock_amber_process
+):
+    recipe = vim2_hot_meze.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    rst_file = tmp_path / "restraints.RST"
+    rst_file.write_text("dummy rst file")
+    meze = dataclasses.replace(
+        vim2_hot_meze, recipe=recipe, restraint_file=rst_file
+    )
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path) + "/prod",
+            process_name="test-run",
+            is_gpu=False
+        )
+
+    assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1
+    assert os.path.isfile(tmp_path / "prod/restraints.RST")
+
+
+def test_additional_disres_sets_nmropt(
+        vim2_hot_meze, tmp_path, mock_amber_process
+):
+    recipe = vim2_hot_meze.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    meze = dataclasses.replace(
+        vim2_hot_meze, recipe=recipe
+    )
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path) + "/prod",
+            process_name="test-run",
+            is_gpu=False,
+            additional_distance_restraints={(3450, 1255): {2.00, 100, 1.0}}
+        )
+
+    assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1

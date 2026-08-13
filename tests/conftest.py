@@ -3,7 +3,7 @@ import pytest
 import json
 import BioSimSpace as bss
 from unittest.mock import MagicMock
-from meze import ColdMeze, ColdMezeRecipe
+from meze import ColdMeze, ColdMezeRecipe, HotMeze, HotMezeRecipe
 from pathlib import Path
 
 DATA = Path(__file__).parent.parent / "tests" / "data"
@@ -41,6 +41,16 @@ def vim2_top_and_coord(vim2_recipe_json):
         topology=str(DATA / "vim2/vim2_complex.prmtop"),
         coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
         recipe=ColdMezeRecipe(**vim2_recipe_json),
+        ligand_resname="MOL"
+    )
+
+
+@pytest.fixture(scope="session")
+def vim2_hot_meze(vim2_recipe_json):
+    return HotMeze.from_files(
+        topology=str(DATA / "vim2/vim2_complex.prmtop"),
+        coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
+        recipe=HotMezeRecipe(**vim2_recipe_json),
         ligand_resname="MOL"
     )
 
