@@ -596,7 +596,7 @@ def test_hot_meze_run_happy_path(
         "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
     ) as mock_amber:
         meze.run(
-            workdir=str(tmp_path) + "/prod",
+            workdir=str(tmp_path),
             process_name="test-run",
             nb_cutoff=8,
             timestep=0.002,
@@ -634,8 +634,7 @@ def test_hot_meze_run_happy_path(
     assert protocol.getPressure()._value == 1.0
 
     assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1
-    assert os.path.isfile(tmp_path / "prod/restraints.RST")
-
+    assert os.path.isfile(tmp_path / "test-run/restraints.RST")
 
 
 def test_hot_meze_restraint_file_sets_nmropt(
@@ -654,13 +653,13 @@ def test_hot_meze_restraint_file_sets_nmropt(
         "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
     ) as mock_amber:
         meze.run(
-            workdir=str(tmp_path) + "/prod",
+            workdir=str(tmp_path),
             process_name="test-run",
             is_gpu=False
         )
 
     assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1
-    assert os.path.isfile(tmp_path / "prod/restraints.RST")
+    assert os.path.isfile(tmp_path / "test-run/restraints.RST")
 
 
 def test_hot_meze_additional_disres_sets_nmropt(
@@ -677,7 +676,7 @@ def test_hot_meze_additional_disres_sets_nmropt(
         "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
     ) as mock_amber:
         meze.run(
-            workdir=str(tmp_path) + "/prod",
+            workdir=str(tmp_path),
             process_name="test-run",
             is_gpu=False,
             additional_distance_restraints={(3450, 1255): {2.00, 100, 1.0}}
