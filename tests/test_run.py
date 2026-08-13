@@ -663,7 +663,7 @@ def test_hot_meze_restraint_file_sets_nmropt(
     assert os.path.isfile(tmp_path / "prod/restraints.RST")
 
 
-def test_additional_disres_sets_nmropt(
+def test_hot_meze_additional_disres_sets_nmropt(
         vim2_hot_meze, tmp_path, mock_amber_process
 ):
     recipe = vim2_hot_meze.recipe.model_copy(
