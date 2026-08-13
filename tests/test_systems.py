@@ -676,13 +676,32 @@ def test_write_restrained_atoms_pdb(vim2_cold_meze):
     assert reference == content
 
 
-def test_get_mutatable_ligand_no_matching_residue_raises(vim2_top_and_coord):
+def test_meze_no_matching_residue_raises(vim2_top_and_coord):
+
+    with pytest.raises(
+        ValueError, match="Could not find residues with ligand resname"
+    ):
+        dataclasses.replace(
+            vim2_top_and_coord,
+            ligand_resname="ZZZ",
+            ligand=None,
+            ligand_resid=None,
+        )
+
+
+def test_get_mutatable_ligand_resname_not_set(vim2_cold_meze):
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"),
+        charge=-1,
+        name="ligand_11"
+    )
     meze = dataclasses.replace(
-        vim2_top_and_coord,
-        ligand_resname="ZZZ"
+        vim2_cold_meze,
+        ligand=ligand,
+        ligand_resname=None
     )
     with pytest.raises(
-        RuntimeError, match="Could not find any ligand residues"
+        ValueError, match="Ligand residue name not set"
     ):
         meze.get_mutatable_ligand_molecule()
 
@@ -690,7 +709,9 @@ def test_get_mutatable_ligand_no_matching_residue_raises(vim2_top_and_coord):
 def test_get_mutatable_ligand_multiple_residues_raises(vim2_top_and_coord):
     meze = dataclasses.replace(
         vim2_top_and_coord,
-        ligand_resname="WAT"
+        ligand_resname="WAT",
+        ligand=None,
+        ligand_resid=None
     )
     with pytest.raises(NotImplementedError, match="multiple residues"):
         meze.get_mutatable_ligand_molecule()
@@ -699,19 +720,21 @@ def test_get_mutatable_ligand_multiple_residues_raises(vim2_top_and_coord):
 def test_get_mutatable_ligand_molecule(vim2_top_and_coord):
     meze = dataclasses.replace(
         vim2_top_and_coord,
-        ligand_resname="MOL"
+        ligand_resname="MOL",
+        ligand=None,
+        ligand_resid=None
     )
     molecule = meze.get_mutatable_ligand_molecule()
     assert molecule.nAtoms() == 31
 
 
-def test_get_mutatable_ligand_no_resname_raises(vim2_recipe_json):
+def test_get_mutatable_ligand_top_coord_no_resname_raises(vim2_recipe_json):
     meze = ColdMeze.from_files(
         topology=str(DATA / "vim2/vim2_complex.prmtop"),
         coordinates=str(DATA / "vim2/vim2_complex.inpcrd"),
         recipe=ColdMezeRecipe(**vim2_recipe_json)
     )
-    with pytest.raises(RuntimeError, match="Ligand residue name not set"):
+    with pytest.raises(ValueError, match="Ligand residue name not set"):
         meze.get_mutatable_ligand_molecule()
 
 
@@ -1117,8 +1140,8 @@ def test_add_water_model_2_builds_tleap_command(
         meze.add_water(directory=param_dir)
 
     assert mock_sys.call_args[0][0] == (
-        f"tleap -s -f {tmp_path}/tleap_solvate.in > "
-        f"{tmp_path}/tleap_solvate.out"
+        f"tleap -s -f {param_dir}/tleap_solvate.in > "
+        f"{param_dir}/tleap_solvate.out"
     )
-    assert (tmp_path / "tleap_solvate.in").is_file()
+    assert (param_dir / "tleap_solvate.in").is_file()
     assert os.getcwd() == cwd_before
