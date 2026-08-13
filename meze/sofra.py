@@ -3099,6 +3099,15 @@ class QuantumMeze(Meze):
 
     def __post_init__(self):
         super().__post_init__()
+
+        if self.recipe.model:
+            message = (
+                f"You have set model to {self.recipe.model}.\n"
+                "This is a QM/MM system and the classical metal "
+                "model option will be ignored."
+            )
+            log.warning(message)
+        
         if isinstance(self.exclude_resids, int):
             self.exclude_resids = [self.exclude_resids]
 
