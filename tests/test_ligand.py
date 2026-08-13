@@ -322,3 +322,33 @@ def test_run_tleap_builds_command_and_restores_cwd(tmp_path, monkeypatch):
     )
     assert result == output_file
     assert os.getcwd() == cwd_before
+
+
+def test_add_water_wrong_box_shape_raises():
+    with pytest.raises(ValueError, match="'box_shape' must be one of"):
+        Ligand(
+            file=str(DATA / "ligands/ligand_11.pdb"),
+            charge=-1,
+            name="ligand_11"
+        ).add_water(box_shape="wrong")
+
+
+def test_add_water_builds_tleap_command(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    cwd_before = os.getcwd()
+    ligand = Ligand(
+        file=str(DATA / "ligands/ligand_11.pdb"), charge=-1, name="ligand_11"
+    )
+    param_dir = tmp_path / "parameterisation"
+    param_dir.mkdir()
+
+    with patch("meze.sofra.os.system") as mock_sys, pytest.raises(
+        OSError, match="Failed to solvate meze"
+    ):
+        ligand.add_water(directory=str(tmp_path))
+
+    assert mock_sys.call_args[0][0] == (
+        f"tleap -s -f {tmp_path}/tleap_solvate.in > "
+        f"{tmp_path}/tleap_solvate.out"
+    )
+    assert (tmp_path / "tleap_solvate.in").is_file()
