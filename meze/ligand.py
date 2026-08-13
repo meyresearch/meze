@@ -359,15 +359,15 @@ class Ligand():
             f"\n"
         ])
 
-        if "oct" in box_shape.lower():
+        if box_shape.lower() == "octahedral":
             lines.append(
-                f"solvate{box_shape[:3]} lig "
+                f"solvateOct lig "
                 f"{water_model.upper()}BOX {box_edges} iso "
                 f"{solvent_closeness}\n"
             )
         else:
             lines.append(
-                f"solvate{box_shape[:3]} lig "
+                f"solvateBox lig "
                 f"{water_model.upper()}BOX {box_edges} {solvent_closeness}\n"
             )
 
