@@ -206,7 +206,7 @@ def test_run_minimisation_protocol_type(
     assert extra_options["ncyc"] == recipe.n_sd_cycles
 
 
-def test_run_nvt_ramp_up_protocol_type(
+def test_run_nvt_ramp_up(
         vim2_top_and_coord, tmp_path, mock_amber_process
 ):
     recipe = vim2_top_and_coord.recipe.model_copy(
@@ -240,3 +240,31 @@ def test_run_nvt_ramp_up_protocol_type(
     extra_options = call_kwargs["extra_options"]
     assert extra_options["irest"] == 1
     assert extra_options["ntx"] == 5
+
+
+def test_run_nvt_constant_temp(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 2}
+    )
+    meze = dataclasses.replace(vim2_top_and_coord, recipe=recipe)
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path),
+            protocol_type="nvt",
+            process_name="test-run",
+            is_gpu=False,
+            restart=True,
+            temperature=300
+        )
+
+    call_kwargs = mock_amber.call_args.kwargs
+    protocol = call_kwargs["protocol"]
+    assert (
+        protocol.getStartTemperature() == protocol.getEndTemperature()
+        == recipe.temperature
+    )
