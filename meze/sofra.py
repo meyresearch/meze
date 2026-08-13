@@ -3069,11 +3069,6 @@ class HotMeze(Meze):
             temperature=recipe.temperature,
             pressure=recipe.pressure
         )
-        if self.restraint_file and os.path.isfile(self.restraint_file):
-            step_restraint_file = os.path.join(
-                recipe.workdir, "restraints.RST"
-            )
-            shutil.copyfile(self.restraint_file, step_restraint_file)
         extra_distance_restraints = _write_distance_restraints(
             additional_distance_restraints
         ) if additional_distance_restraints else None
