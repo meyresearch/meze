@@ -438,8 +438,8 @@ class Meze:
             self._validate_non_standard_residues()
 
         if self.ligand and self.ligand.parameterised and not self.ligand_resid:
-            self.ligand_resid = self.get_ligand_resid()
             self.ligand_resname = self.ligand.residue_name
+            self.ligand_resid = self.get_ligand_resid()
         elif self.ligand and self.ligand.parameterised and self.ligand_resid:
             self.ligand_resname = self.ligand.residue_name
         elif not self.ligand and self.ligand_resname:
@@ -641,27 +641,33 @@ class Meze:
     def get_mutatable_ligand_molecule(self):
 
         if not self.ligand_resname:
-            raise RuntimeError(
+            message = (
                 "Ligand residue name not set. "
                 "Cannot determine mutatable ligand."
             )
+            log.error(message)
+            raise ValueError(message)
 
         residues = self.system.getResidues()
         if len(residues) == 0:
-            raise RuntimeError(
+            message = (
                 "No residues found in BioSimSpace system for meze with file:"
                 f"\n{self.coordinates}"
             )
+            log.error(message)
+            raise RuntimeError(message)
         ligand_residues = [
             residue for residue in residues if residue.name().upper() == (
                 self.ligand_resname
             )
         ]
         if not ligand_residues:
-            raise RuntimeError(
+            message = (
                 "Could not find any ligand residues for meze object with file:"
                 f"\n{self.coordinates}"
             )
+            log.error(message)
+            raise ValueError(message)
         if len(ligand_residues) > 1:
             message = "Cannot extract ligand with multiple residues"
             log.error(message)
@@ -1278,9 +1284,19 @@ class Meze:
         return restraints
 
     def get_ligand_resid(self):
-        return self.universe.select_atoms(
-            f"resname {self.ligand.residue_name}"
-        ).resids[0]
+
+        try:
+            resid = self.universe.select_atoms(
+                f"resname {self.ligand.residue_name}"
+            ).resids[0]
+            return resid
+        except IndexError:
+            message = (
+                "Could not find residues with ligand resname "
+                f"{self.ligand.residue_name} in meze universe"
+            )
+            log.error(message)
+            raise ValueError(message)
 
     def get_active_site_atom_group(self) -> mda.AtomGroup:
         """Get active site based on metal and coordination cutoff
