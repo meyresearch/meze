@@ -174,3 +174,22 @@ def test_coldmeze_run_wrong_protocol_raises(vim2_cold_meze):
         vim2_cold_meze.run(
             protocol_type="wrong"
         )
+
+
+def test_run_minimisation_protocol_type(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    meze = dataclasses.replace(vim2_top_and_coord, recipe=recipe)
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path),
+            protocol_type="minimisation",
+            process_name="test-run",
+            is_gpu=False,
+        )
