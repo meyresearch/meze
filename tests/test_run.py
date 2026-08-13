@@ -1,5 +1,6 @@
 import os
 import dataclasses
+from pathlib import Path
 from unittest.mock import patch
 import BioSimSpace as bss
 import pytest
@@ -114,3 +115,55 @@ def test_run_distance_restraints_branch(
     assert '&wt TYPE="END", /' in config_content
     assert "DISANG=restraints.RST" in config_content
     assert "DUMPAVE=distances.out" in config_content
+
+
+def test_run_restraint_file_remap_branch(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path)}
+    )
+    restraint_input = tmp_path / "my_restraints.RST"
+    original_lines = _write_distance_restraints(
+        {(3450, 1255): (2.05, 100.0, 1.0)}
+    )
+    restraint_input.write_text("".join(original_lines))
+
+    meze = dataclasses.replace(
+        vim2_top_and_coord,
+        recipe=recipe,
+        restraint_file=str(restraint_input)
+    )
+    protocol = bss.Protocol.Minimisation(steps=100)
+
+    with patch("meze.sofra.bss.Process.Amber", side_effect=mock_amber_process):
+        meze._run(
+            system=None,
+            recipe=recipe,
+            protocol=protocol,
+            process_name="test-run",
+            config_options={},
+            is_gpu=False
+        )
+
+    run_directory = tmp_path / "test-run"
+
+    assert meze.restraint_file == str(run_directory / "my_restraints.RST")
+    assert os.path.isfile(meze.restraint_file)
+    remapped_lines = Path(meze.restraint_file).read_text().splitlines(
+        keepends=True
+    )
+    # Does NOT exercise this issue: github.com/OpenBioSim/sire issue #423
+    assert remapped_lines == original_lines
+
+    coordination_restraints = meze._prepare_distance_restraints()
+    angle_restraints = meze._prepare_angle_restraints()
+    expected_restraints = (
+        remapped_lines + coordination_restraints + angle_restraints
+    )
+
+    top_level_restraints = tmp_path / "restraints.RST"
+    assert top_level_restraints.read_text() == "".join(expected_restraints)
+    assert (run_directory / "restraints.RST").read_text() == (
+        top_level_restraints.read_text()
+    )
