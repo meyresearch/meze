@@ -378,3 +378,53 @@ def test_metal_position_restraints_threading(
         mock_amber.call_args.kwargs["extra_options"]["restraintmask"]
         == expected_mask
     )
+
+
+def test_restraint_file_sets_nmropt(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    rst_file = tmp_path / "restraints.RST"
+    rst_file.write_text("dummy rst file")
+    meze = dataclasses.replace(
+        vim2_top_and_coord, recipe=recipe, restraint_file=rst_file
+    )
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path) + "/min",
+            protocol_type="minimisation",
+            process_name="test-run",
+            is_gpu=False
+        )
+
+    assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1
+    assert os.path.isfile(tmp_path / "min/restraints.RST")
+
+
+def test_additional_disres_sets_nmropt(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    meze = dataclasses.replace(
+        vim2_top_and_coord, recipe=recipe
+    )
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.run(
+            workdir=str(tmp_path) + "/min",
+            protocol_type="minimisation",
+            process_name="test-run",
+            is_gpu=False,
+            additional_distance_restraints={(3450, 1255): {2.00, 100, 1.0}}
+        )
+
+    assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1
