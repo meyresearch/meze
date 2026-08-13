@@ -416,9 +416,10 @@ class Ligand():
                 parameterised=True
             )
         except OSError:
-            log.error(f"Failed to solvate ligand {ligand.name}")
+            message = f"Failed to solvate ligand {ligand.name}"
+            log.error(message)
             os.chdir(workdir)
-            raise RuntimeError
+            raise RuntimeError(message)
         os.chdir(workdir)
 
         return solvated_ligand
