@@ -3100,7 +3100,7 @@ class QuantumMeze(Meze):
     def __post_init__(self):
         super().__post_init__()
 
-        if self.recipe.model:
+        if self.recipe.model is not None:
             message = (
                 f"You have set model to {self.recipe.model}.\n"
                 "This is a QM/MM system and the classical metal "
