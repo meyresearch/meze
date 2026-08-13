@@ -47,7 +47,7 @@ def test_run_happy_path(vim2_top_and_coord, tmp_path, mock_amber_process):
 
 
 def test_run_process_is_error_raises(
-        vim2_top_and_coord, tmp_path, mock_amber_process
+        vim2_top_and_coord, tmp_path, mock_amber_process_error
 ):
     recipe = vim2_top_and_coord.recipe.model_copy(
         update={"workdir": str(tmp_path), "model": 2}
@@ -56,9 +56,9 @@ def test_run_process_is_error_raises(
     protocol = bss.Protocol.Minimisation(steps=100)
 
     with pytest.raises(
-        RuntimeError, match="The run test-run excited with an error"
+        RuntimeError, match="The run test-run exited with an error"
     ), patch(
-        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process_error
     ):
         meze._run(
             system=None,
