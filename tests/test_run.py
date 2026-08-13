@@ -206,11 +206,11 @@ def test_run_minimisation_protocol_type(
     assert extra_options["ncyc"] == recipe.n_sd_cycles
 
 
-def test_run_nvt_protocol_type(
+def test_run_nvt_ramp_up_protocol_type(
         vim2_top_and_coord, tmp_path, mock_amber_process
 ):
     recipe = vim2_top_and_coord.recipe.model_copy(
-        update={"workdir": str(tmp_path), "model": 0}
+        update={"workdir": str(tmp_path), "model": 2}
     )
     meze = dataclasses.replace(vim2_top_and_coord, recipe=recipe)
 
@@ -222,12 +222,21 @@ def test_run_nvt_protocol_type(
             protocol_type="nvt",
             process_name="test-run",
             is_gpu=False,
-            restart=True
+            restart=True,
+            start_temperature=100,
+            end_temperature=300
         )
 
     call_kwargs = mock_amber.call_args.kwargs
     protocol = call_kwargs["protocol"]
-    assert isinstance(protocol, bss.Protocol.Minimisation)
-    assert protocol.getSteps() == recipe.max_cycles
+    assert isinstance(protocol, bss.Protocol.Equilibration)
+    assert protocol.getStartTemperature()._value == 100
+    assert protocol.getEndTemperature()._value == 300
+    assert protocol.getTimeStep() == recipe.dt
+    assert protocol.getRunTime() == recipe.runtime
+    assert protocol.getPressure() is None
+    assert protocol.getForceConstant()._value == recipe.restraint_weight
 
     extra_options = call_kwargs["extra_options"]
+    assert extra_options["irest"] == 1
+    assert extra_options["ntx"] == 5
