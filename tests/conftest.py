@@ -66,3 +66,23 @@ def mock_amber_process():
 
     _side_effect.processes = processes
     return _side_effect
+
+
+@pytest.fixture
+def mock_amber_process_error():
+    def _side_effect(*args, **kwargs):
+        system = kwargs.get("system")
+        work_dir = kwargs.get("work_dir")
+        name = kwargs.get("name")
+        bss.IO.saveMolecules(
+            os.path.join(work_dir, name),
+            system=system,
+            fileformat=["prm7", "rst7"]
+        )
+        process = MagicMock()
+        process.isError.return_value = True
+        process.getSystem.return_value = system
+        process.getStderr.return_value = ["some amber error line"]
+        return process
+
+    return _side_effect
