@@ -428,3 +428,45 @@ def test_additional_disres_sets_nmropt(
         )
 
     assert mock_amber.call_args.kwargs["extra_options"]["nmropt"] == 1
+
+
+def test_minimise(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 0}
+    )
+    meze = dataclasses.replace(
+        vim2_top_and_coord, recipe=recipe
+    )
+
+    with patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ) as mock_amber:
+        meze.minimise(
+            workdir=str(tmp_path) + "/min",
+            position_restraints="solute",
+            max_cycles=10,
+            n_sd_cycles=5,
+            nb_cutoff=8,
+            is_gpu=False
+        )
+
+    call_kwargs = mock_amber.call_args.kwargs
+    protocol = call_kwargs["protocol"]
+    assert isinstance(protocol, bss.Protocol.Minimisation)
+    assert protocol.getSteps() == 10
+
+    extra_options = call_kwargs["extra_options"]
+    assert extra_options["nmropt"] == 1
+    assert extra_options["ntmin"] == recipe.min_method
+    assert extra_options["maxcyc"] == 10
+    assert extra_options["ncyc"] == 5
+
+    expected_mask = meze._build_restraint_mask(
+        position_restraints="solute"
+    )
+    assert (
+        mock_amber.call_args.kwargs["extra_options"]["restraintmask"]
+        == expected_mask
+    )
