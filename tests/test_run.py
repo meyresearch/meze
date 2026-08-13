@@ -2,6 +2,7 @@ import os
 import dataclasses
 from unittest.mock import patch
 import BioSimSpace as bss
+import pytest
 
 
 def test_run_happy_path(vim2_top_and_coord, tmp_path, mock_amber_process):
@@ -43,3 +44,27 @@ def test_run_happy_path(vim2_top_and_coord, tmp_path, mock_amber_process):
     assert os.path.isfile(result.topology)
     assert os.path.isfile(result.coordinates)
     assert result.recipe == recipe
+
+
+def test_run_process_is_error_raises(
+        vim2_top_and_coord, tmp_path, mock_amber_process
+):
+    recipe = vim2_top_and_coord.recipe.model_copy(
+        update={"workdir": str(tmp_path), "model": 2}
+    )
+    meze = dataclasses.replace(vim2_top_and_coord, recipe=recipe)
+    protocol = bss.Protocol.Minimisation(steps=100)
+
+    with pytest.raises(
+        RuntimeError, match="The run test-run excited with an error"
+    ), patch(
+        "meze.sofra.bss.Process.Amber", side_effect=mock_amber_process
+    ):
+        meze._run(
+            system=None,
+            recipe=recipe,
+            protocol=protocol,
+            process_name="test-run",
+            config_options={},
+            is_gpu=False
+        )
