@@ -193,3 +193,13 @@ def test_run_minimisation_protocol_type(
             process_name="test-run",
             is_gpu=False,
         )
+
+    call_kwargs = mock_amber.call_args.kwargs
+    protocol = call_kwargs["protocol"]
+    assert isinstance(protocol, bss.Protocol.Minimisation)
+    assert protocol.getSteps() == recipe.max_cycles
+
+    extra_options = call_kwargs["extra_options"]
+    assert extra_options["ntmin"] == recipe.min_method
+    assert extra_options["maxcyc"] == recipe.max_cycles
+    assert extra_options["ncyc"] == recipe.n_sd_cycles
