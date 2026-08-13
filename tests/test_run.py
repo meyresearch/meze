@@ -270,8 +270,7 @@ def test_run_nvt_constant_temp(
     )
 
 
-
-def test_run_nvt_constant_temp(
+def test_run_npt(
         vim2_top_and_coord, tmp_path, mock_amber_process
 ):
     recipe = vim2_top_and_coord.recipe.model_copy(
@@ -292,8 +291,12 @@ def test_run_nvt_constant_temp(
 
     call_kwargs = mock_amber.call_args.kwargs
     protocol = call_kwargs["protocol"]
+    assert isinstance(protocol, bss.Protocol.Equilibration)
     assert (
         protocol.getStartTemperature() == protocol.getEndTemperature()
         == recipe.temperature
     )
     assert protocol.getPressure() == recipe.pressure
+    assert call_kwargs["extra_options"]["barostat"] == recipe.barostat
+
+
